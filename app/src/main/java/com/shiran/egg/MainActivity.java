@@ -9,15 +9,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -32,12 +38,18 @@ import java.util.regex.Pattern;
  *
  *  Updates without reinstalling: on every launch the app fetches the newest index.html
  *  from GitHub and keeps a copy. Offline, it uses the last copy it saved, or the one
- *  built into the app. */
+ *  built into the app.
+ *
+ *  Drawings and sounds the page asks for (art/..., sound/...) come from the app itself;
+ *  a file the app does not have yet is downloaded once from GitHub and kept. So new art
+ *  needs a new file name, not a reinstall. */
 public class MainActivity extends Activity implements SensorEventListener {
 
     private WebView web;
     private SensorManager sensors;
     private Sensor gravity;
+    private Sensor motion;
+    private long lastShakeSent = 0;
     private boolean pageReady = false;
     private long lastSent = 0;
 
@@ -59,9 +71,23 @@ public class MainActivity extends Activity implements SensorEventListener {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
+        web.addJavascriptInterface(new Bridge(), "EggNative");
         web.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) { pageReady = true; }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+                if (!"egg.game".equals(req.getUrl().getHost())) return null;
+                String path = req.getUrl().getPath();
+                if (path == null || path.length() < 2 || path.contains("..")) return null;
+                byte[] data = gameFile(path.substring(1));
+                if (data == null) return new WebResourceResponse("text/plain", "utf-8", 404, "Not found",
+                        java.util.Collections.singletonMap("Access-Control-Allow-Origin", "*"), new ByteArrayInputStream(new byte[0]));
+                WebResourceResponse r = new WebResourceResponse(mime(path), null, new ByteArrayInputStream(data));
+                r.setResponseHeaders(java.util.Collections.singletonMap("Access-Control-Allow-Origin", "*"));
+                return r;
+            }
         });
         setContentView(web);
         loadGame();
@@ -69,6 +95,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         sensors = (SensorManager) getSystemService(SENSOR_SERVICE);
         gravity = sensors.getDefaultSensor(Sensor.TYPE_GRAVITY);
         if (gravity == null) gravity = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        motion = sensors.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
         hideSystemBars();
     }
@@ -104,6 +131,62 @@ public class MainActivity extends Activity implements SensorEventListener {
             return readAll(getAssets().open("index.html"));
         } catch (Exception e) {
             return "<body style='background:#120a10'></body>";
+        }
+    }
+
+    /** A drawing or sound for the page: from the app, else saved earlier, else GitHub (then saved). */
+    private byte[] gameFile(String rel) {
+        try { return readBytes(getAssets().open(rel)); } catch (Exception ignored) { }
+        File cached = new File(getFilesDir(), "cache/" + rel);
+        try { if (cached.exists()) return readBytes(new java.io.FileInputStream(cached)); } catch (Exception ignored) { }
+        try {
+            HttpURLConnection c = (HttpURLConnection) new URL("https://raw.githubusercontent.com/" + REPO
+                    + "/main/app/src/main/assets/" + rel).openConnection();
+            c.setConnectTimeout(5000);
+            c.setReadTimeout(15000);
+            if (c.getResponseCode() != 200) return null;
+            byte[] data = readBytes(c.getInputStream());
+            cached.getParentFile().mkdirs();
+            try (FileOutputStream o = new FileOutputStream(cached)) { o.write(data); }
+            return data;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static byte[] readBytes(InputStream in) throws Exception {
+        try (InputStream i = in) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int n;
+            while ((n = i.read(buf)) > 0) out.write(buf, 0, n);
+            return out.toByteArray();
+        }
+    }
+
+    private static String mime(String path) {
+        String p = path.toLowerCase();
+        if (p.endsWith(".webp")) return "image/webp";
+        if (p.endsWith(".png")) return "image/png";
+        if (p.endsWith(".jpg") || p.endsWith(".jpeg")) return "image/jpeg";
+        if (p.endsWith(".mp3")) return "audio/mpeg";
+        if (p.endsWith(".ogg")) return "audio/ogg";
+        if (p.endsWith(".wav")) return "audio/wav";
+        if (p.endsWith(".json")) return "application/json";
+        if (p.endsWith(".js")) return "text/javascript";
+        if (p.endsWith(".css")) return "text/css";
+        return "application/octet-stream";
+    }
+
+    /** Things the page can ask the phone to do. */
+    private class Bridge {
+        @JavascriptInterface
+        public void vibrate(int ms) {
+            Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v == null || !v.hasVibrator()) return;
+            int len = Math.max(5, Math.min(ms, 400));
+            if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(len, VibrationEffect.DEFAULT_AMPLITUDE));
+            else v.vibrate(len);
         }
     }
 
@@ -153,12 +236,15 @@ public class MainActivity extends Activity implements SensorEventListener {
         super.onResume();
         web.onResume();
         if (gravity != null) sensors.registerListener(this, gravity, SensorManager.SENSOR_DELAY_GAME);
+        if (motion != null) sensors.registerListener(this, motion, SensorManager.SENSOR_DELAY_GAME);
+        if (pageReady) web.evaluateJavascript("window.eggResume&&eggResume()", null);
         hideSystemBars();
     }
 
     @Override
     protected void onPause() {
         sensors.unregisterListener(this);
+        if (pageReady) web.evaluateJavascript("window.eggPause&&eggPause()", null);
         web.onPause();
         super.onPause();
     }
@@ -173,6 +259,14 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onSensorChanged(SensorEvent e) {
         if (!pageReady) return;
         long now = System.currentTimeMillis();
+        if (e.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+            float m = (float) Math.sqrt(e.values[0] * e.values[0] + e.values[1] * e.values[1] + e.values[2] * e.values[2]);
+            if (m > 8 && now - lastShakeSent > 120) {
+                lastShakeSent = now;
+                web.evaluateJavascript("window.eggShake&&eggShake(" + m + ")", null);
+            }
+            return;
+        }
         if (now - lastSent < 15) return;
         lastSent = now;
         String js = "window.eggGravity&&eggGravity(" + e.values[0] + "," + e.values[1] + "," + e.values[2] + ")";

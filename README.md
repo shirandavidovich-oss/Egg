@@ -19,11 +19,19 @@ Install the APK once. After that, every launch fetches the newest game file
 time the app opens, with no reinstall. Offline, the app uses the last version it saved.
 A new APK is only needed when the Android part changes.
 
+Drawings (`app/src/main/assets/art/`) and sounds (`.../sound/`) ship inside the app. A file the
+installed app does not have yet is downloaded from this repo once and kept, so **new art gets a
+new file name** (changing an existing file only reaches phones with a fresh install).
+
 ## Where things are
 
 | What | File |
 |---|---|
-| The whole game (scene, egg, tilt, physics) | `app/src/main/assets/index.html` |
+| The game code (edit this one) | `art/game-template.html` |
+| Built page the phone loads (made by `python3 art/build.py`) | `app/src/main/assets/index.html` |
+| Cut-out drawings, music | `app/src/main/assets/art/`, `.../sound/` |
+| The original drawings as made | `art/source/` |
+| Where each drawing's feet and size are | `art/sprites.json` |
 | Android shell: full screen + tilt sensor | `app/src/main/java/com/shiran/egg/MainActivity.java` |
 | App name, orientation | `app/src/main/AndroidManifest.xml` |
 | Automatic APK build | `.github/workflows/build-apk.yml` |

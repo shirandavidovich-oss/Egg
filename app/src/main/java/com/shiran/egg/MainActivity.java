@@ -62,6 +62,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private boolean loaded = false;
+    private String shownHtml = null;          // the page on screen, to know when a newer one arrives
+    private long pausedAt = 0;
+    private boolean checking = false;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -125,16 +128,40 @@ public class MainActivity extends Activity implements SensorEventListener {
             try {
                 String html = fetchLatest();
                 writeFile(savedCopy(), html);
-                main.post(() -> showGame(html));
+                // slow network: the old page went up first. Swap to the new one as soon as it is here
+                main.post(() -> { if (!loaded) showGame(html); else swapIfNewer(html); });
             } catch (Exception e) {
                 main.post(() -> showGame(readLocal()));
             }
         }).start();
     }
 
+    // coming back to the app after a while: look for a newer game in the background
+    private void checkForUpdate() {
+        if (checking || !loaded) return;
+        checking = true;
+        new Thread(() -> {
+            try {
+                String html = fetchLatest();
+                writeFile(savedCopy(), html);
+                main.post(() -> swapIfNewer(html));
+            } catch (Exception ignored) {
+            } finally { checking = false; }
+        }).start();
+    }
+
+    // the player's progress lives in the page's storage, so loading the new page keeps everything
+    private void swapIfNewer(String html) {
+        if (html == null || html.equals(shownHtml)) return;
+        shownHtml = html;
+        pageReady = false;
+        web.loadDataWithBaseURL("https://egg.game/", html, "text/html", "utf-8", null);
+    }
+
     private void showGame(String html) {
         if (loaded || html == null) return;
         loaded = true;
+        shownHtml = html;
         web.loadDataWithBaseURL("https://egg.game/", html, "text/html", "utf-8", null);
     }
 
@@ -292,10 +319,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         if (motion != null) sensors.registerListener(this, motion, SensorManager.SENSOR_DELAY_GAME);
         if (pageReady) web.evaluateJavascript("window.eggResume&&eggResume()", null);
         hideSystemBars();
+        if (pausedAt > 0 && System.currentTimeMillis() - pausedAt > 30000) checkForUpdate();
     }
 
     @Override
     protected void onPause() {
+        pausedAt = System.currentTimeMillis();
         sensors.unregisterListener(this);
         if (pageReady) web.evaluateJavascript("window.eggPause&&eggPause()", null);
         web.onPause();

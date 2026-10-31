@@ -610,10 +610,33 @@ const SpringPhys = (() => {
   const rparams = (m, k, mus, muk, g = G_EARTH) => ({ m, k, mus, muk, g });
   const rEnergy = (st, p, T) => ({ el: st.s < 0 ? 0.5 * p.k * st.s * st.s : 0, k: 0.5 * p.m * st.v * st.v, g: p.m * p.g * trackAt(T, st.s).y });
 
+  // ---------------- spring on an incline ----------------
+  // x = stretch along the slope (+ down the slope). m·x'' = m·g·sinθ − k·x − friction, with N = m·g·cosθ.
+  // In u = x − m·g·sinθ/k this is exactly the wall spring with g → g·cosθ, so HSim does the work.
+  const iparams = (m, k, mus, muk, deg, g = G_EARTH) => ({ ...hparams(m, k, mus, muk, g * Math.cos(deg * Math.PI / 180)), deg, gTrue: g });
+  const inclineEq = (p) => p.m * p.gTrue * Math.sin(p.deg * Math.PI / 180) / p.k;
+
+  // ---------------- two bodies pushed apart by a compressed spring (frictionless) ----------------
+  // the spring is not attached: it pushes while compressed, then both coast. Momentum stays zero.
+  function twoStep(st, p, dt) {
+    let { x1, x2, v1, v2 } = st;
+    for (let i = 0; i < 8; i++) {
+      const h = dt / 8, comp = Math.max(0, p.L0 - (x2 - x1)), F = p.k * comp;     // pushes 1 left, 2 right
+      v1 -= F / p.m1 * h; v2 += F / p.m2 * h; x1 += v1 * h; x2 += v2 * h;
+    }
+    return { x1, x2, v1, v2, touching: x2 - x1 < p.L0 };
+  }
+  // ideal result: momentum 0, all spring energy to motion
+  function twoSpeeds(p, c) {
+    const E = 0.5 * p.k * c * c, v2 = Math.sqrt(2 * E * p.m1 / (p.m2 * (p.m1 + p.m2)));
+    return { v1: -p.m2 * v2 / p.m1, v2 };
+  }
+
   return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
     hparams, stickZone, halfSwingLoss, hstep, HSim,
     lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim,
-    track, trackAt, trackEnd, rstep, rparams, rEnergy };
+    track, trackAt, trackEnd, rstep, rparams, rEnergy,
+    iparams, inclineEq, twoStep, twoSpeeds };
 })();
 
 // ======================================================================
@@ -3214,6 +3237,9 @@ const EggProfile = (() => {
     { id: "springs.parallel", he: "קפיצים במקביל", insight: "במקביל שני הקפיצים נמתחים אותו מרחק, והכוחות מתחברים. הקפיץ השקול קשיח יותר מכל אחד מהם.", eq: "k_eq = k1 + k2" },
     { id: "springs.graphs", he: "גרפים של תנודה", insight: "x, v ו-a הם גלים באותו קצב אבל מוזזים: כש-x בקצה, v = 0 ו-a הכי גדולה ובכיוון ההפוך. האנרגיה עוברת בין תנועה לקפיץ, והסכום קבוע.", eq: "a = −ω²·x" },
     { id: "springs.ramp", he: "מסילת אנרגיה", insight: "האנרגיה לא נעלמת: היא עוברת מהקפיץ לתנועה ולגובה, והחיכוך הופך חלק ממנה לחום. הסכום תמיד שווה למה שהיה בקפיץ.", eq: "½·k·x² = ½·m·v² + m·g·h + Q" },
+    { id: "springs.incline", he: "קפיץ על מדרון", insight: "על מדרון הקפיץ צריך להחזיק רק את mg·sinθ, ולכן נמתח פחות. הזווית מזיזה את שיווי המשקל אבל לא משנה את זמן המחזור.", eq: "k·x = m·g·sinθ" },
+    { id: "springs.momentum", he: "קפיץ בין שני גופים: תנע", insight: "מתחילים במנוחה, ולכן התנע הכולל נשאר אפס: הגופים עפים לכיוונים מנוגדים, והקל מהיר יותר.", eq: "m1·v1 + m2·v2 = 0" },
+    { id: "springs.pulley", he: "קפיץ וגלגלת", insight: "גלגלת אידיאלית רק משנה את כיוון החוט. המתיחות זהה לכל אורכו, ולכן הקפיץ מחזיק את אותו משקל וזמן המחזור לא משתנה.", eq: "T = k·x = m·g" },
     { id: "springs.graph", he: "גרף כוח מול התארכות", insight: "הנקודות יושבות על קו ישר שעובר בראשית, והשיפוע שלו הוא k. השטח מתחת לקו הוא האנרגיה האלסטית.", eq: "k = ΔF / Δx" }
   ];
   const UNITS = SPRING_UNITS;
@@ -3244,6 +3270,12 @@ const EggProfile = (() => {
     { id: "q.ramp.top", unit: "springs.ramp", q: "קפיץ k = 400 N/m דחוס 10 cm. דמות של 1 kg, בלי חיכוך (g = 10). לאיזה גובה מקסימלי תגיע?", a: ["20 cm", "2 cm", "40 cm"], right: 0, why: "½·400·0.1² = 2 J. mgh = 2 → h = 2 / (1·10) = 0.2 m = 20 cm." },
     { id: "q.ramp.heat", unit: "springs.ramp", q: "על מסילה עם חיכוך הדמות מגיעה נמוך יותר. לאן הלכה האנרגיה החסרה?", a: ["נעלמה", "הפכה לחום", "חזרה לקפיץ"], right: 1, why: "החיכוך עושה עבודה שלילית: האנרגיה הופכת לחום, Q = μk·N·d. הסכום הכולל נשמר." },
     { id: "q.ramp.speed", unit: "springs.ramp", q: "בלי חיכוך, באיזה רגע המהירות הכי גדולה?", a: ["בשיא הגובה", "כשהדמות עוזבת את הקפיץ ועדיין על הרצפה", "בתחילת הדחיסה"], right: 1, why: "כשהקפיץ מסיים לדחוף, כל האנרגיה שלו הפכה לתנועה, ועוד לא התחילה לעלות." },
+    { id: "q.incline.eq", unit: "springs.incline", q: "דמות קשורה לקפיץ על מדרון חלק. מגדילים את הזווית. ההתארכות בשיווי משקל…", a: ["גדלה", "קטנה", "לא משתנה"], right: 0, why: "k·x = m·g·sinθ: כשהזווית גדלה, sinθ גדל, והקפיץ צריך להחזיק יותר." },
+    { id: "q.incline.T", unit: "springs.incline", q: "ומה עם זמן המחזור כשהזווית גדלה (בלי חיכוך)?", a: ["גדל", "קטן", "לא משתנה"], right: 2, why: "T = 2π√(m/k). הכובד רק מזיז את נקודת שיווי המשקל." },
+    { id: "q.mom.ratio", unit: "springs.momentum", q: "קפיץ דחוס בין גוף של 1 kg לגוף של 3 kg, במנוחה. אחרי השחרור הגוף הקל נע ב-3 m/s. הכבד…", a: ["1 m/s לכיוון ההפוך", "3 m/s לכיוון ההפוך", "9 m/s"], right: 0, why: "1·3 + 3·v = 0 → v = −1 m/s." },
+    { id: "q.mom.zero", unit: "springs.momentum", q: "התנע הכולל של שני הגופים אחרי השחרור הוא…", a: ["אפס", "½kx²", "תלוי ב-k"], right: 0, why: "לפני השחרור הכול במנוחה, ואין כוח חיצוני לאורך המסילה: התנע נשמר, ונשאר אפס." },
+    { id: "q.pulley.T", unit: "springs.pulley", q: "דמות של 2 kg תלויה במנוחה על חוט שעובר מעל גלגלת לקפיץ (g = 10). מה המתיחות בחוט?", a: ["20 N", "10 N", "40 N"], right: 0, why: "בשיווי משקל T = m·g = 20 N, ואותה מתיחות בכל החוט, גם ליד הקפיץ." },
+    { id: "q.pulley.dir", unit: "springs.pulley", q: "מה הגלגלת האידיאלית עושה לכוח?", a: ["מגדילה אותו", "משנה רק את הכיוון", "מקטינה אותו בחצי"], right: 1, why: "גלגלת אחת קבועה, בלי מסה ובלי חיכוך, רק מסובבת את החוט." },
     { id: "q.graph.slope", unit: "springs.graph", q: "בגרף של כוח (N) מול התארכות (m) של קפיץ, השיפוע הוא…", a: ["k", "המסה", "האנרגיה"], right: 0, why: "F = k·x: קו ישר דרך הראשית, ושיפועו k ביחידות N/m." },
     { id: "q.graph.area", unit: "springs.graph", q: "מה מייצג השטח שמתחת לקו בגרף F מול x?", a: ["את k", "את האנרגיה האלסטית ½kx²", "את זמן המחזור"], right: 1, why: "השטח הוא משולש: ½·x·(kx) = ½kx², העבודה שהושקעה במתיחה." },
     { id: "q.graph.units", unit: "springs.graph", q: "תלו 200 g והקפיץ התארך ב-4 cm (g = 10). מה k?", a: ["5 N/m", "50 N/m", "500 N/m"], right: 1, why: "F = 0.2·10 = 2 N, x = 0.04 m, ולכן k = 2 / 0.04 = 50 N/m. קודם להמיר לגרם→ק״ג וס״מ→מטר!" },
@@ -3732,7 +3764,7 @@ const EggProfile = (() => {
     });
     return el;
   }
-  const SCENES = [["hang", "תלוי", "lab"], ["wall", "מהקיר", "wall"], ["launch", "משגר", "launch"], ["pair", "שניים", "pair"], ["ramp", "מסילה", "ramp"], ["graph", "מדידה", "graph"], ["osc", "גרפים", "osc"]];
+  const SCENES = [["hang", "תלוי", "lab"], ["wall", "מהקיר", "wall"], ["launch", "משגר", "launch"], ["pair", "שניים", "pair"], ["ramp", "מסילה", "ramp"], ["graph", "מדידה", "graph"], ["osc", "גרפים", "osc"], ["islope", "מדרון", "islope"], ["two", "תנע", "two"], ["pulley", "גלגלת", "pulley"]];
   const modeSeg = (m) => `<div class="seg seg4" role="group" aria-label="סצנת הקפיץ">${SCENES.map(([id, he]) => `<button type="button" data-m="${id}" aria-pressed="${m === id}">${he}</button>`).join("")}</div>`;
   function bindModeSeg(args) {
     const on = screenEl.querySelector('.seg4 [aria-pressed="true"]'); if (on) on.scrollIntoView({ inline: "center", block: "nearest" });
@@ -3809,6 +3841,12 @@ const EggProfile = (() => {
       eq: ["Q = f_k·d", "f_k = μk·N"], live: (c) => c.Q !== undefined && `עד עכשיו: Q = ${f2(c.Q, 2)} J. μk = ${f2(c.muk)}.` },
     energyBars: { t: "לאן הלכה האנרגיה?", p: "כל עמודה היא סוג אנרגיה. הסגולה מימין היא הסכום שלהן, והקו הסגול הוא מה שהיה בקפיץ בהתחלה. מה שיורד מעמודה אחת עולה באחרת: האנרגיה נשמרת.",
       eq: ["E_el = ½·k·x²", "E_k = ½·m·v²", "E_g = m·g·h", "Q = μk·N·d"], live: () => "" },
+    momentum: { t: "תנע p", p: "מסה כפול מהירות, כולל כיוון. כשאין כוחות חיצוניים, התנע הכולל של המערכת לא משתנה. הקפיץ הוא כוח פנימי: דוחף את שניהם באותו כוח לכיוונים מנוגדים.",
+      eq: ["p = m·v", "m1·v1 + m2·v2 = 0", "v1 / v2 = −m2 / m1"], live: (c) => c.m1 && `עכשיו: p1 + p2 = ${f2(c.p, 2)} kg·m/s.` },
+    tension: { t: "מתיחות בחוט T", p: "הכוח שהחוט מושך בו בכל קצה. בחוט בלי מסה המתיחות זהה לכל אורכו, גם אחרי שהוא מתעקם על גלגלת. כאן היא שווה בדיוק לכוח הקפיץ.",
+      eq: ["T = k·x", "m·a = m·g − T"], live: (c) => c.T !== undefined && `עכשיו T = ${f2(c.T, 1)} N, והמשקל ${f2(c.m * 9.81, 1)} N.` },
+    pulley: { t: "גלגלת אידיאלית", p: "גלגל קטן שהחוט עובר מעליו. אידיאלית: בלי מסה ובלי חיכוך. היא לא מגדילה ולא מקטינה את הכוח, רק משנה את הכיוון שלו: הדמות מושכת למטה, והקפיץ מרגיש משיכה הצידה.",
+      eq: ["T₁ = T₂ = T"], live: () => "" },
     weights: { t: "משקולות כיול", p: "ציוד מעבדה עם מסה ידועה. כל משקולת של 100 g מוסיפה משקל של 0.981 N. הן לא משנות את הדמות: הדמות רק מחזיקה את הסרגל ורושמת.",
       eq: ["W = m·g", "100 g = 0.1 kg"], live: (c) => c.n !== undefined && `עכשיו תלויות ${c.n} משקולות: ${f2(c.n * 0.1, 1)} kg, ${f2(c.n * 0.981, 2)} N.` },
     theta: { t: "זווית המדרון θ", p: "הזווית בין המדרון לאופק. כשהיא גדלה, הרכיב של הכובד במורד (mg·sinθ) גדל והנורמל (mg·cosθ) קטן. הכובד עצמו לא משתנה. הגוף מתחיל להחליק כש-tanθ עובר את μs.",
@@ -3864,6 +3902,11 @@ const EggProfile = (() => {
     "ΣF⊥": { n: "סכום הכוחות בניצב למשטח", d: "רק החלקים של הכוחות שניצבים למדרון. כשהגוף לא קופץ ולא שוקע, הסכום הזה הוא אפס.", u: "N", un: "ניוטון", si: "kg·m/s²" },
     L:   { n: "אורך הקפיץ", d: "האורך הנוכחי של הקפיץ.", u: "m", un: "מטר", si: "m" },
     "L₀": { n: "אורך טבעי", d: "האורך של הקפיץ כשאף כוח לא פועל עליו.", u: "m", un: "מטר", si: "m" },
+    m1:  { n: "מסת הגוף הראשון", d: "הדמות שלך.", u: "kg", un: "קילוגרם", si: "kg" },
+    m2:  { n: "מסת הגוף השני", d: "העגלה, או דמות נוספת משלך.", u: "kg", un: "קילוגרם", si: "kg" },
+    v1:  { n: "מהירות הגוף הראשון", d: "שלילית = שמאלה.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    v2:  { n: "מהירות הגוף השני", d: "חיובית = ימינה.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    p:   { n: "תנע (momentum)", d: "מסה כפול מהירות, עם כיוון.", u: "kg·m/s", un: "קילוגרם-מטר לשנייה", si: "kg·m/s" },
     Q:   { n: "חום (אנרגיה תרמית)", d: "האנרגיה שהחיכוך הפך לחום. היא לא נעלמה, רק כבר לא מכנית.", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
     E_el: { n: "אנרגיה אלסטית", d: "האנרגיה שבקפיץ הדחוס או המתוח: ½·k·x².", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
     A:   { n: "משרעת (Amplitude)", d: "המרחק המרבי מנקודת שיווי המשקל.", u: "m", un: "מטר", si: "m" },
@@ -3881,7 +3924,7 @@ const EggProfile = (() => {
     u:   { n: "הסטה משיווי המשקל", d: "המרחק מנקודת שיווי המשקל (לא מהאורך הטבעי).", u: "m", un: "מטר", si: "m" },
     mg:  { n: "המשקל, m כפול g", d: "כוח הכובד על הגוף. תמיד אנכי כלפי מטה, גם על מדרון.", u: "N", un: "ניוטון", si: "kg·m/s²" }
   };
-  const SYM_RE = /(E_el|v_max|a_max|E_p|k_eq|k1|k2|x1|x2|F1|F2|x_rest|s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
+  const SYM_RE = /(m1|m2|v1|v2|E_el|v_max|a_max|E_p|k_eq|k1|k2|x1|x2|F1|F2|x_rest|s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
   // turn the text of a formula into tappable symbols (numbers and units in <em> stay as they are)
   function symbolize(root) {
     if (!root) return;
@@ -4066,6 +4109,9 @@ const EggProfile = (() => {
     if (lab.mode === "pair") return SCREENS.pair(args);
     if (lab.mode === "osc") return SCREENS.osc(args);
     if (lab.mode === "ramp") return SCREENS.ramp(args);
+    if (lab.mode === "islope") return SCREENS.islope(args);
+    if (lab.mode === "two") return SCREENS.two(args);
+    if (lab.mode === "pulley") return SCREENS.pulley(args);
     lab.mode = "hang";
     setTitle("קפיץ־קפוץ", "קפיץ תלוי מהתקרה");
     let sp = activeSpecies();
@@ -5713,6 +5759,357 @@ const EggProfile = (() => {
     raf = requestAnimationFrame(frame);
     say(`דחפו את ${nameOf(sp)} אל הקפיץ ושחררו. יגיע לבמה?`, 3.4);
     cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); };
+    bindModeSeg(args);
+  };
+
+  // shared frame for the last scenes: canvas, image, resize, speech, cleanup
+  function sceneShell(mode, html) {
+    screenEl.innerHTML = `<div class="lab-screen">${modeSeg(mode)}${html}</div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab"), d = { W: 0, H: 0, DPR: 1 };
+    const resize = () => { const r = box.getBoundingClientRect(); d.DPR = Math.min(devicePixelRatio || 1, 2); d.W = r.width; d.H = r.height; cv.width = Math.round(d.W * d.DPR); cv.height = Math.round(d.H * d.DPR); };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box);
+    let sayT = 0;
+    const say = (text, secs = 2.6) => { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; };
+    const tickSay = (dt) => { if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; } };
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const begin = () => { ctx.setTransform(d.DPR, 0, 0, d.DPR, 0, 0); ctx.clearRect(0, 0, d.W, d.H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr"; };
+    const done = (raf, extra) => () => { cancelAnimationFrame(raf()); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); if (extra) extra(); };
+    return { cv, ctx, box, d, say, tickSay, pos, begin, done };
+  }
+  const readout = (info, label, id) => `<button type="button" class="readout" data-info="${info}"><small>${label} <i class="qi">?</i></small><b id="${id}">–</b></button>`;
+  const firstDrag = (e, flag) => { if (!flag.v) { flag.v = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); } };
+
+  // ======================================================================
+  //  SPRING ON AN INCLINE: "איפה הרצפה שלי?!" — the spring holds the creature on a slope
+  // ======================================================================
+  SCREENS.islope = (args = {}) => {
+    lab.mode = "islope";
+    setTitle("קפיץ־קפוץ", "קפיץ על מישור משופע");
+    let sp = activeSpecies();
+    lab.ideg = lab.ideg ?? 30; lab.isurf = lab.isurf || "dry_wood";
+    const m = () => phys(sp).mass_kg, mu = () => (phys(sp).surfaces || {})[lab.isurf] || { mu_s: phys(sp).mu_s, mu_k: phys(sp).mu_k };
+    const ip = () => SP.iparams(m(), lab.k, mu().mu_s, mu().mu_k, lab.ideg);
+    const S0 = sceneShell("islope", `
+        <div class="lab" id="lab"><canvas id="labCanvas"></canvas><div class="bubble say" id="say" hidden></div></div>
+        <div class="readouts">${readout("theta", "זווית θ", "rTh")}${readout("x", "מתיחה x", "rX")}${readout("F", "כוח קפיץ", "rF")}${readout("finc", "חיכוך", "rf")}</div>
+        <div class="card controls">
+          <div class="slider-row"><label for="thIn"><span>זווית המדרון ${infoBtn("theta")}</span><span class="val" id="thVal"></span></label><input id="thIn" type="range" min="0" max="60" step="1"></div>
+          <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k ${infoBtn("k")}</span><span class="val" id="kVal"></span></label><input id="kIn" type="range" min="30" max="400" step="5"></div>
+          <div><div class="meter-label"><span>המשטח ${infoBtn("surface")}</span><span class="ltr" id="muVal"></span></div>
+            <div class="surfaces">${Object.entries(SPR.surfaces).map(([k, v]) => `<button type="button" data-s="${k}">${esc(v)}</button>`).join("")}</div></div>
+          <p class="fine" style="margin:4px 0 0">המסה והרגליים של ${esc(nameOf(sp))} קבועות. משנים רק את המדרון, הקפיץ והמשטח.</p>
+        </div>
+        <div class="card formula" id="formula"></div>`);
+    const { cv, ctx, box, d, say, tickSay, pos, begin } = S0;
+    const img = new Image(); img.src = artOf(sp);
+    let sim = new SP.HSim(ip(), 0), dragging = null, trial = null, raf = 0, lastT = performance.now(), fpaint = 0, questionCooldown = 1;
+    const drag1 = { v: false }, L0 = 0.32, UM = 0.22;
+    const thIn = $("#thIn"), kIn = $("#kIn"); thIn.value = lab.ideg; kIn.value = lab.k;
+    const xeq = () => SP.inclineEq(sim.p), th = () => lab.ideg * Math.PI / 180;
+    const forces = () => {
+      const p = sim.p, x = sim.st.x + xeq(), W = p.m * p.gTrue, par = W * Math.sin(th()), N = W * Math.cos(th()), Fs = p.k * x;
+      let f = 0;                                                    // + = up the slope
+      if (sim.st.moving) f = Math.sign(sim.st.v) * p.muk * N;      // v + is down the slope, friction opposes
+      else if (!sim.held) f = clamp(par - Fs, -p.mus * N, p.mus * N);
+      return { x, W, par, N, Fs, f };
+    };
+    function paint() {
+      $("#thVal").textContent = lab.ideg + "°"; $("#kVal").textContent = lab.k + " N/m";
+      $("#muVal").textContent = `μs ${fmt(mu().mu_s, 2)} · μk ${fmt(mu().mu_k, 2)}`;
+      for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.setAttribute("aria-pressed", b.dataset.s === lab.isurf);
+      const p = sim.p;
+      setFormula($("#formula"), `
+        <div class="eq"><span>לאורך המדרון</span><span class="m">m·a = m·g·sinθ − k·x − f<em>${fmt(forces().par, 1)} − ${fmt(forces().Fs, 1)} − ${fmt(forces().f, 1)} N</em></span></div>
+        <div class="eq"><span>שיווי משקל בלי חיכוך</span><span class="m">x = m·g·sinθ / k<em>${fmt(xeq() * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>נורמל</span><span class="m">N = m·g·cosθ<em>${fmt(forces().N, 1)} N</em></span></div>
+        <div class="eq"><span>זמן מחזור</span><span class="m">T = 2π·√(m/k)<em>${fmt(2 * Math.PI * Math.sqrt(p.m / p.k))} s</em></span></div>
+        <p class="fine">x היא ההתארכות של הקפיץ לאורך המדרון. הזווית מזיזה את נקודת שיווי המשקל, אבל לא משנה את זמן המחזור.</p>`);
+    }
+    function reset(why) { sim = new SP.HSim(ip(), 0); trial = null; if (why) say(why, 3.6); paint(); }
+    thIn.addEventListener("input", () => { lab.ideg = +thIn.value; reset(); });
+    thIn.addEventListener("change", () => say(lab.ideg === 0 ? "זה כבר לא מדרון: הקפיץ לא נמתח בכלל במנוחה." : `בזווית ${lab.ideg}° הקפיץ נמתח ${fmt(xeq() * 100, 1)} ס״מ כדי להחזיק את mg·sinθ = ${fmt(forces().par, 1)} N.`, 3.6));
+    kIn.addEventListener("input", () => { lab.k = +kIn.value; reset(); });
+    for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.addEventListener("click", () => { lab.isurf = b.dataset.s; G.sfx.pop(); reset(`על ${SPR.surfaces[lab.isurf]}: μs = ${fmt(mu().mu_s, 2)}. החיכוך כאן תלוי ב-N = mg·cosθ.`); });
+    paint();
+    infoLive = () => { const f = forces(); return { deg: lab.ideg, name: nameOf(sp), crit: Math.atan(mu().mu_s) / Math.PI * 180, k: lab.k, m: m(), x: f.x, W: f.W, N: f.N, f: Math.abs(f.f), fk: mu().mu_k * f.N, fsMax: mu().mu_s * f.N, holds: !sim.st.moving, a: 0, s: f.x, mus: mu().mu_s, muk: mu().mu_k, surface: SPR.surfaces[lab.isurf] }; };
+
+    // screen frame: the slope rises to the right; the spring hangs from its top end, down the slope
+    const view = () => { const LS = 1.25, c = Math.cos(th()), s = Math.sin(th()), S = Math.min((d.W - 40) / Math.max(0.6, LS * c + 0.1), (d.H - 50) / (LS * s + 0.45)); const p0 = { x: 20, y: d.H - 22 }; return { S, c, s, p0, top: { x: p0.x + LS * c * S, y: p0.y - LS * s * S }, LS }; };
+    // a point at distance dd down the slope from the top, raised hh above the surface
+    const at = (v, dd, hh = 0) => ({ x: v.top.x - dd * v.c * v.S - hh * v.s * v.S, y: v.top.y + dd * v.s * v.S - hh * v.c * v.S });
+    const bodyLen = () => phys(sp).height_m * 1.4 * (img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.9);
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen()) return;
+      const q = pos(e), v = view(), c = at(v, L0 + forces().x + bodyLen() * 0.45, phys(sp).height_m * 0.7);
+      if (Math.hypot(q.x - c.x, q.y - c.y) > 80) { const s0 = at(v, (L0 + forces().x) / 2, 0.1); if (Math.hypot(q.x - s0.x, q.y - s0.y) < 50) openInfo("k", { x: e.clientX, y: e.clientY }); else openInfo("forces", { x: e.clientX, y: e.clientY }); return; }
+      G.audio.unlock(); dragging = { q, u0: sim.st.x }; cv.setPointerCapture(e.pointerId); sim.hold(sim.st.x); trial = null; firstDrag(e, drag1);
+    });
+    cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), v = view(); const along = ((q.x - dragging.q.x) * -v.c + (q.y - dragging.q.y) * v.s) / v.S; sim.hold(clamp(dragging.u0 + along, -Math.min(UM, xeq() + L0 * 0.6), UM)); });
+    const letGo = () => { if (!dragging) return; dragging = null; if (Math.abs(sim.st.x) < 0.015) { reset(); return; } sim.release(); trial = { seen: false, t0: performance.now() }; G.sfx.boing(0.6); say("איפה הרצפה שלי?!", 1.6); };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+    function observe() {
+      if (!trial || trial.seen || dragging) return;
+      const T = 2 * Math.PI * Math.sqrt(sim.p.m / sim.p.k), settled = sim.turns.length >= 1 && sim.stuck;
+      if (!settled && performance.now() - trial.t0 < T * 2500) return;
+      trial.seen = true;
+      say(settled && Math.abs(sim.st.x) > 0.003 ? `נעצרתי ${fmt(Math.abs(sim.st.x) * 100, 1)} ס״מ מנקודת שיווי המשקל: החיכוך הסטטי עוזר לקפיץ להחזיק אותי.` : `מתנודד סביב x = ${fmt(xeq() * 100, 1)} ס״מ, באותו זמן מחזור כמו בלי מדרון.`, 4);
+      if (lab.ideg >= 10 && P.completeSubtopic("springs.incline")) { const r = cv.getBoundingClientRect(); setTimeout(() => celebrateUnits("springs", ["springs.incline"], { x: r.left + d.W / 2, y: r.top + d.H / 2 }), 1300); questionCooldown = 2; return; }
+      if (questionCooldown > 0) questionCooldown--; else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.incline"))) questionCooldown = 3;
+    }
+    function draw() {
+      begin();
+      const v = view(), f = forces(), S = v.S;
+      const tint = { dry_wood: "#B58A55", smooth_ice: "#7FC1DE", rubber_mat: "#4F5157" }[lab.isurf];
+      ctx.fillStyle = "rgba(107,107,112,0.07)"; ctx.beginPath(); ctx.moveTo(v.p0.x, v.p0.y); ctx.lineTo(v.top.x, v.top.y); ctx.lineTo(v.top.x, v.p0.y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = tint; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(v.p0.x, v.p0.y); ctx.lineTo(v.top.x, v.top.y); ctx.stroke();
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(v.p0.x, v.p0.y); ctx.lineTo(v.top.x, v.top.y); ctx.lineTo(v.top.x, v.p0.y); ctx.lineTo(0, v.p0.y); ctx.stroke();
+      if (lab.ideg > 0) { ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(v.p0.x, v.p0.y, 36, -th(), 0); ctx.stroke(); ctx.fillStyle = "#B8741A"; ctx.font = "700 13px " + FONT; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(`θ = ${lab.ideg}°`, v.p0.x + 42, v.p0.y - 12); }
+      // anchor post at the top end
+      const a0 = at(v, 0, 0.11); ctx.fillStyle = "#3a3a40"; ctx.save(); ctx.translate(v.top.x, v.top.y); ctx.rotate(-th()); ctx.fillRect(-6, -0.2 * S, 6, 0.2 * S); ctx.restore();
+      // equilibrium mark (frictionless) on the slope
+      const qe = at(v, L0 + xeq()); ctx.fillStyle = "#6E48C9"; ctx.beginPath(); ctx.arc(qe.x, qe.y, 4, 0, Math.PI * 2); ctx.fill();
+      // spring along the slope, then the creature
+      const dd = L0 + f.x, sEnd = at(v, dd, 0.11);
+      drawSpring(ctx, a0.x, a0.y, sEnd.x, sEnd.y, lab.k, false);
+      const bl = bodyLen(), hpx = phys(sp).height_m * 1.4 * S, base = at(v, dd, 0), pr = probe(img), edge = pr ? pr.right(1 - 0.11 / (phys(sp).height_m * 1.4)) : 1;
+      // in the turned frame +x points up the slope, so the picture's right edge meets the spring
+      if (img.complete && img.naturalWidth) { ctx.save(); ctx.translate(base.x, base.y); ctx.rotate(-th()); ctx.drawImage(img, -bl * S * edge, -hpx, bl * S, hpx); ctx.restore(); }
+      // forces from the centre: mg down, N out of the surface, spring up the slope, friction along the slope
+      const c = at(v, dd + (edge - 0.5) * bl, phys(sp).height_m * 0.7), k = 70 / Math.max(f.W, 1), up = { x: v.c, y: -v.s }, out = { x: -v.s, y: -v.c };
+      forceArrow(ctx, c.x, c.y, 0, f.W * k, "#2785C7", "mg", { value: f.W });
+      if (f.N > 0.05) forceArrow(ctx, c.x, c.y, out.x * f.N * k, out.y * f.N * k, "#8969C6", "N", { value: f.N });
+      if (f.Fs > 0.05) forceArrow(ctx, c.x, c.y, up.x * f.Fs * k, up.y * f.Fs * k, "#25A06F", "kx", { value: f.Fs, side: 1 });
+      if (Math.abs(f.f) > 0.05) forceArrow(ctx, c.x, c.y + 2, up.x * f.f * k, up.y * f.f * k, "#CC5794", sim.st.moving ? "f_k" : "f_s", { value: Math.abs(f.f), side: -1 });
+    }
+    function readouts() {
+      const f = forces();
+      $("#rTh").textContent = lab.ideg + "°"; $("#rX").textContent = fmt(f.x * 100, 1) + " cm"; $("#rF").textContent = fmt(f.Fs, 1) + " N";
+      $("#rf").textContent = Math.abs(f.f) > 0.01 ? (sim.st.moving ? "f_k " : "f_s ") + fmt(Math.abs(f.f), 1) + " N" : "0 N"; $("#rf").className = Math.abs(f.f) > 0.01 ? "" : "dim";
+    }
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen()) sim.advance(dt);
+      draw(); if ((fpaint++ & 3) === 0) { readouts(); paint(); }
+      tickSay(dt); observe();
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    say(`${nameOf(sp)} קשור לקפיץ על מדרון. הזיזו את הזווית, או משכו אותו במורד ושחררו.`, 3.6);
+    cleanup = S0.done(() => raf);
+    bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  TWO BODIES AND A SPRING: push them together, let go, momentum stays zero
+  //  Body 1 is the active creature (its own mass). Body 2 is a lab cart, or another creature the player owns.
+  // ======================================================================
+  SCREENS.two = (args = {}) => {
+    lab.mode = "two";
+    setTitle("קפיץ־קפוץ", "שני גופים וקפיץ: תנע");
+    const sp = activeSpecies();
+    lab.tm2 = lab.tm2 || 2.8; lab.tk = lab.tk || 400;
+    let other = null;                                           // species id of a second owned creature, or null = cart
+    const m1 = () => phys(sp).mass_kg, m2 = () => other ? phys(other).mass_kg : lab.tm2;
+    const S0 = sceneShell("two", `
+        <div class="lab" id="lab"><canvas id="labCanvas"></canvas><div class="bubble say" id="say" hidden></div>
+          <div class="lab-tools"><button class="chip" id="otherChip" type="button"></button></div></div>
+        <div class="readouts">${readout("v", "v1", "rV1")}${readout("v", "v2", "rV2")}${readout("momentum", "p1 + p2", "rP")}${readout("E", "אנרגיה", "rE")}</div>
+        <div class="card controls">
+          <div class="slider-row" id="m2Row"><label for="m2In"><span>מסת העגלה m2 ${infoBtn("m")}</span><span class="val" id="m2Val"></span></label><input id="m2In" type="range" min="0.5" max="4" step="0.1"></div>
+          <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k ${infoBtn("k")}</span><span class="val" id="kVal"></span></label><input id="kIn" type="range" min="100" max="800" step="20"></div>
+          <p class="fine" style="margin:4px 0 0">העגלה היא ציוד מעבדה. ${esc(nameOf(sp))} נשאר עם המסה שלו.</p>
+        </div>
+        <div class="card formula" id="formula"></div>`);
+    const { cv, ctx, box, d, say, tickSay, pos, begin } = S0;
+    const img1 = new Image(); img1.src = artOf(sp); const img2 = new Image();
+    const L0 = 0.22, CM = 0.12;
+    const prm = () => ({ k: lab.tk, L0, m1: m1(), m2: m2() });
+    let st = null, held = false, dragging = null, run = null, raf = 0, lastT = performance.now(), fpaint = 0, questionCooldown = 1;
+    const drag1 = { v: false };
+    const restSt = (c = 0) => ({ x1: -0.02 - (L0 - c) / 2, x2: (L0 - c) / 2 - 0.02 + 0.04, v1: 0, v2: 0, touching: c > 0 });
+    st = restSt();
+    const m2In = $("#m2In"), kIn = $("#kIn"); m2In.value = lab.tm2; kIn.value = lab.tk;
+    function paint() {
+      $("#m2Val").textContent = fmt(m2(), 1) + " kg"; $("#kVal").textContent = lab.tk + " N/m";
+      $("#m2Row").hidden = !!other;
+      $("#otherChip").innerHTML = other ? `<img src="${artOf(other)}" alt=""><span>${esc(nameOf(other))} · <span class="ltr">${fmt(m2(), 1)} kg</span></span><span aria-hidden="true">⇄</span>` : `<span>עגלה · <span class="ltr">${fmt(m2(), 1)} kg</span></span><span aria-hidden="true">⇄</span>`;
+      const c = run ? run.c : 0, id = SP.twoSpeeds(prm(), c || 0.1);
+      setFormula($("#formula"), `
+        <div class="eq"><span>שימור תנע (מתחילים במנוחה)</span><span class="m">m1·v1 + m2·v2 = 0<em>${fmt(m1() * st.v1 + m2() * st.v2, 2)} kg·m/s</em></span></div>
+        <div class="eq"><span>שימור אנרגיה</span><span class="m">½·k·x² = ½·m1·v1² + ½·m2·v2²<em>${fmt(0.5 * lab.tk * c * c, 2)} J</em></span></div>
+        <div class="eq"><span>יחס המהירויות</span><span class="m">v1 / v2 = −m2 / m1<em>${fmt(-m2() / m1(), 2)}</em></span></div>
+        <p class="fine">בלי חיכוך ובלי כוחות חיצוניים לאורך המסילה. הקפיץ חסר מסה ולא מחובר: הוא רק דוחף כשהוא דחוס.</p>`);
+    }
+    const reset = (why) => { st = restSt(); run = null; held = false; if (why) say(why, 3.4); paint(); };
+    m2In.addEventListener("input", () => { lab.tm2 = +m2In.value; reset(); });
+    kIn.addEventListener("input", () => { lab.tk = +kIn.value; reset(); });
+    $("#otherChip").addEventListener("click", () => {
+      const owned = P.owned().filter((c) => c.species !== sp);
+      if (!owned.length) { say("כדי ששתי דמויות ייפרדו צריך עוד דמות משלך (מהחלפה עם חבר). עד אז: עגלה.", 3.6); return; }
+      const ids = [null, ...new Set(owned.map((c) => c.species))], i = ids.indexOf(other);
+      other = ids[(i + 1) % ids.length]; if (other) img2.src = artOf(other); G.sfx.pop(); reset(other ? `עכשיו ${nameOf(sp)} ו-${nameOf(other)}.` : "חזרה לעגלה.");
+    });
+    paint();
+    infoLive = () => ({ m: m1(), name: nameOf(sp), k: lab.tk, v1: st.v1, v2: st.v2, p: m1() * st.v1 + m2() * st.v2, m1: m1(), m2: m2() });
+    const view = () => ({ S: (d.W - 20) / 2.6, cx: d.W / 2, fy: d.H * 0.62 });
+    const bodyW1 = () => phys(sp).height_m * 1.3 * (img1.naturalWidth ? img1.naturalWidth / img1.naturalHeight : 0.9);
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen() || (run && !run.done)) return;
+      const q = pos(e), v = view(); if (run && run.done) reset();
+      const x2px = v.cx + st.x2 * v.S;
+      if (Math.abs(q.x - (x2px + 30)) > 70 || Math.abs(q.y - (v.fy - 30)) > 70) { openInfo("momentum", { x: e.clientX, y: e.clientY }); return; }
+      G.audio.unlock(); dragging = { x0: q.x }; held = true; cv.setPointerCapture(e.pointerId); firstDrag(e, drag1);
+    });
+    cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), v = view(); const c = clamp((dragging.x0 - q.x) / v.S, 0, CM); st = restSt(c); });
+    const letGo = () => {
+      if (!dragging) return; dragging = null; held = false;
+      const c = Math.max(0, L0 - (st.x2 - st.x1)); if (c < 0.01) { reset(); return; }
+      run = { c, t: 0, done: false }; G.sfx.boing(0.8); G.buzz(20); say("ביי!", 1);
+    };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+    function finish() {
+      run.done = true;
+      const r = m2() / m1();
+      say(`${nameOf(sp)}: ${fmt(Math.abs(st.v1), 2)} m/s, ${other ? nameOf(other) : "העגלה"}: ${fmt(Math.abs(st.v2), 2)} m/s. ${r > 1.05 ? "הקל מבינינו עף מהר יותר" : r < 0.95 ? "העגלה הקלה עפה מהר יותר" : "אותה מסה, אותה מהירות"}, והתנע הכולל נשאר אפס.`, 5);
+      if (P.completeSubtopic("springs.momentum")) { const b = cv.getBoundingClientRect(); setTimeout(() => celebrateUnits("springs", ["springs.momentum"], { x: b.left + d.W / 2, y: b.top + d.H / 2 }), 1400); questionCooldown = 2; return; }
+      if (questionCooldown > 0) questionCooldown--; else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.momentum"))) questionCooldown = 3;
+    }
+    function draw() {
+      begin();
+      const v = view(), S = v.S, x1 = v.cx + st.x1 * S, x2 = v.cx + st.x2 * S;
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(0, v.fy); ctx.lineTo(d.W, v.fy); ctx.stroke();
+      ctx.strokeStyle = "rgba(58,58,64,0.2)"; ctx.lineWidth = 1; for (let i = 0; i < d.W; i += 12) { ctx.beginPath(); ctx.moveTo(i, v.fy + 10); ctx.lineTo(i + 8, v.fy + 2); ctx.stroke(); }
+      ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(138,96,232,0.5)"; ctx.beginPath(); ctx.moveTo(v.cx, 10); ctx.lineTo(v.cx, v.fy); ctx.stroke(); ctx.restore();
+      // spring between them (it stays with whichever side it is on once they separate: here it rides on body 1)
+      const sy = v.fy - 0.07 * S, gap = Math.min(L0, st.x2 - st.x1);
+      drawSpring(ctx, x1, sy, x1 + gap * S, sy, lab.tk, false);
+      // body 1: the creature, facing left
+      const w1 = bodyW1() * S, h1 = phys(sp).height_m * 1.3 * S;
+      if (img1.complete && img1.naturalWidth) { ctx.save(); ctx.translate(x1 - w1 / 2, v.fy); ctx.scale(-1, 1); ctx.drawImage(img1, -w1 / 2, -h1, w1, h1); ctx.restore(); }
+      // body 2: a creature, or the lab cart (size grows with its mass)
+      let w2, h2;
+      if (other && img2.complete && img2.naturalWidth) { h2 = phys(other).height_m * 1.3 * S; w2 = h2 * img2.naturalWidth / img2.naturalHeight; ctx.drawImage(img2, x2, v.fy - h2, w2, h2); }
+      else {
+        w2 = (0.16 + 0.05 * Math.sqrt(m2())) * S; h2 = (0.08 + 0.035 * Math.sqrt(m2())) * S;
+        ctx.fillStyle = "#E7E9EE"; ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x2, v.fy - h2 - 8, w2, h2, 6) : ctx.rect(x2, v.fy - h2 - 8, w2, h2); ctx.fill(); ctx.stroke();
+        for (const wx of [x2 + w2 * 0.22, x2 + w2 * 0.78]) { ctx.fillStyle = "#3a3a40"; ctx.beginPath(); ctx.arc(wx, v.fy - 5, 5, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = "#3a3a40"; ctx.font = "700 11px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(fmt(m2(), 1) + " kg", x2 + w2 / 2, v.fy - h2 / 2 - 8);
+      }
+      // velocity arrows (orange) and momentum bars: equal and opposite
+      const vk = 40;
+      if (Math.abs(st.v1) > 0.02) forceArrow(ctx, x1 - w1 / 2, v.fy - h1 - 14, st.v1 * vk, 0, "#E39B28", "v1", { thin: true });
+      if (Math.abs(st.v2) > 0.02) forceArrow(ctx, x2 + w2 / 2, v.fy - h2 - 22, st.v2 * vk, 0, "#E39B28", "v2", { thin: true });
+      const p1 = m1() * st.v1, p2 = m2() * st.v2, pk = 26, by = v.fy + 44;
+      ctx.font = "700 11px " + FONT; ctx.textBaseline = "middle"; ctx.direction = "ltr";
+      ctx.fillStyle = "#2785C7"; ctx.fillRect(v.cx, by - 7, p1 * pk, 14); ctx.fillStyle = "#25A06F"; ctx.fillRect(v.cx, by + 11, p2 * pk, 14);
+      ctx.fillStyle = "#3a3a40"; ctx.textAlign = p1 < 0 ? "right" : "left"; ctx.fillText(`p1 = ${fmt(p1, 2)}`, v.cx + p1 * pk + (p1 < 0 ? -6 : 6), by);
+      ctx.textAlign = p2 < 0 ? "right" : "left"; ctx.fillText(`p2 = ${fmt(p2, 2)}`, v.cx + p2 * pk + (p2 < 0 ? -6 : 6), by + 18);
+      ctx.textAlign = "center"; ctx.fillStyle = "#6E48C9"; ctx.fillText(`p1 + p2 = ${fmt(p1 + p2, 2)} kg·m/s`, v.cx, by + 40);
+      if (!drag1.v && !reduceMotion) {
+        const kk = (performance.now() / 900) % 1; ctx.globalAlpha = Math.sin(kk * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
+        const ax = x2 + w2 + 20 - kk * 24, ay = v.fy - h2 - 34; ctx.beginPath(); ctx.moveTo(ax + 22, ay); ctx.lineTo(ax, ay); ctx.moveTo(ax + 8, ay - 7); ctx.lineTo(ax, ay); ctx.lineTo(ax + 8, ay + 7); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    }
+    function readouts() {
+      $("#rV1").textContent = fmt(st.v1, 2) + " m/s"; $("#rV2").textContent = fmt(st.v2, 2) + " m/s";
+      $("#rP").textContent = fmt(m1() * st.v1 + m2() * st.v2, 2); $("#rE").textContent = fmt(0.5 * m1() * st.v1 ** 2 + 0.5 * m2() * st.v2 ** 2 + 0.5 * lab.tk * Math.max(0, L0 - (st.x2 - st.x1)) ** 2, 2) + " J";
+    }
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen() && run && !run.done) {
+        st = SP.twoStep(st, prm(), dt); run.t += dt;
+        const v = view(); if (run.t > 0.4 && (v.cx + st.x1 * v.S < 30 || v.cx + st.x2 * v.S > d.W - 50 || run.t > 3)) finish();
+      }
+      draw(); if ((fpaint++ & 3) === 0) { readouts(); paint(); }
+      tickSay(dt); raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    say("דחפו את העגלה אל הקפיץ ושחררו. מי יעוף מהר יותר?", 3.4);
+    cleanup = S0.done(() => raf);
+    bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  PULLEY: the creature hangs from a rope that runs over a pulley to a spring on the wall.
+  //  The rope is massless and does not stretch, so the spring stretches exactly as far as the creature drops.
+  // ======================================================================
+  SCREENS.pulley = (args = {}) => {
+    lab.mode = "pulley";
+    setTitle("קפיץ־קפוץ", "קפיץ וגלגלת");
+    const sp = activeSpecies(), m = () => phys(sp).mass_kg;
+    const S0 = sceneShell("pulley", `
+        <div class="lab say-low" id="lab"><canvas id="labCanvas"></canvas><div class="bubble say" id="say" hidden></div></div>
+        <div class="readouts">${readout("tension", "מתיחות T", "rT2")}${readout("s", "התארכות", "rS")}${readout("m", "משקל", "rW")}${readout("T", "זמן מחזור", "rP")}</div>
+        <div class="card controls"><div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k ${infoBtn("k")}</span><span class="val" id="kVal"></span></label><input id="kIn" type="range" min="30" max="400" step="5"></div></div>
+        <div class="card formula" id="formula"></div>`);
+    const { cv, ctx, box, d, say, tickSay, pos, begin } = S0;
+    const img = new Image(); img.src = artOf(sp);
+    let sim = new SP.Sim(SP.params(m(), lab.k, 0), 0), dragging = null, trial = null, raf = 0, lastT = performance.now(), fpaint = 0, questionCooldown = 1;
+    const drag1 = { v: false }, kIn = $("#kIn"); kIn.value = lab.k;
+    const paint = () => {
+      $("#kVal").textContent = lab.k + " N/m";
+      const s = sim.st.s;
+      setFormula($("#formula"), `
+        <div class="eq"><span>המתיחות בחוט = כוח הקפיץ</span><span class="m">T = k·x<em>${fmt(lab.k * s, 1)} N</em></span></div>
+        <div class="eq"><span>על הדמות</span><span class="m">m·a = m·g − T<em>${fmt(m() * 9.81 - lab.k * s, 1)} N</em></span></div>
+        <div class="eq"><span>שיווי משקל</span><span class="m">k·x = m·g<em>${fmt(m() * 9.81 / lab.k * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>זמן מחזור</span><span class="m">T = 2π·√(m/k)<em>${fmt(SP.period(sim.p))} s</em></span></div>
+        <p class="fine">חוט יכול רק למשוך, לא לדחוף, ולכן אפשר למשוך את הדמות למטה רק עד s_eq: אחרת החוט היה מתרופף בדרך למעלה. גלגלת אידיאלית (בלי מסה ובלי חיכוך) רק משנה את כיוון החוט. המתיחות זהה בכל החוט, ולכן הקפיץ מרגיש בדיוק את מה שהדמות מרגישה.</p>`);
+    };
+    kIn.addEventListener("input", () => { lab.k = +kIn.value; sim.reset(SP.params(m(), lab.k, 0), 0); trial = null; paint(); });
+    paint();
+    infoLive = () => ({ k: lab.k, m: m(), name: nameOf(sp), s: sim.st.s, eq: SP.equilibrium(sim.p), T: lab.k * sim.st.s });
+    const G0 = () => { const S = Math.min(300, (d.H - 90) / (SP.equilibrium(sim.p) * 2 + 0.22 + phys(sp).height_m * 1.1)); return { S, px: d.W * 0.68, py: 60, r: 16, wallX: 14, ry: 30 }; };
+    const hookY = (g, s) => g.py + (0.22 + s) * g.S;
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen()) return;
+      const q = pos(e), g = G0(), y = hookY(g, sim.st.s);
+      if (Math.abs(q.x - (g.px + g.r)) > 70 || q.y < y - 20) { openInfo(q.y < g.py + 20 ? "pulley" : "tension", { x: e.clientX, y: e.clientY }); return; }
+      G.audio.unlock(); dragging = { dy: q.y - y }; cv.setPointerCapture(e.pointerId); sim.hold(sim.u); trial = null; firstDrag(e, drag1);
+    });
+    cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), g = G0(); sim.hold(clamp((q.y - dragging.dy - hookY(g, SP.equilibrium(sim.p))) / g.S, 0, Math.min(0.2, SP.equilibrium(sim.p) * 0.95))); });   // beyond s_eq the rope would go slack on the way up
+    const letGo = () => { if (!dragging) return; dragging = null; if (sim.u < 0.02) { sim.reset(sim.p, 0); return; } sim.release(); trial = { seen: false }; G.sfx.boing(0.6); say("מי משך לי בכיוון הזה?!", 1.8); };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+    function observe() {
+      if (!trial || trial.seen || sim.held || sim.periods() < 2) return;
+      trial.seen = true;
+      say(`הקפיץ שוכב על הצד, אבל זמן המחזור אותו דבר: ${fmt(SP.period(sim.p))} שנ׳. הגלגלת רק מסובבת את הכוח.`, 4);
+      if (P.completeSubtopic("springs.pulley")) { const b = cv.getBoundingClientRect(); setTimeout(() => celebrateUnits("springs", ["springs.pulley"], { x: b.left + d.W / 2, y: b.top + d.H / 2 }), 1300); questionCooldown = 2; return; }
+      if (questionCooldown > 0) questionCooldown--; else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.pulley"))) questionCooldown = 3;
+    }
+    function draw() {
+      begin();
+      const g = G0(), s = sim.st.s, Tn = lab.k * s, y = hookY(g, s), x = g.px + g.r;
+      // wall, spring along the top, rope over the pulley, down to the creature
+      ctx.fillStyle = "#F4F4F2"; ctx.fillRect(0, 0, g.wallX, d.H); ctx.fillStyle = "#3a3a40"; ctx.fillRect(g.wallX - 2, 0, 3, d.H);
+      const sx = g.wallX + 6 + (0.32 + s) * g.S * 0.9;
+      drawSpring(ctx, g.wallX + 2, g.py - g.r, Math.min(sx, g.px - 30), g.py - g.r, lab.k, true);
+      ctx.strokeStyle = "#7A5A2E"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(Math.min(sx, g.px - 30), g.py - g.r); ctx.lineTo(g.px, g.py - g.r); ctx.arc(g.px, g.py, g.r, -Math.PI / 2, 0); ctx.lineTo(x, y - 6); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(g.px, g.py, g.r - 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#3a3a40"; ctx.beginPath(); ctx.arc(g.px, g.py, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(g.px, g.py); ctx.lineTo(g.px + 26, 0); ctx.stroke();
+      // the creature on the rope
+      const pr = probe(img) || { top: 0 }, h = phys(sp).height_m * g.S, w = img.naturalWidth ? h * img.naturalWidth / img.naturalHeight : h;
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, x - w / 2, y - pr.top * h, w, h);
+      ctx.fillStyle = "#F49A35"; ctx.beginPath(); ctx.ellipse(x, y + 1, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+      // forces: on the creature mg and T; at the spring the same T, pointing along the rope
+      const W = m() * 9.81, k = 70 / Math.max(W, Tn * 0.6, 1), cy = y + h * 0.5, ax = Math.min(x + w / 2 + 20, d.W - 70);
+      forceArrow(ctx, ax, cy, 0, W * k, "#2785C7", "mg", { value: W });
+      if (Tn > 0.05) { forceArrow(ctx, ax, cy, 0, -Tn * k, "#A0662A", "T", { value: Tn }); forceArrow(ctx, Math.min(sx, g.px - 30) + 4, g.py - g.r + 30, Tn * k * 0.8, 0, "#A0662A", "T", { value: Tn, dy: 4 }); }
+    }
+    function readouts() {
+      $("#rT2").textContent = fmt(lab.k * sim.st.s, 1) + " N"; $("#rS").textContent = fmt(sim.st.s * 100, 1) + " cm";
+      $("#rW").textContent = fmt(m() * 9.81, 1) + " N"; const Tm = sim.measuredPeriod(); $("#rP").textContent = fmt(Tm && !sim.held ? Tm : SP.period(sim.p)) + " s";
+    }
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen()) sim.advance(dt);
+      draw(); if ((fpaint++ & 3) === 0) { readouts(); paint(); }
+      tickSay(dt); observe(); raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    say(`${nameOf(sp)} תלוי על חוט שעובר מעל גלגלת לקפיץ שבקיר. משכו אותו למטה ושחררו.`, 3.6);
+    cleanup = S0.done(() => raf);
     bindModeSeg(args);
   };
 

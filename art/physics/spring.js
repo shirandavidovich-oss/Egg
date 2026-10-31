@@ -208,9 +208,32 @@ const SpringPhys = (() => {
   const rparams = (m, k, mus, muk, g = G_EARTH) => ({ m, k, mus, muk, g });
   const rEnergy = (st, p, T) => ({ el: st.s < 0 ? 0.5 * p.k * st.s * st.s : 0, k: 0.5 * p.m * st.v * st.v, g: p.m * p.g * trackAt(T, st.s).y });
 
+  // ---------------- spring on an incline ----------------
+  // x = stretch along the slope (+ down the slope). m·x'' = m·g·sinθ − k·x − friction, with N = m·g·cosθ.
+  // In u = x − m·g·sinθ/k this is exactly the wall spring with g → g·cosθ, so HSim does the work.
+  const iparams = (m, k, mus, muk, deg, g = G_EARTH) => ({ ...hparams(m, k, mus, muk, g * Math.cos(deg * Math.PI / 180)), deg, gTrue: g });
+  const inclineEq = (p) => p.m * p.gTrue * Math.sin(p.deg * Math.PI / 180) / p.k;
+
+  // ---------------- two bodies pushed apart by a compressed spring (frictionless) ----------------
+  // the spring is not attached: it pushes while compressed, then both coast. Momentum stays zero.
+  function twoStep(st, p, dt) {
+    let { x1, x2, v1, v2 } = st;
+    for (let i = 0; i < 8; i++) {
+      const h = dt / 8, comp = Math.max(0, p.L0 - (x2 - x1)), F = p.k * comp;     // pushes 1 left, 2 right
+      v1 -= F / p.m1 * h; v2 += F / p.m2 * h; x1 += v1 * h; x2 += v2 * h;
+    }
+    return { x1, x2, v1, v2, touching: x2 - x1 < p.L0 };
+  }
+  // ideal result: momentum 0, all spring energy to motion
+  function twoSpeeds(p, c) {
+    const E = 0.5 * p.k * c * c, v2 = Math.sqrt(2 * E * p.m1 / (p.m2 * (p.m1 + p.m2)));
+    return { v1: -p.m2 * v2 / p.m1, v2 };
+  }
+
   return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
     hparams, stickZone, halfSwingLoss, hstep, HSim,
     lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim,
-    track, trackAt, trackEnd, rstep, rparams, rEnergy };
+    track, trackAt, trackEnd, rstep, rparams, rEnergy,
+    iparams, inclineEq, twoStep, twoSpeeds };
 })();
 if (typeof module !== "undefined") module.exports = SpringPhys;

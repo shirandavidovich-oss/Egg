@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Egg</title>
+<style>
+  /* One full-bleed canvas: the screen is a window into a burrow behind the glass. */
+  :root {
+    --void: #120a10;
+    color-scheme: dark;
+  }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--void);
+    overflow: hidden;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+<script>
+(() => {
+  "use strict";
+
+  // ---------- setup ----------
+  const cv = document.getElementById("world");
+  const ctx = cv.getContext("2d");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let W = 0, H = 0, DPR = 1, U = 1;   // screen size in CSS px, unit = short side
+  let EYE = 1;                       // distance from eye to the glass
+  let DEPTH = 1;                     // depth of the burrow floor behind the glass
+  let floorTex = null;               // baked floor (soil + nest)
+
+  // ---------- palette ----------
+  const C = {
+    soilA: [44, 26, 34],
+    soilB: [30, 18, 26],
+    wallNear: [92, 60, 62],
+    wallDeep: [22, 13, 20],
+    straw: ["#c9a46a", "#b8904f", "#d8b77c", "#9c7642", "#e3c891", "#a8834c"],
+    eggBase: [238, 233, 226],
+    eggShade: [150, 140, 160],
+    speck: ["#3f7f86", "#2f6470", "#5a96a0", "#6b5a7a"],
+    mote: [255, 214, 150]
+  };
+
+  // ---------- egg state ----------
+  const egg = {
+    x: 0, y: 0,          // position on the floor (world px, origin = screen centre)
+    vx: 0, vy: 0,
+    theta: -0.35,        // long-axis direction on the floor
+    phi: 0.6,            // roll phase around the long axis
+    a: 1, b: 1,          // half length, half width
+    wiggle: 0, wiggleT: 3.5
+  };
+
+  // speckles live on the shell in egg coordinates (u along axis, alpha around it)
+  const speckles = [];
+  (function makeSpeckles() {
+    let s = 7;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 70; i++) {
+      speckles.push({
+        u: rnd() * 1.9 - 0.95,
+        al: rnd() * Math.PI * 2,
+        r: 0.012 + rnd() * rnd() * 0.05,
+        c: C.speck[Math.floor(rnd() * C.speck.length)],
+        o: 0.35 + rnd() * 0.5
+      });
+    }
+  })();
+
+  // dust motes floating inside the burrow, at many depths
+  const motes = [];
+  function makeMotes() {
+    motes.length = 0;
+    for (let i = 0; i < 34; i++) {
+      motes.push({
+        x: (Math.random() - 0.5) * W * 0.9,
+        y: (Math.random() - 0.5) * H * 0.9,
+        z: -DEPTH * (0.06 + Math.random() * 0.88),
+        vx: (Math.random() - 0.5) * 6,
+        vy: -2 - Math.random() * 5,
+        s: 0.6 + Math.random() * 1.6,
+        tw: Math.random() * 6.28
+      });
+    }
+  }
+
+  // ---------- tilt input ----------
+  // g = gravity in device coords (x right, y up, z out of the screen), normalised.
+  const tilt = {
+    gx: 0, gy: 0.7, gz: 0.7,
+    refx: 0, refy: 0.7,       // the "neutral" holding angle, adapts slowly
+    dx: 0, dy: 0,             // smoothed difference from neutral
+    have: false, native: false, lastAt: 0,
+    pointer: null
+  };
+
+  function feedGravity(x, y, z) {
+    const m = Math.hypot(x, y, z) || 1;
+    tilt.gx = x / m; tilt.gy = y / m; tilt.gz = z / m;
+    if (!tilt.have) { tilt.refx = tilt.gx; tilt.refy = tilt.gy; }
+    tilt.have = true;
+    tilt.lastAt = performance.now();
+  }
+
+  // called by the Android app with the phone's gravity sensor
+  window.eggGravity = (x, y, z) => { tilt.native = true; feedGravity(x, y, z); };
+
+  // browser fallback (phone browsers)
+  addEventListener("devicemotion", (e) => {
+    if (tilt.native) return;
+    const a = e.accelerationIncludingGravity;
+    if (!a || a.x == null) return;
+    feedGravity(a.x, a.y, a.z);
+  });
+
+  // no sensors at all (desktop preview): pressing and holding tilts toward the finger
+  cv.addEventListener("pointerdown", (e) => { tilt.pointer = { x: e.clientX, y: e.clientY }; });
+  addEventListener("pointermove", (e) => { if (tilt.pointer) { tilt.pointer.x = e.clientX; tilt.pointer.y = e.clientY; } });
+  addEventListener("pointerup", () => { tilt.pointer = null; });
+  addEventListener("pointercancel", () => { tilt.pointer = null; });
+
+  // ---------- projection ----------
+  // The glass is the plane z = 0. Everything in the burrow has z < 0.
+  // The eye sits at (ex, ey, EYE) and moves as the phone tilts.
+  const eye = { x: 0, y: 0 };
+  function scaleAt(z) { return EYE / (EYE - z); }
+  function proj(x, y, z) {
+    const f = scaleAt(z);
+    return [W / 2 + eye.x + (x - eye.x) * f, H / 2 + eye.y + (y - eye.y) * f, f];
+  }
+
+  // ---------- floor bake ----------
+  function bakeFloor() {
+    const c = document.createElement("canvas");
+    const k = DPR;
+    c.width = Math.ceil(W * k); c.height = Math.ceil(H * k);
+    const g = c.getContext("2d");
+    g.scale(k, k);
+
+    // soil
+    g.fillStyle = `rgb(${C.soilA})`;
+    g.fillRect(0, 0, W, H);
+    let s = 11;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < W * H / 90; i++) {
+      const v = rnd();
+      g.fillStyle = v < 0.5 ? "rgba(20,10,16,0.35)" : "rgba(110,80,80,0.12)";
+      g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 2, 1 + rnd() * 2);
+    }
+
+    // pool of light falling through the glass
+    const cx = W / 2, cy = H / 2;
+    const pool = g.createRadialGradient(cx - U * 0.06, cy - U * 0.1, U * 0.05, cx, cy, Math.max(W, H) * 0.62);
+    pool.addColorStop(0, "rgba(255,226,180,0.22)");
+    pool.addColorStop(0.5, "rgba(255,200,150,0.07)");
+    pool.addColorStop(1, "rgba(0,0,0,0.35)");
+    g.fillStyle = pool;
+    g.fillRect(0, 0, W, H);
+
+    // nest: a ring of straw around a soft hollow
+    const R1 = U * 0.27, R2 = U * 0.47;
+    const hollowShadow = g.createRadialGradient(cx, cy, R1 * 0.3, cx, cy, R2 * 1.05);
+    hollowShadow.addColorStop(0, "rgba(60,38,30,0.9)");
+    hollowShadow.addColorStop(0.55, "rgba(70,46,34,0.8)");
+    hollowShadow.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = hollowShadow;
+    g.beginPath(); g.arc(cx, cy, R2 * 1.05, 0, 6.2832); g.fill();
+
+    g.lineCap = "round";
+    const strands = Math.round(900 * (U / 400));
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < strands / 2; i++) {
+        const ang = rnd() * 6.2832;
+        const rr = R1 + (R2 - R1) * Math.pow(rnd(), pass ? 0.8 : 1.4);
+        const len = U * (0.06 + rnd() * 0.12);
+        const tang = ang + Math.PI / 2 + (rnd() - 0.5) * 0.9;
+        const x0 = cx + Math.cos(ang) * rr, y0 = cy + Math.sin(ang) * rr;
+        const x1 = x0 + Math.cos(tang) * len, y1 = y0 + Math.sin(tang) * len;
+        const bend = (rnd() - 0.5) * len * 0.5;
+        g.strokeStyle = C.straw[Math.floor(rnd() * C.straw.length)];
+        g.globalAlpha = pass ? 0.55 + rnd() * 0.45 : 0.35 + rnd() * 0.3;
+        g.lineWidth = (pass ? 1.1 : 1.6) + rnd() * 1.4;
+        g.beginPath();
+        g.moveTo(x0, y0);
+        g.quadraticCurveTo((x0 + x1) / 2 + bend, (y0 + y1) / 2 - bend, x1, y1);
+        g.stroke();
+      }
+    }
+    // soft bed in the middle
+    g.globalAlpha = 1;
+    for (let i = 0; i < strands / 3; i++) {
+      const ang = rnd() * 6.2832, rr = Math.sqrt(rnd()) * R1;
+      const x0 = cx + Math.cos(ang) * rr, y0 = cy + Math.sin(ang) * rr;
+      const t = rnd() * 6.2832, len = U * (0.02 + rnd() * 0.05);
+      g.strokeStyle = C.straw[Math.floor(rnd() * C.straw.length)];
+      g.globalAlpha = 0.18 + rnd() * 0.25;
+      g.lineWidth = 0.8 + rnd();
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + Math.cos(t) * len, y0 + Math.sin(t) * len); g.stroke();
+    }
+    g.globalAlpha = 1;
+    floorTex = c;
+  }
+
+  // ---------- sizing ----------
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    U = Math.min(W, H);
+    cv.width = Math.round(W * DPR);
+    cv.height = Math.round(H * DPR);
+    EYE = 1.5 * Math.hypot(W, H);
+    DEPTH = 0.95 * U;
+    egg.a = U * 0.15;
+    egg.b = U * 0.112;
+    bakeFloor();
+    makeMotes();
+    // keep the egg inside after a fold/unfold
+    egg.x = Math.max(-W / 2 + egg.a, Math.min(W / 2 - egg.a, egg.x));
+    egg.y = Math.max(-H / 2 + egg.a, Math.min(H / 2 - egg.a, egg.y));
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  // ---------- helpers ----------
+  const mix = (p, q, t) => p.map((v, i) => Math.round(v + (q[i] - v) * t));
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const RC = () => U * 0.11; // corner radius of the burrow, echoes the phone's own corners
+
+  // half-width of the egg at position x along its axis (one end fuller than the other)
+  function eggHalfWidth(x) {
+    const t = x / egg.a;
+    if (Math.abs(t) >= 1) return 0;
+    return egg.b * Math.sqrt(1 - t * t) * (1 + 0.16 * t);
+  }
+
+  function eggPath(g) {
+    const n = 40;
+    g.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const x = -egg.a + (2 * egg.a * i) / n;
+      const y = -eggHalfWidth(x);
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    for (let i = n; i >= 0; i--) {
+      const x = -egg.a + (2 * egg.a * i) / n;
+      g.lineTo(x, eggHalfWidth(x));
+    }
+    g.closePath();
+  }
+
+  // ---------- update ----------
+  let time = 0;
+  function update(dt) {
+    time += dt;
+    const now = performance.now();
+    const sensorLive = tilt.have && now - tilt.lastAt < 1500;
+
+    // target tilt (difference from the neutral holding angle)
+    let tx = 0, ty = 0;
+    if (sensorLive) {
+      // neutral angle follows slowly, so any comfortable grip becomes "level"
+      const k = 1 - Math.exp(-dt / 9);
+      tilt.refx += (tilt.gx - tilt.refx) * k;
+      tilt.refy += (tilt.gy - tilt.refy) * k;
+      tx = tilt.gx - tilt.refx;
+      ty = tilt.gy - tilt.refy;
+    } else if (tilt.pointer) {
+      tx = -((tilt.pointer.x - W / 2) / (W / 2)) * 0.45;
+      ty = ((tilt.pointer.y - H / 2) / (H / 2)) * 0.45;
+    }
+    tx = clamp(tx, -0.6, 0.6); ty = clamp(ty, -0.6, 0.6);
+    const sm = 1 - Math.exp(-dt / 0.09);
+    tilt.dx += (tx - tilt.dx) * sm;
+    tilt.dy += (ty - tilt.dy) * sm;
+
+    // eye position: tilting the phone is read as moving your head around the window
+    let ex = tilt.dx * U * 1.5;
+    let ey = -tilt.dy * U * 1.5;
+    if (!sensorLive && !tilt.pointer && !reduceMotion) {
+      // no sensor: a slow sway so the depth still reads
+      ex += Math.sin(time * 0.37) * U * 0.16;
+      ey += Math.sin(time * 0.23 + 1) * U * 0.1;
+    }
+    eye.x += (clamp(ex, -U * 0.8, U * 0.8) - eye.x) * sm;
+    eye.y += (clamp(ey, -U * 0.8, U * 0.8) - eye.y) * sm;
+
+    // rolling: the egg runs downhill on the burrow floor
+    const G = U * 7.5;
+    egg.vx += -tilt.dx * G * dt;
+    egg.vy += tilt.dy * G * dt;
+
+    // the nest is a shallow bowl: when the phone is level the egg settles home
+    const rn = Math.hypot(egg.x, egg.y), nestR = U * 0.4;
+    if (rn < nestR) {
+      egg.vx -= egg.x * 2.2 * dt;
+      egg.vy -= egg.y * 2.2 * dt;
+    }
+
+    // split velocity along / across the long axis
+    const ca = Math.cos(egg.theta), sa = Math.sin(egg.theta);
+    let along = egg.vx * ca + egg.vy * sa;
+    let across = -egg.vx * sa + egg.vy * ca;
+    along *= Math.exp(-dt * 2.6);   // an egg slides badly along its length
+    across *= Math.exp(-dt * 0.55); // and rolls easily across it
+    egg.vx = along * ca - across * sa;
+    egg.vy = along * sa + across * ca;
+
+    egg.x += egg.vx * dt;
+    egg.y += egg.vy * dt;
+    egg.phi += (across / egg.b) * dt;
+
+    // the egg turns until it rolls sideways, with a slight curve like a real egg
+    const speed = Math.hypot(egg.vx, egg.vy);
+    if (speed > U * 0.02) {
+      let target = Math.atan2(egg.vy, egg.vx) + Math.PI / 2;
+      const d = ((target - egg.theta) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2;
+      egg.theta += d * Math.min(1, (speed / U) * 1.6 * dt) + across / U * 0.12 * dt;
+    }
+
+    // walls: a soft bump back
+    const ext = Math.abs(egg.a * ca) * 0.85 + Math.abs(egg.b * sa) * 0.85;
+    const eyt = Math.abs(egg.a * sa) * 0.85 + Math.abs(egg.b * ca) * 0.85;
+    const mx = W / 2 - Math.max(ext, egg.b), my = H / 2 - Math.max(eyt, egg.b);
+    if (egg.x > mx) { egg.x = mx; egg.vx = -egg.vx * 0.42; bump(); }
+    if (egg.x < -mx) { egg.x = -mx; egg.vx = -egg.vx * 0.42; bump(); }
+    if (egg.y > my) { egg.y = my; egg.vy = -egg.vy * 0.42; bump(); }
+    if (egg.y < -my) { egg.y = -my; egg.vy = -egg.vy * 0.42; bump(); }
+
+    // something inside moves, now and then
+    egg.wiggleT -= dt;
+    if (egg.wiggleT <= 0 && !reduceMotion) {
+      egg.wiggle = 1;
+      egg.wiggleT = 4 + Math.random() * 7;
+    }
+    egg.wiggle = Math.max(0, egg.wiggle - dt * 0.9);
+
+    // motes drift upward slowly and twinkle
+    for (const m of motes) {
+      m.x += m.vx * dt; m.y += m.vy * dt; m.tw += dt * 2;
+      if (m.y < -H * 0.48) { m.y = H * 0.48; m.x = (Math.random() - 0.5) * W * 0.9; }
+      if (m.x > W * 0.47) m.x = -W * 0.47;
+      if (m.x < -W * 0.47) m.x = W * 0.47;
+    }
+  }
+
+  let lastBump = 0;
+  function bump() {
+    const now = performance.now();
+    if (now - lastBump < 120) return;
+    lastBump = now;
+  }
+
+  // ---------- draw ----------
+  function drawFloor() {
+    const [sx, sy, f] = proj(-W / 2, -H / 2, -DEPTH);
+    ctx.drawImage(floorTex, sx, sy, W * f, H * f);
+  }
+
+  function drawShadow() {
+    const z = -DEPTH;
+    const [sx, sy, f] = proj(egg.x + U * 0.035, egg.y + U * 0.05, z);
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(egg.theta);
+    ctx.scale(f, f);
+    // broad soft shadow
+    ctx.save();
+    ctx.scale(1, egg.b / egg.a * 1.15);
+    const g = ctx.createRadialGradient(0, 0, egg.a * 0.2, 0, 0, egg.a * 1.35);
+    g.addColorStop(0, "rgba(10,4,8,0.55)");
+    g.addColorStop(0.6, "rgba(10,4,8,0.22)");
+    g.addColorStop(1, "rgba(10,4,8,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, egg.a * 1.35, 0, 6.2832); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+    // tight contact shadow right under the shell
+    const [cx, cy, cf] = proj(egg.x, egg.y, z);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(egg.theta); ctx.scale(cf, cf);
+    ctx.scale(1, 0.55);
+    const g2 = ctx.createRadialGradient(0, 0, 0, 0, 0, egg.a * 0.8);
+    g2.addColorStop(0, "rgba(8,3,6,0.6)");
+    g2.addColorStop(1, "rgba(8,3,6,0)");
+    ctx.fillStyle = g2;
+    ctx.beginPath(); ctx.arc(0, 0, egg.a * 0.8, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawWalls() {
+    const N = 46, rc = RC();
+    for (let i = N; i >= 0; i--) {
+      const t = i / N;                 // 0 = at the glass, 1 = floor
+      const z = -DEPTH * t;
+      const [sx, sy, f] = proj(-W / 2, -H / 2, z);
+      let col = mix(C.wallNear, C.wallDeep, Math.pow(t, 0.7));
+      // faint strata in the earth
+      const band = Math.sin(t * 38) * 0.5 + Math.sin(t * 91 + 2) * 0.25;
+      col = col.map((v) => clamp(Math.round(v * (1 + band * 0.07)), 0, 255));
+      ctx.fillStyle = `rgb(${col})`;
+      ctx.beginPath();
+      ctx.rect(-10, -10, W + 20, H + 20);
+      roundRectPath(ctx, sx, sy, W * f, H * f, rc * f, true);
+      ctx.fill("evenodd");
+    }
+    // light falls from the top-left of the window onto the walls
+    const lg = ctx.createLinearGradient(0, 0, W, H);
+    lg.addColorStop(0, "rgba(255,220,180,0.06)");
+    lg.addColorStop(1, "rgba(0,0,0,0.18)");
+    ctx.fillStyle = lg;
+    const [sx, sy, f] = proj(-W / 2, -H / 2, -DEPTH);
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    roundRectPath(ctx, sx, sy, W * f, H * f, rc * f, true);
+    ctx.fill("evenodd");
+  }
+
+  function roundRectPath(g, x, y, w, h, r, reverse) {
+    r = Math.min(r, w / 2, h / 2);
+    if (!reverse) {
+      g.moveTo(x + r, y);
+      g.arcTo(x + w, y, x + w, y + h, r);
+      g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r);
+      g.arcTo(x, y, x + w, y, r);
+    } else {
+      g.moveTo(x + r, y);
+      g.arcTo(x, y, x, y + h, r);
+      g.arcTo(x, y + h, x + w, y + h, r);
+      g.arcTo(x + w, y + h, x + w, y, r);
+      g.arcTo(x + w, y, x, y, r);
+    }
+    g.closePath();
+  }
+
+  function drawMotes(minZ, maxZ) {
+    for (const m of motes) {
+      if (m.z < minZ || m.z >= maxZ) continue;
+      const [sx, sy, f] = proj(m.x, m.y, m.z);
+      const depthFade = 0.35 + 0.65 * (1 + m.z / DEPTH);
+      const a = (0.25 + 0.35 * (0.5 + 0.5 * Math.sin(m.tw))) * depthFade;
+      const r = m.s * f * (U / 400);
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 3);
+      g.addColorStop(0, `rgba(${C.mote},${a})`);
+      g.addColorStop(1, `rgba(${C.mote},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(sx, sy, r * 3, 0, 6.2832); ctx.fill();
+    }
+  }
+
+  function drawEgg() {
+    const z = -DEPTH + egg.b;
+    const [sx, sy, f] = proj(egg.x, egg.y, z);
+    const wig = egg.wiggle > 0 ? Math.sin((1 - egg.wiggle) * 22) * egg.wiggle * 0.28 : 0;
+    const phi = egg.phi + wig;
+    const theta = egg.theta + wig * 0.15;
+    const breathe = 1 + Math.sin(time * 1.3) * 0.006;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.scale(f * breathe, f * breathe);
+    ctx.rotate(theta);
+    eggPath(ctx);
+    ctx.save();
+    ctx.clip();
+
+    // shell: light from the top-left of the window, fixed while the egg turns
+    ctx.save();
+    ctx.rotate(-theta);
+    const R = egg.a * 1.3;
+    const lx = -egg.a * 0.35, ly = -egg.a * 0.42;
+    const g = ctx.createRadialGradient(lx, ly, egg.a * 0.05, egg.a * 0.1, egg.a * 0.12, R);
+    g.addColorStop(0, "rgb(255,253,249)");
+    g.addColorStop(0.35, `rgb(${C.eggBase})`);
+    g.addColorStop(0.8, `rgb(${mix(C.eggBase, C.eggShade, 0.55)})`);
+    g.addColorStop(1, `rgb(${mix(C.eggBase, C.eggShade, 0.95)})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+
+    // a faint warm life glowing inside
+    const pulse = 0.05 + 0.05 * (0.5 + 0.5 * Math.sin(time * 1.3)) + egg.wiggle * 0.08;
+    const lg = ctx.createRadialGradient(egg.a * 0.05, egg.a * 0.05, 0, egg.a * 0.05, egg.a * 0.05, egg.a);
+    lg.addColorStop(0, `rgba(255,190,120,${pulse})`);
+    lg.addColorStop(1, "rgba(255,190,120,0)");
+    ctx.fillStyle = lg;
+    ctx.fillRect(-R, -R, R * 2, R * 2);
+    ctx.restore();
+
+    // speckles turn with the shell as it rolls
+    for (const s of speckles) {
+      const ang = s.al + phi;
+      const up = Math.sin(ang);
+      if (up < 0.04) continue;
+      const x = s.u * egg.a;
+      const hw = eggHalfWidth(x);
+      const y = hw * Math.cos(ang);
+      const r = s.r * egg.a * 2;
+      ctx.globalAlpha = s.o * Math.min(1, up * 2.2);
+      ctx.fillStyle = s.c;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, Math.max(0.3, r * up), 0, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // rim: the shell curves away from you at its edges
+    ctx.lineWidth = egg.b * 0.5;
+    ctx.strokeStyle = "rgba(60,40,70,0.16)";
+    eggPath(ctx);
+    ctx.stroke();
+
+    // gloss
+    ctx.save();
+    ctx.rotate(-theta);
+    const hg = ctx.createRadialGradient(lx * 0.95, ly * 0.85, 0, lx * 0.95, ly * 0.85, egg.a * 0.32);
+    hg.addColorStop(0, "rgba(255,255,255,0.75)");
+    hg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = hg;
+    ctx.fillRect(-R, -R, R * 2, R * 2);
+    ctx.restore();
+
+    ctx.restore(); // clip
+    ctx.restore();
+  }
+
+  function drawGlass() {
+    // the edge of the window: a thin catch-light, and depth darkening toward the corners
+    const v = ctx.createRadialGradient(W / 2, H * 0.45, U * 0.3, W / 2, H / 2, Math.hypot(W, H) * 0.62);
+    v.addColorStop(0, "rgba(0,0,0,0)");
+    v.addColorStop(1, "rgba(8,3,8,0.4)");
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function frame() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = "#120a10";
+    ctx.fillRect(0, 0, W, H);
+    drawFloor();
+    drawShadow();
+    drawWalls();
+    const eggTop = -DEPTH + egg.b * 2;
+    drawMotes(-Infinity, eggTop);
+    drawEgg();
+    drawMotes(eggTop, Infinity);
+    drawGlass();
+  }
+
+  // ---------- loop ----------
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    frame();
+    requestAnimationFrame(loop);
+  }
+  update(0);
+  frame();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

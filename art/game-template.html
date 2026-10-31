@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Egg</title>
+<style>
+  /* One full-bleed canvas: the screen is a window into a small pencil-drawn room. */
+  :root { --paper: #ecebe8; color-scheme: light; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--paper);
+    overflow: hidden; touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+<script>
+/*ART*/
+(() => {
+  "use strict";
+
+  // ======================================================================
+  //  SETUP
+  // ======================================================================
+  const cv = document.getElementById("world");
+  const ctx = cv.getContext("2d");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const img = {};
+  let loadedCount = 0;
+  for (const k of Object.keys(ART)) {
+    img[k] = new Image();
+    img[k].onload = () => { loadedCount++; };
+    img[k].src = ART[k];
+  }
+
+  let W = 0, H = 0, DPR = 1, U = 1;
+  let EYE = 1, DEPTH = 1;
+  let roomTex = null;          // baked pencil grain
+
+  // the nest's inner bowl, as fractions of the nest drawing
+  const NEST = { bowlY: 0.53, cx: 0.505, lipCx: 0.505, lipCy: 0.40, lipRx: 0.36, lipRy: 0.17 };
+
+  // ======================================================================
+  //  BALANCE TUNING  (all angles in radians of phone tilt)
+  // ======================================================================
+  const CALM    = 0.10;   // below this the egg just stands (~6°)
+  const FALL    = 0.36;   // above this it is about to fall (~21°)
+  const FALL_HOLD = 0.75; // seconds past FALL before it really goes over
+  const GET_UP_AFTER = 1.6; // seconds lying down (phone level) before it gets up
+
+  const egg = {
+    side: 0, fwd: 0,          // current lean (sideways, toward/away from you)
+    vSide: 0, vFwd: 0,
+    panic: 0,                 // 0 calm … 1 arms going wild
+    overTime: 0,              // how long the tilt has been past FALL
+    state: "stand",           // stand | falling | down | rising
+    fallDir: { side: 0, fwd: 0 },
+    t: 0,                     // progress of falling / rising
+    downTime: 0,
+    hop: 0
+  };
+
+  // ======================================================================
+  //  TILT INPUT
+  // ======================================================================
+  const tilt = {
+    gx: 0, gy: 0.7, gz: 0.7, refx: 0, refy: 0.7,
+    dx: 0, dy: 0, have: false, native: false, lastAt: 0, pointer: null
+  };
+  function feedGravity(x, y, z) {
+    const m = Math.hypot(x, y, z) || 1;
+    tilt.gx = x / m; tilt.gy = y / m; tilt.gz = z / m;
+    if (!tilt.have) { tilt.refx = tilt.gx; tilt.refy = tilt.gy; }
+    tilt.have = true; tilt.lastAt = performance.now();
+  }
+  window.eggGravity = (x, y, z) => { tilt.native = true; feedGravity(x, y, z); };
+  addEventListener("devicemotion", (e) => {
+    if (tilt.native) return;
+    const a = e.accelerationIncludingGravity;
+    if (!a || a.x == null) return;
+    feedGravity(a.x, a.y, a.z);
+  });
+  cv.addEventListener("pointerdown", (e) => { tilt.pointer = { x: e.clientX, y: e.clientY }; });
+  addEventListener("pointermove", (e) => { if (tilt.pointer) { tilt.pointer.x = e.clientX; tilt.pointer.y = e.clientY; } });
+  addEventListener("pointerup", () => { tilt.pointer = null; });
+  addEventListener("pointercancel", () => { tilt.pointer = null; });
+
+  // ======================================================================
+  //  PROJECTION  (glass = plane z 0, the room is behind it, z < 0)
+  // ======================================================================
+  const eye = { x: 0, y: 0 };
+  const scaleAt = (z) => EYE / (EYE - z);
+  function proj(x, y, z) {
+    const f = scaleAt(z);
+    return [W / 2 + eye.x + (x - eye.x) * f, H / 2 + eye.y + (y - eye.y) * f, f];
+  }
+
+  // ======================================================================
+  //  PENCIL GRAIN  (baked once per size)
+  // ======================================================================
+  function bakeGrain() {
+    const c = document.createElement("canvas");
+    c.width = Math.ceil(W * DPR); c.height = Math.ceil(H * DPR);
+    const g = c.getContext("2d");
+    g.scale(DPR, DPR);
+    let s = 3;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    g.lineCap = "round";
+    // hatching: short diagonal graphite strokes, denser toward the edges
+    const n = Math.round(W * H / 60);
+    for (let i = 0; i < n; i++) {
+      const x = rnd() * W, y = rnd() * H;
+      const ex = Math.min(x, W - x) / (W / 2), ey = Math.min(y, H - y) / (H / 2);
+      const edge = 1 - Math.min(ex, ey);
+      if (rnd() > 0.25 + edge * 0.75) continue;
+      const len = 4 + rnd() * 10;
+      const a = -0.9 + (rnd() - 0.5) * 0.25;
+      g.strokeStyle = `rgba(40,40,44,${0.03 + rnd() * 0.07})`;
+      g.lineWidth = 0.6 + rnd() * 0.7;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+    }
+    // paper tooth
+    for (let i = 0; i < W * H / 40; i++) {
+      g.fillStyle = rnd() < 0.5 ? "rgba(0,0,0,0.035)" : "rgba(255,255,255,0.05)";
+      g.fillRect(rnd() * W, rnd() * H, 1, 1);
+    }
+    roomTex = c;
+  }
+
+  // ======================================================================
+  //  SIZING
+  // ======================================================================
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight; U = Math.min(W, H);
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    EYE = 1.5 * Math.hypot(W, H);
+    DEPTH = 1.1 * U;
+    bakeGrain();
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  // ======================================================================
+  //  HELPERS
+  // ======================================================================
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeOutBounce = (t) => {
+    const n = 7.5625, d = 2.75;
+    if (t < 1 / d) return n * t * t;
+    if (t < 2 / d) return n * (t -= 1.5 / d) * t + 0.75;
+    if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + 0.9375;
+    return n * (t -= 2.625 / d) * t + 0.984375;
+  };
+  function roundRectPath(g, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  // ======================================================================
+  //  UPDATE
+  // ======================================================================
+  let time = 0;
+  function update(dt) {
+    time += dt;
+    const now = performance.now();
+    const sensorLive = tilt.have && now - tilt.lastAt < 1500;
+
+    let tx = 0, ty = 0;
+    if (sensorLive) {
+      const k = 1 - Math.exp(-dt / 14);          // a held grip slowly becomes "level"
+      tilt.refx += (tilt.gx - tilt.refx) * k;
+      tilt.refy += (tilt.gy - tilt.refy) * k;
+      tx = tilt.gx - tilt.refx; ty = tilt.gy - tilt.refy;
+    } else if (tilt.pointer) {
+      tx = -((tilt.pointer.x - W / 2) / (W / 2)) * 0.6;
+      ty = ((tilt.pointer.y - H / 2) / (H / 2)) * 0.6;
+    }
+    tx = clamp(tx, -0.8, 0.8); ty = clamp(ty, -0.8, 0.8);
+    const sm = 1 - Math.exp(-dt / 0.08);
+    tilt.dx += (tx - tilt.dx) * sm; tilt.dy += (ty - tilt.dy) * sm;
+
+    // eye: tilting reads as moving your head around the window
+    let ex = tilt.dx * U * 1.2, ey = -tilt.dy * U * 1.2;
+    if (!sensorLive && !tilt.pointer && !reduceMotion) {
+      ex += Math.sin(time * 0.37) * U * 0.12;
+      ey += Math.sin(time * 0.23 + 1) * U * 0.07;
+    }
+    eye.x += (clamp(ex, -U * 0.7, U * 0.7) - eye.x) * sm;
+    eye.y += (clamp(ey, -U * 0.7, U * 0.7) - eye.y) * sm;
+
+    // the slope the egg feels: right edge down → leans right, top away → leans back
+    const slopeSide = -tilt.dx;
+    const slopeFwd = tilt.dy;
+    const slope = Math.hypot(slopeSide, slopeFwd);
+
+    if (egg.state === "stand") {
+      // panic grows with the slope past CALM
+      const want = clamp((slope - CALM) / (FALL - CALM), 0, 1.4);
+      egg.panic += (want - egg.panic) * (1 - Math.exp(-dt / (want > egg.panic ? 0.15 : 0.5)));
+
+      // lean: springs toward the slope, fights back, and sways harder when panicking
+      const sway = egg.panic > 0.05 && !reduceMotion ? Math.sin(time * 9.5) * 0.09 * egg.panic : 0;
+      const tgtSide = slopeSide * 0.55 + sway;
+      const tgtFwd = slopeFwd * 0.55 + (egg.panic > 0.05 ? Math.sin(time * 7.3 + 1) * 0.05 * egg.panic : 0);
+      egg.vSide += ((tgtSide - egg.side) * 60 - egg.vSide * 9) * dt;
+      egg.vFwd += ((tgtFwd - egg.fwd) * 60 - egg.vFwd * 9) * dt;
+      egg.side += egg.vSide * dt; egg.fwd += egg.vFwd * dt;
+
+      // past FALL for long enough → over it goes, toward the low side
+      if (slope > FALL) egg.overTime += dt; else egg.overTime = Math.max(0, egg.overTime - dt * 2);
+      if (egg.overTime > FALL_HOLD) {
+        egg.state = "falling"; egg.t = 0;
+        if (Math.abs(slopeSide) >= Math.abs(slopeFwd)) egg.fallDir = { side: Math.sign(slopeSide), fwd: 0 };
+        else egg.fallDir = { side: 0, fwd: Math.sign(slopeFwd) };
+        egg.fromSide = egg.side; egg.fromFwd = egg.fwd;
+      }
+    } else if (egg.state === "falling") {
+      egg.t = Math.min(1, egg.t + dt / 0.75);
+      const p = easeOutBounce(egg.t);
+      egg.side = lerp(egg.fromSide, egg.fallDir.side * Math.PI / 2, p);
+      egg.fwd = lerp(egg.fromFwd, egg.fallDir.fwd * Math.PI / 2, p);
+      egg.panic = Math.max(0, egg.panic - dt * 1.2);
+      if (egg.t >= 1) { egg.state = "down"; egg.downTime = 0; }
+    } else if (egg.state === "down") {
+      egg.panic = Math.max(0, egg.panic - dt * 2);
+      // lies there until the phone has been level for a moment
+      if (slope < CALM * 1.2) egg.downTime += dt; else egg.downTime = 0;
+      if (egg.downTime > GET_UP_AFTER) { egg.state = "rising"; egg.t = 0; }
+    } else if (egg.state === "rising") {
+      egg.t = Math.min(1, egg.t + dt / 0.9);
+      // rock twice, then up with a little hop
+      const t = egg.t;
+      const k = t < 0.45 ? 1 - Math.sin(t / 0.45 * Math.PI) * 0.18 : 1 - (t - 0.45) / 0.55;
+      const up = Math.max(0, k);
+      egg.side = egg.fallDir.side * Math.PI / 2 * Math.pow(up, 1.3);
+      egg.fwd = egg.fallDir.fwd * Math.PI / 2 * Math.pow(up, 1.3);
+      egg.hop = t > 0.8 ? Math.sin((t - 0.8) / 0.2 * Math.PI) : 0;
+      if (egg.t >= 1) {
+        egg.state = "stand"; egg.side = 0; egg.fwd = 0; egg.vSide = 0; egg.vFwd = 0;
+        egg.overTime = 0; egg.hop = 0;
+      }
+    }
+  }
+
+  // ======================================================================
+  //  DRAW
+  // ======================================================================
+  function drawRoom() {
+    // back wall, floor, ceiling and sides as nested frames, lighter near the glass
+    const N = 40, rc = U * 0.06;
+    for (let i = N; i >= 0; i--) {
+      const t = i / N, z = -DEPTH * t;
+      const [sx, sy, f] = proj(-W / 2, -H / 2, z);
+      const v = Math.round(lerp(232, 168, Math.pow(t, 0.8)));
+      ctx.fillStyle = `rgb(${v},${v},${v + 2})`;
+      ctx.beginPath();
+      ctx.rect(-10, -10, W + 20, H + 20);
+      roundRectPath(ctx, sx, sy, W * f, H * f, rc * f);
+      ctx.fill("evenodd");
+    }
+    // back wall
+    const [bx, by, bf] = proj(-W / 2, -H / 2, -DEPTH);
+    ctx.fillStyle = "rgb(198,198,200)";
+    ctx.beginPath(); roundRectPath(ctx, bx, by, W * bf, H * bf, rc * bf); ctx.fill();
+
+    // pencil edges of the room: the four corner seams
+    ctx.strokeStyle = "rgba(30,30,34,0.35)";
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = "round";
+    for (const [cx, cy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const [x0, y0] = proj(cx * W / 2, cy * H / 2, 0);
+      const [x1, y1] = proj(cx * W / 2, cy * H / 2, -DEPTH);
+      sketchLine(x0, y0, x1, y1, cx * 31 + cy * 7);
+    }
+    ctx.beginPath(); roundRectPath(ctx, bx, by, W * bf, H * bf, rc * bf);
+    ctx.strokeStyle = "rgba(30,30,34,0.3)"; ctx.stroke();
+
+    // floor: a few receding pencil lines so it reads as ground
+    ctx.strokeStyle = "rgba(30,30,34,0.12)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 7; i++) {
+      const z = -DEPTH * (i / 7);
+      const [x0, y0] = proj(-W / 2, H / 2, z);
+      const [x1] = proj(W / 2, H / 2, z);
+      sketchLine(x0, y0, x1, y0, i * 13);
+    }
+  }
+
+  // a slightly wobbly double stroke, like a pencil line
+  function sketchLine(x0, y0, x1, y1, seed) {
+    for (let k = 0; k < 2; k++) {
+      const j = (n) => Math.sin(seed * 12.9898 + n * 78.233 + k * 3.1) * 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x0 + j(1), y0 + j(2));
+      ctx.quadraticCurveTo((x0 + x1) / 2 + j(3) * 2, (y0 + y1) / 2 + j(4) * 2, x1 + j(5), y1 + j(6));
+      ctx.stroke();
+    }
+  }
+
+  // where things stand: the nest sits on the floor partway back
+  function layout() {
+    const zN = -DEPTH * 0.45;
+    const f = scaleAt(zN);
+    const nestW = Math.min(W * 1.05, U * 1.15) / f * 0.9;  // world width
+    const nestH = nestW * img.nest.height / img.nest.width;
+    const floorY = H / 2;                                  // floor is the bottom face of the room
+    const nestTop = floorY - nestH * 0.98;
+    // egg size: body about half the nest's width
+    const eggScale = (nestW * 0.44) / META.body.w;
+    return { zN, nestW, nestH, nestTop, floorY, eggScale };
+  }
+
+  function drawNest(L, front) {
+    const [sx, sy, f] = proj(-L.nestW / 2, L.nestTop, L.zN);
+    const w = L.nestW * f, h = L.nestH * f;
+    if (!front) {
+      // soft contact shadow on the floor
+      const [cx, cy, cf] = proj(0, L.floorY, L.zN);
+      ctx.save();
+      ctx.translate(cx, cy - h * 0.04); ctx.scale(1, 0.18);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 0.55);
+      g.addColorStop(0, "rgba(20,20,24,0.35)"); g.addColorStop(1, "rgba(20,20,24,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, w * 0.55, 0, 6.2832); ctx.fill();
+      ctx.restore();
+      ctx.drawImage(img.nest, sx, sy, w, h);
+      return;
+    }
+    // front rim: the same drawing, only below the bowl's lower lip
+    ctx.save();
+    ctx.beginPath();
+    const cx = sx + w * NEST.lipCx, cy = sy + h * NEST.lipCy, rx = w * NEST.lipRx, ry = h * NEST.lipRy;
+    ctx.moveTo(sx - 2, cy);
+    ctx.lineTo(cx - rx, cy);
+    ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, true);
+    ctx.lineTo(sx + w + 2, cy);
+    ctx.lineTo(sx + w + 2, sy + h + 2);
+    ctx.lineTo(sx - 2, sy + h + 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(img.nest, sx, sy, w, h);
+    ctx.restore();
+  }
+
+  function drawEgg(L) {
+    const M = META;
+    const s = L.eggScale;
+    // feet stand on the bowl floor
+    const footWorldY = L.nestTop + L.nestH * NEST.bowlY;
+    const zE = L.zN + L.nestW * 0.02;
+    const [fx, fy, f] = proj(0, footWorldY, zE);
+    const k = s * f;
+    const breathe = 1 + Math.sin(time * 1.6) * 0.008;
+    const hopY = -egg.hop * 18 * f;
+
+    // lean toward / away from you: foreshorten the height
+    const fw = egg.fwd;
+    const squash = Math.max(0.5, Math.cos(fw));
+    const sideAng = egg.side;
+    // distance from the feet to the middle of the shell
+    const hc = (M.body.feetY - M.body.h * 0.42) * k;
+
+    ctx.save();
+    // a sideways fall pivots on the feet, then slides back so the egg lies inside the nest
+    ctx.translate(fx - Math.sin(sideAng) * hc * 0.8, fy + hopY - (1 - Math.cos(sideAng)) * hc * 0.15);
+    // falling toward or away from you sinks the egg down into the bowl
+    ctx.translate(0, Math.abs(Math.sin(fw)) * hc * 0.35);
+    ctx.rotate(sideAng);
+    ctx.scale(k, k * squash * breathe);
+    ctx.translate(-M.body.w / 2, -M.body.feetY);
+
+    ctx.drawImage(img.body, 0, 0, M.body.w, M.body.h);
+
+    // arms: hang at rest, wave when the egg is losing its balance
+    const p = egg.panic;
+    const flap = reduceMotion ? 0 : 1;
+    // the arm on the high side reaches further out to counterbalance
+    const lean = clamp(egg.side * 3, -1, 1);
+    const raiseL = p * (1.55 + 0.55 * Math.sin(time * 15) * flap) * (1 + Math.max(0, -lean) * 0.4);
+    const raiseR = p * (1.55 + 0.55 * Math.sin(time * 15 + 2.1) * flap) * (1 + Math.max(0, lean) * 0.4);
+    const downArms = egg.state === "down" ? 0.5 : 0;
+    drawArm(img.armL, M.armL, raiseL + downArms);
+    drawArm(img.armR, M.armR, -(raiseR + downArms));
+    ctx.restore();
+  }
+
+  function drawArm(im, a, angle) {
+    ctx.save();
+    ctx.translate(a.x + a.px, a.y + a.py);
+    ctx.rotate(angle);
+    ctx.drawImage(im, -a.px, -a.py, a.w, a.h);
+    ctx.restore();
+  }
+
+  function drawEggShadow(L) {
+    const footWorldY = L.nestTop + L.nestH * NEST.bowlY;
+    const zE = L.zN + L.nestW * 0.02;
+    const [fx, fy, f] = proj(0, footWorldY, zE);
+    const w = META.body.w * L.eggScale * f;
+    const off = Math.sin(egg.side) * w * 0.25;
+    const spread = 1 + Math.abs(Math.sin(egg.side)) * 0.8 + Math.abs(Math.sin(egg.fwd)) * 0.3;
+    ctx.save();
+    ctx.translate(fx + off, fy);
+    ctx.scale(1, 0.2);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 0.55 * spread);
+    g.addColorStop(0, "rgba(20,20,24,0.4)"); g.addColorStop(1, "rgba(20,20,24,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, w * 0.55 * spread, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function frame() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = "#ecebe8";
+    ctx.fillRect(0, 0, W, H);
+    drawRoom();
+    if (loadedCount >= 4) {
+      const L = layout();
+      drawNest(L, false);
+      drawEggShadow(L);
+      drawEgg(L);
+      drawNest(L, true);
+    }
+    // grain over everything, so it all reads as one drawing
+    ctx.globalAlpha = 1;
+    ctx.drawImage(roomTex, 0, 0, W, H);
+    // vignette
+    const v = ctx.createRadialGradient(W / 2, H * 0.45, U * 0.35, W / 2, H / 2, Math.hypot(W, H) * 0.62);
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(20,20,24,0.22)");
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  }
+
+  // ======================================================================
+  //  LOOP
+  // ======================================================================
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    frame();
+    requestAnimationFrame(loop);
+  }
+  update(0);
+  frame();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

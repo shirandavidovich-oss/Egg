@@ -337,8 +337,12 @@
   @media (prefers-reduced-motion: reduce) { .m3-machine.spinning, .m3-hint, .m3-machine.spinning .m3-glints { animation: none; } }
   /* the coin is the drawn gold coin from the V3 pack */
   .coin, .fly-coin { background: url("art/machine/v3_coin.webp") center / 112% no-repeat; border: 0; box-shadow: none; }
-  .seg4 button { font-size: 14px; padding: 0 2px; }
+  .seg4 button { font-size: 13.5px; padding: 0 1px; }
   .lab.tall { height: 56vh; min-height: 340px; }
   .weights-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 8px; }
   .weights-row .btn { min-height: 48px; padding: 0 6px; font-size: 15px; }
   .weights-row .btn:disabled { opacity: .45; }
+  .seg-sub { margin-top: -2px; }
+  .seg-sub button { min-height: 40px; font-size: 13.5px; }
+  input.k2 { accent-color: #2B8A64; }
+  .lab.say-low .say { top: auto; bottom: 66px; right: auto; left: 12px; max-width: 46%; font-size: 14px; }

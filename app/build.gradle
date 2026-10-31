@@ -33,3 +33,9 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+
+dependencies {
+    // direct phone-to-phone link
+    implementation "com.google.android.gms:play-services-nearby:19.3.0"
+    implementation "androidx.annotation:annotation:1.8.2"
+}

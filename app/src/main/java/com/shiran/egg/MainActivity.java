@@ -49,6 +49,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private SensorManager sensors;
     private Sensor gravity;
     private Sensor motion;
+    private PhoneLink link;
     private long lastShakeSent = 0;
     private boolean pageReady = false;
     private long lastSent = 0;
@@ -72,6 +73,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         web.addJavascriptInterface(new Bridge(), "EggNative");
+        link = new PhoneLink(this, (event, data) -> {
+            if (!pageReady) return;
+            web.evaluateJavascript("window.eggTrade&&eggTrade(" + org.json.JSONObject.quote(event) + "," + org.json.JSONObject.quote(data) + ")", null);
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) { pageReady = true; }
@@ -188,6 +193,16 @@ public class MainActivity extends Activity implements SensorEventListener {
             if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(len, VibrationEffect.DEFAULT_AMPLITUDE));
             else v.vibrate(len);
         }
+
+        // the direct phone-to-phone link (see PhoneLink)
+        @JavascriptInterface
+        public void tradeStart(String name) { main.post(() -> link.start(name)); }
+
+        @JavascriptInterface
+        public void tradeSend(String message) { main.post(() -> link.send(message)); }
+
+        @JavascriptInterface
+        public void tradeStop() { main.post(() -> link.stop()); }
     }
 
     private String fetchLatest() throws Exception {
@@ -247,6 +262,18 @@ public class MainActivity extends Activity implements SensorEventListener {
         if (pageReady) web.evaluateJavascript("window.eggPause&&eggPause()", null);
         web.onPause();
         super.onPause();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        link.onPermissionResult(requestCode, results);
+    }
+
+    @Override
+    protected void onDestroy() {
+        link.stop();
+        super.onDestroy();
     }
 
     @Override

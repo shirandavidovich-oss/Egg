@@ -38,7 +38,21 @@ new file name** (changing an existing file only reaches phones with a fresh inst
 
 Opening `index.html` in a desktop browser shows the scene too: press and hold to tilt.
 
+## Trading creatures between phones
+
+After hatching, swipe up: the creature asks whether to trade (✓ / ✗). On ✓ the phone looks for
+another phone nearby doing the same (Bluetooth / Wi-Fi, no internet, no server:
+`app/src/main/java/com/shiran/egg/PhoneLink.java`, reusable for the spaceship game). Each player
+sees the other creature and answers ✓ / ✗; when both say yes, each creature leaves through the top
+of its screen and lands on the other phone.
+
+While the server is off (demo) a trade is trusted between the two phones. When the server is on,
+trades must go through it so a creature cannot be copied.
+
 ## Server (Supabase)
+
+**Off for now (demo):** `SERVER.enabled` in `art/game-template.html` is `false`, so the egg is
+rolled in the game.
 
 Each player gets one egg, rolled on the server, so it cannot be changed from the phone and survives
 a reinstall once the account is linked.

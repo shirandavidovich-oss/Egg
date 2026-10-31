@@ -38,6 +38,13 @@ new file name** (changing an existing file only reaches phones with a fresh inst
 
 Opening `index.html` in a desktop browser shows the scene too: press and hold to tilt.
 
+## Live wallpaper
+
+Long-press the egg or creature (about a second): it asks to go on the home screen. ✓ opens Android's
+wallpaper preview with "Set wallpaper". The wallpaper (`EggWallpaper.java`) draws the room, nest and
+the current egg or creature; it breathes, hops now and then or when tapped, and follows the tilt.
+The game tells it which drawing to show whenever that changes.
+
 ## Trading creatures between phones
 
 After hatching, swipe up: the creature asks whether to trade (✓ / ✗). On ✓ the phone looks for

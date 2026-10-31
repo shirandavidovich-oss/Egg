@@ -15,6 +15,8 @@
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="32" />
+    <uses-feature android:name="android.software.live_wallpaper" android:required="false" />
+
     <!-- lets the app find the phone's text-to-speech engine (Android 11+) -->
     <queries>
         <intent>
@@ -38,5 +40,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- live wallpaper: the egg or creature on the home screen -->
+        <service
+            android:name=".EggWallpaper"
+            android:label="@string/wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/egg_wallpaper" />
+        </service>
     </application>
 </manifest>

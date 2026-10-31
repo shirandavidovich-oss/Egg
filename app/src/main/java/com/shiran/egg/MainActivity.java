@@ -211,6 +211,27 @@ public class MainActivity extends Activity implements SensorEventListener {
             tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "dog");
         }
 
+        // the live wallpaper (see EggWallpaper): which drawing to show, and opening its preview
+        @JavascriptInterface
+        public void setPet(String json) {
+            getSharedPreferences(EggWallpaper.PREFS, MODE_PRIVATE).edit().putString("pet", json).apply();
+        }
+
+        @JavascriptInterface
+        public void setWallpaper() {
+            main.post(() -> {
+                try {
+                    android.content.Intent i = new android.content.Intent(android.app.WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
+                    i.putExtra(android.app.WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                            new android.content.ComponentName(MainActivity.this, EggWallpaper.class));
+                    startActivity(i);
+                } catch (Exception e) {
+                    try { startActivity(new android.content.Intent(android.app.WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)); }
+                    catch (Exception ignored) { }
+                }
+            });
+        }
+
         // the direct phone-to-phone link (see PhoneLink)
         @JavascriptInterface
         public void tradeStart(String name) { main.post(() -> link.start(name)); }

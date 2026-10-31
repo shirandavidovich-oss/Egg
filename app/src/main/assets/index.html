@@ -83,7 +83,14 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     epic:      { weight: 1 },
     legendary: { weight: 0.3 }
   };
+  // the server that decides each player's creature (Supabase)
+  const SERVER = {
+    url: "https://uzzfmlktyesmehnmkrkn.supabase.co",
+    key: "sb_publishable_5eHUOj6fj2-MsUd2Y6bTmw_k1o9mxy4"   // public key, safe to ship in the app
+  };
+
   // which creature is which rarity (anything not listed is common)
+  // used only when the game runs outside the app (the desktop preview); the app asks the server
   const CREATURE_RARITY = {
     puffhorn: "uncommon", orbit: "uncommon", tweetle: "uncommon", cloudbun: "uncommon",
     emberwing: "rare", nightflap: "rare", pebblebot: "rare", mossdragon: "rare",
@@ -613,9 +620,11 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       return;
     }
     if (egg.state === "stand" && egg.shell <= 0) {
-      if (hatch.readyT === 0) { audio.preload(["01_shell_first_crack", "02_rapid_cracks", "03_shell_explosion", "04_balloon_whoosh", "05_happy_celebration_loop", "06_reveal_fanfare", "07_magic_sparkle", "08_comic_oh_no"]); hatch.creature = hatch.creature || rollCreature(); loadCreature(hatch.creature); loadParty(); }
+      if (hatch.readyT === 0) { audio.preload(["01_shell_first_crack", "02_rapid_cracks", "03_shell_explosion", "04_balloon_whoosh", "05_happy_celebration_loop", "06_reveal_fanfare", "07_magic_sparkle", "08_comic_oh_no"]); loadParty(); }
+      if (!hatch.creature) { hatch.creature = eggCreature(); if (hatch.creature) loadCreature(hatch.creature); }
       hatch.readyT += dt;
-      if (hatch.readyT > HATCH.readyWait && !dog.active) { startHatch(); return; }
+      // it only hatches once we know what is inside; until then it keeps glowing
+      if (hatch.readyT > HATCH.readyWait && hatch.creature && !dog.active) { startHatch(); return; }
     }
 
     if (egg.state === "arriving") {
@@ -1730,6 +1739,66 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   }
 
   // ======================================================================
+  //  ACCOUNT AND SERVER EGG
+  //  The player gets a quiet account on first launch (no sign-up screen).
+  //  The server rolls the egg once and always returns the same one.
+  //  Later this account gets linked to the player's Google account.
+  // ======================================================================
+  const account = { token: null, until: 0, refresh: null, creature: null, busy: false, fails: 0, lastTry: -99 };
+  try { account.refresh = localStorage.getItem("egg.refresh"); account.creature = localStorage.getItem("egg.serverCreature"); } catch (e) {}
+  const inApp = !!native;
+
+  async function api(path, body, token) {
+    const r = await fetch(SERVER.url + path, {
+      method: "POST",
+      headers: { "apikey": SERVER.key, "Content-Type": "application/json", ...(token ? { "Authorization": "Bearer " + token } : {}) },
+      body: JSON.stringify(body || {})
+    });
+    const text = await r.text();
+    let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+    if (!r.ok) throw new Error((data && (data.msg || data.message || data.error_description)) || ("HTTP " + r.status));
+    return data;
+  }
+  function keepSession(d) {
+    account.token = d.access_token;
+    account.until = Date.now() + (d.expires_in || 3600) * 1000 - 60000;
+    account.refresh = d.refresh_token;
+    try { localStorage.setItem("egg.refresh", d.refresh_token); } catch (e) {}
+  }
+  async function session() {
+    if (account.token && Date.now() < account.until) return account.token;
+    if (account.refresh) {
+      try { keepSession(await api("/auth/v1/token?grant_type=refresh_token", { refresh_token: account.refresh })); return account.token; }
+      catch (e) { if (/invalid|not found|revoked/i.test(e.message)) { account.refresh = null; } else throw e; }
+    }
+    keepSession(await api("/auth/v1/signup", { data: {} }));        // a quiet, anonymous account
+    return account.token;
+  }
+  async function claimEgg() {
+    if (account.busy) return;
+    account.busy = true; account.lastTry = time;
+    try {
+      const token = await session();
+      const id = await api("/rest/v1/rpc/claim_egg", {}, token);
+      if (typeof id === "string" && creatureMeta(id)) {
+        account.creature = id; account.fails = 0;
+        try { localStorage.setItem("egg.serverCreature", id); } catch (e) {}
+      }
+    } catch (e) {
+      account.fails++;
+      console.warn("egg server:", e.message);
+    } finally { account.busy = false; }
+  }
+  function markHatched() { session().then((t) => api("/rest/v1/rpc/mark_hatched", {}, t)).catch(() => {}); }
+  // the creature in this egg, once known: from the server, or (outside the app, when the server cannot be reached) a local roll
+  function eggCreature() {
+    if (account.creature) return account.creature;
+    if (!account.busy && time - account.lastTry > 4) claimEgg();
+    if (!inApp && account.fails >= 2) return hatch.creature || rollCreature();
+    return null;
+  }
+
+  // ======================================================================
   //  HATCHING  (the shell gives way, balloons, and a creature in the nest)
   // ======================================================================
   const hatch = { t: 0, creature: null, shards: [], balloons: [], confetti: [], flash: 0, colorK: 0, bornAt: 0, hop: 0, readyT: 0, celebrate: null, cues: new Set() };
@@ -1752,7 +1821,6 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   }
 
   function startHatch() {
-    hatch.creature = hatch.creature || rollCreature();
     loadCreature(hatch.creature);
     loadParty();
     egg.state = "hatching"; hatch.t = 0; hatch.cues.clear();
@@ -1797,6 +1865,7 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     if (t > 9) {
       egg.state = "hatched"; hatch.bornAt = time;
       saveCreature();
+      if (account.creature) markHatched();
     }
   }
 
@@ -2057,6 +2126,7 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   };
   let arrivedBefore = null;
   try { arrivedBefore = localStorage.getItem("egg.arrived"); } catch (e) {}
+  setTimeout(() => { if (!account.creature) claimEgg(); }, 1500);
   let savedCreature = null;
   try { savedCreature = DEV.resetShell ? null : localStorage.getItem("egg.creature"); } catch (e) {}
   if (savedCreature && creatureMeta(savedCreature)) {

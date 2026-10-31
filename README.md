@@ -37,3 +37,14 @@ new file name** (changing an existing file only reaches phones with a fresh inst
 | Automatic APK build | `.github/workflows/build-apk.yml` |
 
 Opening `index.html` in a desktop browser shows the scene too: press and hold to tilt.
+
+## Server (Supabase)
+
+Each player gets one egg, rolled on the server, so it cannot be changed from the phone and survives
+a reinstall once the account is linked.
+
+- `server/setup.sql`: tables, read-only rules, and `claim_egg()` / `mark_hatched()`. Paste it into
+  Supabase > SQL Editor and run it (safe to run again).
+- Supabase > Authentication > Sign In / Providers: **Allow anonymous sign-ins** must be on. The game
+  makes a quiet account on first launch; linking it to Google comes next.
+- Odds: table `rarity_weights`; which creature is which rarity: table `creatures`.

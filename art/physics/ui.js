@@ -630,6 +630,39 @@
   }
 
   // ======================================================================
+  //  FORCE ARROWS: bold, haloed, with the name and the size in a coloured tag
+  // ======================================================================
+  function forceArrow(ctx, x0, y0, vx, vy, color, label, opts = {}) {
+    let len = Math.hypot(vx, vy); if (len < 1.5) return;
+    const ux = vx / len, uy = vy / len;
+    len = Math.max(len, 30);                              // a small force is still visible
+    const x1 = x0 + ux * len, y1 = y0 + uy * len, head = opts.thin ? 13 : 19, half = opts.thin ? 7 : 10.5, lw = opts.thin ? 3 : 6;
+    ctx.save(); ctx.globalAlpha = opts.alpha ?? 1; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const shaft = () => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * head * 0.8, y1 - uy * head * 0.8); };
+    const tip = () => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * head - uy * half, y1 - uy * head + ux * half); ctx.lineTo(x1 - ux * head + uy * half, y1 - uy * head - ux * half); ctx.closePath(); };
+    if (opts.dash) ctx.setLineDash([9, 7]);
+    ctx.strokeStyle = "rgba(255,255,255,0.95)"; ctx.lineWidth = lw + 5; shaft(); ctx.stroke();   // halo so it reads over the drawing
+    ctx.setLineDash([]); ctx.lineWidth = 5; tip(); ctx.stroke();
+    if (opts.dash) ctx.setLineDash([9, 7]);
+    ctx.strokeStyle = color; ctx.lineWidth = lw; shaft(); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = color; tip(); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x0, y0, opts.thin ? 3 : 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x0, y0, opts.thin ? 2 : 3.2, 0, Math.PI * 2); ctx.fill();
+    if (label) {
+      const text = opts.value !== undefined ? `${label}  ${fmt(opts.value, 1)} N` : label;
+      ctx.font = "700 13px " + FONT; ctx.direction = "ltr"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const tw = ctx.measureText(text).width + 14, th = 22, side = opts.side || 0;
+      let lx = x1 + ux * (tw / 2 + 8) + side * uy * 16 + (opts.dx || 0), ly = y1 + uy * (th / 2 + 8) - side * ux * 16 + (opts.dy || 0);
+      const cw = ctx.canvas.width / (ctx.getTransform().a || 1), chh = ctx.canvas.height / (ctx.getTransform().d || 1);
+      lx = clamp(lx, tw / 2 + 4, cw - tw / 2 - 4); ly = clamp(ly, th / 2 + 4, chh - th / 2 - 4);
+      ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(lx - tw / 2, ly - th / 2, tw, th, 11) : ctx.rect(lx - tw / 2, ly - th / 2, tw, th); ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.fillText(text, lx, ly + 0.5);
+    }
+    ctx.restore();
+  }
+
+  // ======================================================================
   //  THE SPRING LAB
   // ======================================================================
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -901,6 +934,12 @@
       ctx.strokeStyle = "#F49A35"; ctx.lineWidth = 2.8; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(x, yS - 8); ctx.lineTo(x, yS - 2); ctx.arc(x + 4, yS - 2, 4, Math.PI, Math.PI * 1.9, true); ctx.stroke();
       ctx.fillStyle = "#F49A35"; ctx.beginPath(); ctx.ellipse(x, yS + 1, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+      // the two forces on the creature: weight down, spring up (same scale, so they can be compared)
+      {
+        const Wt = p.m * p.g, Fs = p.k * s, kpx = 78 / Math.max(Wt, Fs * 0.6, 1), cy = r.y + r.h * 0.55, ox = r.w * 0.5 + 22;
+        forceArrow(ctx, x + Math.min(ox, W - x - 70), cy, 0, Wt * kpx, "#2785C7", "mg", { value: Wt });
+        if (Math.abs(Fs) > 0.05) forceArrow(ctx, x + Math.min(ox, W - x - 70), cy, 0, -Fs * kpx, "#25A06F", "kΔx", { value: Math.abs(Fs) });
+      }
       // first time: show where to pull
       if (!everDragged && !reduceMotion) {
         const k = (performance.now() / 900) % 1;
@@ -1106,15 +1145,7 @@
       else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.wall" || done().includes(q.unit)))) questionCooldown = 3;
     }
 
-    function arrow(x0, y0, dx, dy, color, label, below) {
-      const len = Math.hypot(dx, dy); if (len < 3) return;
-      const ux = dx / len, uy = dy / len, x1 = x0 + dx, y1 = y0 + dy;
-      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3.2;
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * 8, y1 - uy * 8); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * 12 - uy * 6, y1 - uy * 12 + ux * 6); ctx.lineTo(x1 - ux * 12 + uy * 6, y1 - uy * 12 - ux * 6); ctx.closePath(); ctx.fill();
-      ctx.font = "700 13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText(label, x1 + ux * 16, y1 + (below ? 14 : -12));
-    }
+    function arrow(x0, y0, dx, dy, color, label, below, value) { forceArrow(ctx, x0, y0, dx, dy, color, label, { value, dy: below ? 22 : 0 }); }
     function draw() {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
@@ -1152,12 +1183,16 @@
       if (img.complete && img.naturalWidth) ctx.drawImage(img, b.left, b.top, b.w, b.h);
       ctx.fillStyle = "#F49A35"; ctx.beginPath(); ctx.ellipse(xr + 1, sy, 3, 6, 0, 0, Math.PI * 2); ctx.fill();
       // forces: spring (blue) at the body, friction (magenta) at the feet
-      const F = -p.k * x, kpx = 2.4;
-      if (Math.abs(F) > 0.05) arrow(b.mid, sy, clamp(-F * kpx, -150, 150), 0, "#2785C7", "F");   // + x is away from the wall = left on screen
+      const F = -p.k * x, Wt = p.m * p.g, kpx = Math.min(2.4, 70 / Wt);
+      // vertical pair: weight from the centre, normal from the floor (they cancel on a level floor)
+      const cy = g.floorY - b.h * 0.55;
+      forceArrow(ctx, b.mid, cy, 0, Wt * kpx, "#2785C7", "mg", { value: Wt });
+      forceArrow(ctx, b.mid, cy, 0, -Wt * kpx, "#8969C6", "N", { value: Wt });
+      if (Math.abs(F) > 0.05) arrow(b.mid, cy, clamp(-F * kpx, -170, 170), 0, "#25A06F", "kΔx", false, Math.abs(F));   // + x is away from the wall = left on screen
       let f = 0;
       if (sim.st.moving) f = -Math.sign(sim.st.v) * p.muk * p.m * p.g;           // + means away from the wall
       else if (!sim.held && Math.abs(F) > 0.01) f = -F;                          // static: exactly what is needed
-      if (Math.abs(f) > 0.05) arrow(b.mid, g.floorY - 6, clamp(-f * kpx, -150, 150), 0, "#CC5794", sim.st.moving ? "f_k" : "f_s", true);
+      if (Math.abs(f) > 0.05) arrow(b.mid, g.floorY - 4, clamp(-f * kpx, -170, 170), 0, "#CC5794", sim.st.moving ? "f_k" : "f_s", true, Math.abs(f));
       // first time: show where to pull
       if (!everDragged && !reduceMotion) {
         const k = (performance.now() / 900) % 1;
@@ -1466,23 +1501,7 @@
     cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
 
     // ---------- drawing ----------
-    function arrow(x0, y0, vx, vy, color, label, opts = {}) {
-      const len = Math.hypot(vx, vy); if (len < 2) return;
-      const ux = vx / len, uy = vy / len, x1 = x0 + vx, y1 = y0 + vy;
-      ctx.save();
-      ctx.globalAlpha = opts.alpha ?? 1;
-      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = opts.thin ? 2 : 3.4;
-      if (opts.dash) ctx.setLineDash([7, 6]);
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * 9, y1 - uy * 9); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * 13 - uy * 6.5, y1 - uy * 13 + ux * 6.5); ctx.lineTo(x1 - ux * 13 + uy * 6.5, y1 - uy * 13 - ux * 6.5); ctx.closePath(); ctx.fill();
-      if (label) {
-        ctx.font = "700 14px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.direction = "ltr";
-        const lx = x1 + ux * 18 + (opts.side || 0) * uy * 14, ly = y1 + uy * 18 - (opts.side || 0) * ux * 14;
-        ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly);
-      }
-      ctx.restore();
-    }
+    function arrow(x0, y0, vx, vy, color, label, opts = {}) { forceArrow(ctx, x0, y0, vx, vy, color, label, opts); }
     function draw() {
       cam = camera();
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -1542,12 +1561,12 @@
       if (showForces()) {
         const c = comPoint(), f = fr, k = Math.min(INC.kpx, 150 / f.W) * (S / cam.side.S);   // one scale per scene: arrows compare with each other
         const real = view === "real";
-        arrow(c.x, c.y, 0, f.W * k, COLORS.g, "mg", { dash: !real, thin: !real });
-        arrow(c.x, c.y, -g.s * f.N * k, -g.c * f.N * k, COLORS.N, "N", { alpha: real ? 1 : 0.3, side: -1 });
-        if (f.f > 0.01) arrow(c.x, c.y, g.c * f.f * k, -g.s * f.f * k, COLORS.f, f.holds ? "f_s" : "f_k", { alpha: real ? 1 : 0.3, side: 1 });
+        arrow(c.x, c.y, 0, f.W * k, COLORS.g, "mg", { dash: !real, thin: !real, value: real ? f.W : undefined });
+        arrow(c.x, c.y, -g.s * f.N * k, -g.c * f.N * k, COLORS.N, "N", { alpha: real ? 1 : 0.3, side: -1, value: real ? f.N : undefined });
+        if (f.f > 0.01) arrow(c.x, c.y, g.c * f.f * k, -g.s * f.f * k, COLORS.f, f.holds ? "f_s" : "f_k", { alpha: real ? 1 : 0.3, side: 1, value: real ? Math.abs(f.f) : undefined });
         if (!real) {
-          arrow(c.x, c.y, -g.c * f.par * k, g.s * f.par * k, COLORS.par, "mg sinθ", { side: 1 });
-          arrow(c.x, c.y, g.s * f.perp * k, g.c * f.perp * k, COLORS.perp, "mg cosθ", { side: -1 });
+          arrow(c.x, c.y, -g.c * f.par * k, g.s * f.par * k, COLORS.par, "mg sinθ", { side: 1, value: f.par });
+          arrow(c.x, c.y, g.s * f.perp * k, g.c * f.perp * k, COLORS.perp, "mg cosθ", { side: -1, value: f.perp });
           ctx.fillStyle = "#606671"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "right"; ctx.textBaseline = "top";
           ctx.fillText("רכיבי הכבידה: לא כוחות נוספים", W - 10, 10); ctx.direction = "ltr";
         }

@@ -12,6 +12,13 @@ Download the newest one, signed in to GitHub on the phone:
 
 New builds install over the old one.
 
+## Updates
+
+Install the APK once. After that, every launch fetches the newest game file
+(`app/src/main/assets/index.html`) from this repo, so changes to the game show up the next
+time the app opens, with no reinstall. Offline, the app uses the last version it saved.
+A new APK is only needed when the Android part changes.
+
 ## Where things are
 
 | What | File |

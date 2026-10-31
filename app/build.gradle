@@ -10,7 +10,7 @@ android {
         applicationId "com.shiran.egg"
         minSdk 26
         targetSdk 34
-        versionCode 1
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger())
         versionName "0.1"
     }
 

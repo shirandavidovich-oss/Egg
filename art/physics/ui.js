@@ -35,8 +35,9 @@
   const UNITS = SPRING_UNITS;
   const INCLINE_EQ = { 1: "ΣF = N − mg = 0", 2: "mg תמיד למטה · N ⟂ למשטח", 3: "mg·sinθ  ,  mg·cosθ", 4: "f_s ≤ μs·N", 5: "a = g·(sinθ − μk·cosθ)", 6: "a לא תלויה ב-m כש-μ זהה", 7: "ΣF = m·a" };
   const INCLINE_UNITS = SPR.inclineStages.map((st) => ({ id: "newton.s" + st.stage, stage: st.stage, he: st.title_he, insight: st.takeaway_he, eq: INCLINE_EQ[st.stage], coins: st.unique_reward_coins, task: st.interaction_he }));
-  const FAMILY_UNITS = { springs: SPRING_UNITS, newton: INCLINE_UNITS };
-  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מי מושך אותי?!" };
+  const MOTION_UNITS = KIN_DATA.units.map((u) => ({ id: u.id, level: u.level, he: u.he, concept: u.concept, insight: u.insight, eq: u.eq, coins: u.level === 8 ? 25 : 10 }));
+  const FAMILY_UNITS = { springs: SPRING_UNITS, newton: INCLINE_UNITS, motion: MOTION_UNITS };
+  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מי מושך אותי?!", motion: "העוגייה בורחת!" };
   const TOTAL_UNITS = TOPICS.reduce((n, t) => n + (FAMILY_UNITS[t.id] ? FAMILY_UNITS[t.id].length : t.subtopics_he.length), 0);
   const done = () => P.data.physics.completed_subtopic_ids;
   const ALL_UNITS = Object.values(FAMILY_UNITS).flat();
@@ -359,6 +360,8 @@
   };
 
   const GAMES = {
+    motion: { title: "קינמטיקה: העוגייה בורחת!", name: "העוגייה בורחת!", bubble: "מי הזיז את העוגייה?!", screen: "cookie",
+      art: `<svg viewBox="0 0 90 210"><path d="M4 196h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="14" y="176" width="44" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="22" cy="190" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="50" cy="190" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="74" cy="182" r="9" fill="#E3B26A" stroke="currentColor" stroke-width="2"/><path d="M8 150h40" stroke="#2785C7" stroke-width="3" stroke-linecap="round"/><path d="M42 144l8 6-8 6" fill="none" stroke="#2785C7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
     springs: { title: "קפיצים ואלסטיות", name: "קפיץ־קפוץ", bubble: "תמשוך אותי בעדינות… או שלא!", screen: "lab",
       art: `<svg viewBox="0 0 90 210"><path d="M10 6h70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M45 6v14l-22 7 44 9-44 9 44 9-44 9 44 9-44 9 44 9-22 7v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="45" cy="138" r="5" fill="none" stroke="#F49A35" stroke-width="2.6"/></svg>` },
     newton: { title: "מישור משופע, כוחות וחיכוך", name: "מי מושך אותי?!", bubble: "אני רק יושב פה. מה כבר יכול לקרות?", screen: "incline",
@@ -637,6 +640,22 @@
       eq: ["T = k·x", "m·a = m·g − T"], live: (c) => c.T !== undefined && `עכשיו T = ${f2(c.T, 1)} N, והמשקל ${f2(c.m * 9.81, 1)} N.` },
     pulley: { t: "גלגלת אידיאלית", p: "גלגל קטן שהחוט עובר מעליו. אידיאלית: בלי מסה ובלי חיכוך. היא לא מגדילה ולא מקטינה את הכוח, רק משנה את הכיוון שלו: הדמות מושכת למטה, והקפיץ מרגיש משיכה הצידה.",
       eq: ["T₁ = T₂ = T"], live: () => "" },
+    kin_x: { t: "מיקום x", p: "איפה הדמות על המסילה, ביחס לנקודת האפס. יכול להיות שלילי (משמאל לאפס). העתק הוא ההפרש בין מיקומים, Δx = x − x0, ודרך היא כמה באמת נסעת, בלי סימנים.",
+      eq: ["Δx = x − x0", "דרך = Σ|Δx|"], live: (c) => c.x !== undefined && `עכשיו x = ${f2(c.x, 2)} m, ודרך ${f2(c.d, 2)} m.` },
+    kin_v: { t: "מהירות v", p: "בכמה מטר המיקום משתנה בכל שנייה, כולל כיוון: חיובית ימינה, שלילית שמאלה. בלי כוח שקול (בלי דחיפה ובלי חיכוך) היא לא משתנה.",
+      eq: ["v = Δx / Δt", "x = x0 + v·t"], live: (c) => c.v !== undefined && `עכשיו v = ${f2(c.v, 2)} m/s.` },
+    kin_a: { t: "תאוצה a", p: "בכמה המהירות משתנה בכל שנייה. כוח קבוע נותן תאוצה קבועה: a = F/m. זהירות: a שלילית לא תמיד אומרת 'מאט'. אם גם v שלילית, הגוף דווקא מאיץ שמאלה.",
+      eq: ["a = Δv / Δt", "v = v0 + a·t", "a = ΣF / m"], live: (c) => c.m && `עכשיו a = ${f2(c.a, 2)} m/s². המסה הכוללת (דמות + סקייטבורד): ${f2(c.m, 1)} kg.` },
+    kin_d: { t: "דרך מול העתק", p: "דרך היא כל המטרים שנסעת, תמיד חיובית. העתק הוא רק מאיפה לאן. אם נוסעים 5 ימינה ו-3 שמאלה: דרך 8, העתק +2.",
+      eq: ["v̄ = Δx / Δt", "גודל מהירות ממוצעת = דרך / Δt"], live: (c) => c.d !== undefined && `עכשיו: דרך ${f2(c.d, 2)} m.` },
+    kin_rel: { t: "תנועה יחסית", p: "כדי לדעת אם תשיג את העוגייה, מסתכלים על הפער. הוא משתנה בקצב של ההפרש בין המהירויות. אם אתה מהיר יותר, הפער נסגר. אם שווים, הוא נשאר.",
+      eq: ["v_rel = v_cookie − v_creature", "t = פער / (v_creature − v_cookie)"], live: (c) => c.gap !== undefined && `עכשיו הפער ${f2(c.gap, 2)} m.` },
+    kin_xt: { t: "גרף מקום-זמן", p: "השיפוע בכל נקודה הוא המהירות. קו ישר = מהירות קבועה. קו שמתעקם כלפי מעלה = מאיץ. שיפוע שלילי = נוסע שמאלה.",
+      eq: ["v = Δx / Δt (שיפוע)"], live: () => "" },
+    kin_vt: { t: "גרף מהירות-זמן", p: "השיפוע הוא התאוצה. השטח בין הקו לציר הזמן הוא ההעתק: מעל הציר נחשב פלוס (כחול), מתחת מינוס (אדום). כדי לקבל דרך מחברים את השטחים בערך מוחלט.",
+      eq: ["a = Δv / Δt (שיפוע)", "Δx = שטח חתום"], live: (c) => c.x !== undefined && `בנסיעה הזאת: Δx = ${f2(c.x, 2)} m.` },
+    kin_at: { t: "גרף תאוצה-זמן", p: "השטח בין הקו לציר הוא שינוי המהירות Δv, לא העתק. דחיפה = מלבן מעל הציר, בלימה = מלבן מתחת.",
+      eq: ["Δv = שטח חתום", "Δv = a·Δt"], live: () => "" },
     weights: { t: "משקולות כיול", p: "ציוד מעבדה עם מסה ידועה. כל משקולת של 100 g מוסיפה משקל של 0.981 N. הן לא משנות את הדמות: הדמות רק מחזיקה את הסרגל ורושמת.",
       eq: ["W = m·g", "100 g = 0.1 kg"], live: (c) => c.n !== undefined && `עכשיו תלויות ${c.n} משקולות: ${f2(c.n * 0.1, 1)} kg, ${f2(c.n * 0.981, 2)} N.` },
     theta: { t: "זווית המדרון θ", p: "הזווית בין המדרון לאופק. כשהיא גדלה, הרכיב של הכובד במורד (mg·sinθ) גדל והנורמל (mg·cosθ) קטן. הכובד עצמו לא משתנה. הגוף מתחיל להחליק כש-tanθ עובר את μs.",
@@ -692,6 +711,20 @@
     "ΣF⊥": { n: "סכום הכוחות בניצב למשטח", d: "רק החלקים של הכוחות שניצבים למדרון. כשהגוף לא קופץ ולא שוקע, הסכום הזה הוא אפס.", u: "N", un: "ניוטון", si: "kg·m/s²" },
     L:   { n: "אורך הקפיץ", d: "האורך הנוכחי של הקפיץ.", u: "m", un: "מטר", si: "m" },
     "L₀": { n: "אורך טבעי", d: "האורך של הקפיץ כשאף כוח לא פועל עליו.", u: "m", un: "מטר", si: "m" },
+    x0:  { n: "מיקום התחלתי", d: "איפה הגוף היה ב-t = 0.", u: "m", un: "מטר", si: "m" },
+    v0:  { n: "מהירות התחלתית", d: "המהירות ב-t = 0, עם סימן.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    v_avg: { n: "מהירות ממוצעת", d: "העתק חלקי זמן. עם כיוון.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    speed_avg: { n: "גודל מהירות ממוצעת", d: "דרך כוללת חלקי זמן. תמיד חיובי.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    a_avg: { n: "תאוצה ממוצעת", d: "שינוי המהירות חלקי הזמן.", u: "m/s²", un: "מטר לשנייה בריבוע", si: "m/s²" },
+    "Δv": { n: "שינוי במהירות", d: "מהירות סופית פחות התחלתית.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    "Δt": { n: "משך זמן", d: "זמן סיום פחות זמן התחלה.", u: "s", un: "שנייה", si: "s" },
+    t_stop: { n: "זמן עצירה", d: "כמה זמן לוקח לעצור בתאוטה קבועה: |v0/a|.", u: "s", un: "שנייה", si: "s" },
+    d_stop: { n: "מרחק עצירה", d: "כמה מטר עוברים עד שעוצרים: v0²/(2|a|). פי 2 מהירות, פי 4 מרחק.", u: "m", un: "מטר", si: "m" },
+    v_rel: { n: "מהירות יחסית", d: "המהירות של אחד כפי שהשני רואה אותה: ההפרש ביניהן.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    v_relative: { n: "מהירות יחסית", d: "המהירות של העוגייה כפי שהדמות רואה אותה.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    v_cookie: { n: "מהירות העוגייה", d: "קבועה בשלב הזה: 1.2 m/s ימינה.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    v_creature: { n: "מהירות הדמות", d: "המהירות שלך על הסקייטבורד.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    total_distance: { n: "דרך כוללת", d: "כל המטרים שעברת, בלי סימנים.", u: "m", un: "מטר", si: "m" },
     m1:  { n: "מסת הגוף הראשון", d: "הדמות שלך.", u: "kg", un: "קילוגרם", si: "kg" },
     m2:  { n: "מסת הגוף השני", d: "העגלה, או דמות נוספת משלך.", u: "kg", un: "קילוגרם", si: "kg" },
     v1:  { n: "מהירות הגוף הראשון", d: "שלילית = שמאלה.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
@@ -714,7 +747,7 @@
     u:   { n: "הסטה משיווי המשקל", d: "המרחק מנקודת שיווי המשקל (לא מהאורך הטבעי).", u: "m", un: "מטר", si: "m" },
     mg:  { n: "המשקל, m כפול g", d: "כוח הכובד על הגוף. תמיד אנכי כלפי מטה, גם על מדרון.", u: "N", un: "ניוטון", si: "kg·m/s²" }
   };
-  const SYM_RE = /(m1|m2|v1|v2|E_el|v_max|a_max|E_p|k_eq|k1|k2|x1|x2|F1|F2|x_rest|s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
+  const SYM_RE = /(speed_avg|total_distance|v_relative|v_creature|v_cookie|v_avg|a_avg|t_stop|d_stop|v_rel|x0|v0|Δv|Δt|m1|m2|v1|v2|E_el|v_max|a_max|E_p|k_eq|k1|k2|x1|x2|F1|F2|x_rest|s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
   // turn the text of a formula into tappable symbols (numbers and units in <em> stay as they are)
   function symbolize(root) {
     if (!root) return;
@@ -2901,6 +2934,310 @@
     say(`${nameOf(sp)} תלוי על חוט שעובר מעל גלגלת לקפיץ שבקיר. משכו אותו למטה ושחררו.`, 3.6);
     cleanup = S0.done(() => raf);
     bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  "העוגייה בורחת!" — kinematics on a skateboard, 8 levels
+  //  Physics in Kin (fixed step, exact stops); this is drawing, camera and the lessons around it.
+  //  The creature's mass and shoe friction come from its own profile; nothing here edits a body.
+  // ======================================================================
+  const KD = KIN_DATA, KF = (id) => KD.formulas.find((f) => f.id === id);
+  const kinSound = (name) => { if (P.data.settings.sound_on === false) return; try { const a = new Audio(`sound/cookie/${name}.wav`); a.volume = 0.6; a.play().catch(() => {}); } catch (e) {} };
+  // read a formula card aloud only when the player asks (off by default)
+  function speakHe(text) {
+    try { if (window.EggNative && EggNative.speak) { EggNative.speak(text, 1, 1); return true; } } catch (e) {}
+    try { if (window.speechSynthesis) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "he-IL"; speechSynthesis.speak(u); return true; } } catch (e) {}
+    return false;
+  }
+  function formulaSheet(level) {
+    const ids = KD.levelFormulas[level] || [], all = KD.formulas.filter((f) => !ids.includes(f.id));
+    const card = (f) => `<div class="kcard"><div class="khead"><b>${esc(f.t)}</b><button class="kspeak" type="button" data-say="${esc(f.id)}" aria-label="הקראה">🔊</button></div>
+      <div class="m kf">${esc(f.f)}</div><p><b>סמלים:</b> ${esc(f.sym)}</p><p><b>יחידה:</b> <span class="ltr">${esc(f.u)}</span></p><p class="pit"><b>זהירות:</b> ${esc(f.pit)}</p><p class="ex"><b>דוגמה:</b> ${esc(f.ex)}</p></div>`;
+    const el = sheet(`<h3>נוסחאות לשלב הזה</h3><p class="fine">לחצו על כל אות בנוסחה. 🔊 מקריא בעברית (רק כשלוחצים).</p>
+      ${ids.map((id) => card(KF(id))).join("")}
+      <details><summary class="linkish">כל 16 הנוסחאות של הנושא</summary>${all.map(card).join("")}</details>
+      <div class="actions"><button class="btn primary" type="button" data-close>חזרה למסילה</button></div>`);
+    el.querySelectorAll(".kf").forEach(symbolize);
+    for (const b of el.querySelectorAll("[data-say]")) b.addEventListener("click", () => { const f = KF(b.dataset.say); if (!speakHe(`${f.t}. ${f.sym}. ${f.ex}`)) b.textContent = "—"; });
+    return el;
+  }
+
+  SCREENS.cookie = (args = {}) => {
+    const MP = (P.data.physics.motion = P.data.physics.motion || { level: 1, quiz: 0 });
+    let level = clamp(args.level || MP.level || 1, 1, 8);
+    let sp = activeSpecies();
+    const prof = () => phys(sp);
+    lab.kExtra = lab.kExtra || 0;
+    const muFoot = () => ((prof().surfaces || {}).dry_wood || { mu_k: prof().mu_k }).mu_k;
+    const body = () => Kin.body(prof().mass_kg, { extra: level === 4 ? lab.kExtra : 0, muk: muFoot() });
+    const U = (n) => KD.units[n - 1];
+    setTitle("העוגייה בורחת!", "קינמטיקה על סקייטבורד");
+    screenEl.innerHTML = `
+      <div class="lab-screen kin">
+        <div class="stagebar kbar" id="kbar">${KD.units.map((u) => `<button type="button" data-l="${u.level}" aria-label="שלב ${u.level}: ${esc(u.he)}">${u.level}</button>`).join("")}</div>
+        <div class="card task" id="ktask"></div>
+        <div class="lab" id="lab"><canvas id="labCanvas"></canvas><div class="bubble say" id="say" hidden></div>
+          <div class="lab-tools"><button class="chip" id="charChip" type="button"></button><button class="chip" id="formBtn" type="button">נוסחאות</button></div></div>
+        <div class="kgraph" id="kgraph" hidden><div class="seg ktabs"><button type="button" data-g="x">x–t</button><button type="button" data-g="v">v–t</button><button type="button" data-g="a">a–t</button></div><canvas id="kgCanvas"></canvas></div>
+        <div class="kin-controls" id="kctl"></div>
+        <div class="readouts">${readout("kin_x", "מיקום x", "rX")}${readout("kin_v", "מהירות v", "rV")}${readout("kin_a", "תאוצה a", "rA")}${readout("kin_d", "דרך", "rD")}</div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab");
+    let W = 0, H = 0, DPR = 1;
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); gResize(); };
+    const gcv = $("#kgCanvas"), gctx = gcv.getContext("2d"); let GW = 0, GH = 0;
+    function gResize() { const r = gcv.getBoundingClientRect(); GW = r.width; GH = r.height; gcv.width = Math.round(GW * DPR); gcv.height = Math.round(GH * DPR); }
+    const ro = new ResizeObserver(resize); ro.observe(box); ro.observe(gcv);
+    const img = new Image(); let imgSp = null; const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } }; loadImg();
+    const art = (n) => { const i = new Image(); i.src = `art/cookie/k1_${n}.webp`; return i; };
+    const IM = { board: art("skateboard"), roll: art("cookie_roll"), lines: art("speed_lines"), sign: art("road_sign") };
+    let sayT = 0; const say = (t, s = 2.8) => { const el = $("#say"); el.textContent = t; el.hidden = false; sayT = s; };
+
+    // ---------------- state ----------------
+    let st, ctl, hist, drops, cookie, camX, zoom, introT, acc, raf = 0, lastT = performance.now(), fpaint = 0, running, flags, l1, l4rows = MP.l4rows || [], phase, gTab = "v", finished, holdPush = 0;
+    const WALL = 14, END = 60, CATCH = 0.25;
+    function resetRun(o = {}) {
+      st = Kin.start(o.x0 ?? 0, o.v0 ?? 0); ctl = { push: false, pad: false, foot: false, given: null };
+      hist = [{ t: 0, x: st.x, v: st.v, a: 0 }]; drops = Kin.dropsBetween(st, st); acc = 0; running = true; finished = false; holdPush = 0;
+      phase = { push: 0, coast: 0, brake: 0 };
+      cookie = level === 6 ? { x0: 4, v: 1.2, caught: false } : { x0: 2.3, v: 0, caught: false, decor: true };
+    }
+    function enterLevel(n, intro = true) {
+      level = n; MP.level = n; P.save();
+      camX = 3; zoom = intro && !reduceMotion ? 1.5 : 1; introT = intro && !reduceMotion ? 0 : 3;
+      l1 = { phase: "idle", t: 0 }; flags = { s: { x: 6.9, set: false }, e: { x: 6.3, set: false }, revealed: false };      // waiting at the right edge, to be dragged
+      resetRun(level === 5 ? { v0: 0 } : {});
+      paintBar(); paintTask(); paintControls();
+      $("#kgraph").hidden = level !== 7 && !MP.graphs;
+      if (intro) say(level === 6 ? KD.say.launch : n === 1 ? "רגע, איפה אני בכלל? בואו נמדוד." : "מי הזיז את העוגייה?!", 2.4);
+      requestAnimationFrame(resize);
+    }
+    // ---------------- top: level bar and the task line ----------------
+    function paintBar() {
+      for (const b of screenEl.querySelectorAll("#kbar [data-l]")) {
+        const n = +b.dataset.l; b.classList.toggle("done", done().includes(U(n).id));
+        b.toggleAttribute("aria-current", n === level); b.disabled = false;
+      }
+    }
+    const TASK = {
+      1: "לחצו 'סע!'. אחר כך גררו את הדגל הירוק לאיפה שהתחיל ואת האדום לאיפה שנגמר.",
+      2: "החזיקו 'דחוף' רגע ושחררו. מה קורה כשאף אחד לא דוחף? (מסילה בלי חיכוך)",
+      3: "החזיקו 'דחוף' לפחות שנייה וחצי. תסתכלו על הנקודות שנשארות מאחור.",
+      4: "'דחיפה של שנייה' באותו כוח (8 N). אחר כך הוסיפו תיק משקולות או החליפו לדמות אחרת שלכם, ונסו שוב.",
+      5: "בחרו מהירות התחלתית ובלמו לפני הקיר. רפידה = כוח קבוע. רגל = חיכוך הנעל של הדמות עם המסילה.",
+      6: "העוגייה בורחת ב-1.2 m/s ויש לה ראש של 4 m. דחפו ותפסו אותה!",
+      7: "נסיעה מלאה: דחפו, שחררו, ובלמו. לחצו על הגרף כדי לשמוע מה השיפוע והשטח אומרים.",
+      8: "שאלות בסגנון בגרות, עם פתרון אחרי שעונים. שלוש תשובות נכונות ונגמר השלב."
+    };
+    function paintTask() { $("#ktask").innerHTML = `<div><small>שלב ${level}: ${esc(U(level).he)} · ${esc(U(level).concept)}</small><p>${esc(TASK[level])}</p></div>`; }
+    // ---------------- controls under the canvas ----------------
+    const hold = (el, on, off) => {
+      const down = (e) => { e.preventDefault(); G.audio.unlock(); el.setPointerCapture?.(e.pointerId); el.classList.add("on"); on(); };
+      const up = () => { el.classList.remove("on"); off(); };
+      el.addEventListener("pointerdown", down); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up);
+      el.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!el.classList.contains("on")) { el.classList.add("on"); on(); } } });
+      el.addEventListener("keyup", (e) => { if (e.key === " " || e.key === "Enter") up(); });
+    };
+    function paintControls() {
+      const c = $("#kctl");
+      $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><span>${esc(nameOf(sp))} · <span class="ltr">${fmt(prof().mass_kg, 1)} kg</span></span><span aria-hidden="true">⇄</span>`;
+      if (level === 1) { c.innerHTML = `<button class="btn primary kbig" id="kGo" type="button">סע!</button><button class="btn quiet" id="kRe" type="button">מההתחלה</button>`; $("#kGo").addEventListener("click", () => { flags.revealed = false; flags.s.set = flags.e.set = false; flags.s.x = 6.9; flags.e.x = 6.3; resetRun({ x0: 1 }); l1 = { phase: "go", t: 0 }; kinSound("button_push"); say("קדימה!", 1); }); $("#kRe").addEventListener("click", () => enterLevel(1, false)); return; }
+      if (level === 8) { c.innerHTML = `<button class="btn primary kbig" id="kQ" type="button">שאלה</button><span class="kquiz" id="kQn"></span>`; $("#kQ").addEventListener("click", ask8); paintQuiz(); return; }
+      const brakeKind = level === 5 ? `<div class="seg kbrake"><button type="button" data-b="pad" aria-pressed="${!lab.kFoot}">רפידה</button><button type="button" data-b="foot" aria-pressed="${!!lab.kFoot}">רגל</button></div>` : "";
+      const extra4 = level === 4 ? `<button class="btn secondary" id="k1s" type="button">דחיפה של שנייה</button><button class="btn quiet" id="kBag" type="button" aria-pressed="${lab.kExtra > 0}">${lab.kExtra > 0 ? "להוריד את התיק (1 kg)" : "+ תיק משקולות 1 kg"}</button>` : "";
+      const start5 = level === 5 ? `<div class="kv0"><button class="btn quiet" data-v0="3" type="button">יציאה ב-3 m/s</button><button class="btn quiet" data-v0="6" type="button">יציאה ב-6 m/s</button></div>` : "";
+      c.innerHTML = `${start5}${brakeKind}<div class="kpads">
+        ${level === 5 ? "" : `<button class="btn kpush" id="kPush" type="button">דחוף</button>`}
+        ${level >= 5 || level === 7 ? `<button class="btn kbrk" id="kBrk" type="button">בלום</button>` : ""}
+        <button class="btn quiet kre" id="kRe" type="button" aria-label="מההתחלה">⟲</button></div>${extra4}
+        ${level === 7 ? "" : `<button class="linkish" id="kG" type="button">${MP.graphs ? "להסתיר גרף" : "להראות גרף"}</button>`}`;
+      const P1 = $("#kPush"), B1 = $("#kBrk");
+      if (P1) hold(P1, () => { if (!running || finished) resetRun(); ctl.push = true; kinSound("button_push"); if (st.v < 0.05) say(KD.say.push, 1.8); }, () => { if (ctl.push) { ctl.push = false; if (st.v > 0.3 && level <= 3) say(KD.say.release, 2.6); } });
+      if (B1) hold(B1, () => { ctl.pad = !lab.kFoot; ctl.foot = !!lab.kFoot; if (st.v > 0.3) { kinSound("brake_soft"); say(KD.say.brake, 1.6); } }, () => { ctl.pad = ctl.foot = false; });
+      $("#kRe").addEventListener("click", () => { resetRun(level === 5 ? { v0: 0 } : {}); G.sfx.pop(); });
+      $("#kG")?.addEventListener("click", () => { MP.graphs = $("#kgraph").hidden; P.save(); $("#kgraph").hidden = !MP.graphs && level !== 7; paintControls(); requestAnimationFrame(resize); });
+      for (const b of c.querySelectorAll("[data-b]")) b.addEventListener("click", () => { lab.kFoot = b.dataset.b === "foot"; paintControls(); say(lab.kFoot ? `בלימת רגל: μk = ${fmt(muFoot(), 2)} של הנעל של ${nameOf(sp)} עם המסילה. a = μk·(½mg)/m_total ≈ ${fmt(muFoot() * Kin.Q_FOOT * prof().mass_kg * 9.81 / Kin.mTotal(body()), 2)} m/s².` : `רפידה: כוח קבוע 6 N. a = 6/${fmt(Kin.mTotal(body()), 1)} ≈ ${fmt(6 / Kin.mTotal(body()), 2)} m/s².`, 4); });
+      for (const b of c.querySelectorAll("[data-v0]")) b.addEventListener("click", () => { resetRun({ x0: 0, v0: +b.dataset.v0 }); G.sfx.whoosh(); say(`יוצא ב-${b.dataset.v0} m/s! הקיר ב-${WALL} m.`, 2); });
+      if (level === 4) {
+        $("#k1s").addEventListener("click", () => { resetRun(); ctl.push = true; holdPush = 1; kinSound("button_push"); });
+        $("#kBag").addEventListener("click", () => { lab.kExtra = lab.kExtra > 0 ? 0 : 1; resetRun(); paintControls(); say(lab.kExtra ? "תיק של 1 kg על הסקייטבורד. זה ציוד, לא אני!" : "בלי התיק.", 2.4); });
+      }
+    }
+    $("#charChip").addEventListener("click", () => pickOwned(sp, "לנסות עם דמות אחרת שלך", (n) => { sp = n; loadImg(); resetRun(); paintControls(); say(KD.say.friend_swap, 3); }));
+    $("#formBtn").addEventListener("click", () => formulaSheet(level));
+    for (const b of screenEl.querySelectorAll("#kbar [data-l]")) b.addEventListener("click", () => { G.sfx.pop(); enterLevel(+b.dataset.l); });
+    for (const b of screenEl.querySelectorAll(".ktabs [data-g]")) b.addEventListener("click", () => { gTab = b.dataset.g; paintTabs(); });
+    const paintTabs = () => { for (const b of screenEl.querySelectorAll(".ktabs [data-g]")) b.setAttribute("aria-pressed", b.dataset.g === gTab); };
+    paintTabs();
+
+    // ---------------- finishing a level (once; the profile keeps it idempotent) ----------------
+    function complete(n, from) {
+      const id = U(n).id;
+      if (!P.completeSubtopic(id)) return false;
+      const r = cv.getBoundingClientRect();
+      setTimeout(() => celebrateUnits("motion", [id], from || { x: r.left + W / 2, y: r.top + H * 0.4 }), 900);
+      setTimeout(paintBar, 1200); return true;
+    }
+    function quizPool(n) { return KD.questions.filter((q) => n === 8 ? true : q.level === n); }
+    function maybeAsk() { if (!inviteQuestion(box, "motion", quizPool(level))) return; }
+    function paintQuiz() { const el = $("#kQn"); if (el) el.textContent = `${Math.min(3, MP.quiz || 0)}/3 נכונות`; }
+    function ask8() { askQuestion(quizPool(8).filter((q) => q.level >= 5 || Math.random() < 0.4), (q, okk) => { if (okk) { MP.quiz = (MP.quiz || 0) + 1; P.save(); paintQuiz(); if (MP.quiz >= 3) complete(8); } else say(KD.say.wrong, 2.6); }); }
+
+    // ---------------- the lessons, checked every frame ----------------
+    function lessons(dt) {
+      const p = st;
+      if (level === 2) { if (!ctl.push && !ctl.pad && p.v > 0.5) { phase.coast += dt; if (phase.coast > 1.5 && !phase.said) { phase.said = true; say("הנקודות במרחקים שווים: אותה מהירות כל הזמן.", 3); if (!complete(2)) maybeAsk(); } } else phase.coast = 0; }
+      if (level === 3) { if (ctl.push) { phase.push += dt; if (phase.push > 0.7 && !phase.mid) { phase.mid = true; say(KD.say.accelerating, 2.6); } if (phase.push >= 1.5 && !phase.said) { phase.said = true; if (!complete(3)) maybeAsk(); } } else phase.push = 0; }
+      if (level === 7) { if (ctl.push) phase.push += dt; else if (ctl.pad || ctl.foot) { if (p.v > 0.05) phase.brake += dt; } else if (p.v > 0.3) phase.coast += dt;
+        if (phase.push > 0.5 && phase.coast > 0.5 && phase.brake > 0.3 && p.v === 0 && !phase.said) { phase.said = true; say("שלושה חלקים בגרף: עולה, שטוח, יורד. השטח מתחת ל-v–t הוא כל הדרך שעברתי.", 4); if (!complete(7)) maybeAsk(); } }
+    }
+    function step(dt) {
+      if (!running) return;
+      // level 1: a scripted walk with given velocities (pure kinematics, model D)
+      if (level === 1 && l1.phase !== "idle") {
+        l1.t += dt; const seg = l1.t < 2 ? 2.5 : l1.t < 2.4 ? 0 : l1.t < 3.9 ? -2 : null;
+        if (seg === null) { if (l1.phase === "go") { l1.phase = "done"; say("עכשיו סמנו: גררו את הדגל הירוק להתחלה ואת האדום לסוף.", 3.6); } return; }
+        const n = { x: st.x + seg * dt, v: seg, t: st.t + dt, a: 0, dist: st.dist + Math.abs(seg * dt) };
+        drops.push(...Kin.dropsBetween(st, n)); st = n; hist.push({ t: st.t, x: st.x, v: st.v, a: 0 }); return;
+      }
+      if (level === 1) return;
+      acc += Math.min(dt, 0.25);
+      while (acc >= Kin.DT) {
+        if (holdPush > 0) { holdPush -= Kin.DT; if (holdPush <= 0) { ctl.push = false; l4done(); } }
+        const prev = st; st = Kin.step(st, body(), ctl); acc -= Kin.DT;
+        drops.push(...Kin.dropsBetween(prev, st).filter((d) => !drops.length || d.t > drops[drops.length - 1].t + 1e-6));
+        if (level === 6 && !cookie.caught) {
+          const tc = Kin.catchTime(prev, st, cookie, CATCH);
+          if (tc !== null) { cookie.caught = true; finished = true; ctl.push = false; st = { ...st, v: 0, a: 0 }; kinSound("cookie_caught"); G.buzz(40); say(KD.say.cookie_caught, 3); const r = cv.getBoundingClientRect(); if (!complete(6, { x: r.left + W * 0.5, y: r.top + H * 0.5 })) maybeAsk(); break; }
+          if (Kin.cookieAt(cookie, st.t) > END - 2) { finished = true; running = false; say(`העוגייה הגיעה לסוף המסילה. הפער נסגר רק אם v שלי גדולה מ-1.2 m/s. נסו לדחוף יותר זמן!`, 4); break; }
+        }
+        if (level === 5 && st.x >= WALL - 0.45) { st = { ...st, x: WALL - 0.45, v: 0, a: 0 }; running = false; finished = true; kinSound("brake_soft"); say("פוף! כרית. במהירות כפולה מרחק העצירה פי 4. נסו לבלום מוקדם יותר.", 3.6); break; }
+        if (level === 5 && hist.length > 10 && st.v === 0 && prev.v > 0) { const left = WALL - st.x; say(`עצרתי ${fmt(left, 1)} m לפני הקיר!`, 2.4); if (!complete(5)) maybeAsk(); }
+        if (st.x > END - 1) { st = { ...st, x: END - 1, v: 0 }; running = false; finished = true; say("סוף המסילה. כרית רכה. ⟲ כדי להתחיל שוב.", 2.4); }
+      }
+      if (!hist.length || st.t - hist[hist.length - 1].t >= 1 / 30) { hist.push({ t: st.t, x: st.x, v: st.v, a: st.a, push: ctl.push, brake: ctl.pad || ctl.foot }); if (hist.length > 1800) hist.shift(); }
+      lessons(dt);
+    }
+    function l4done() {
+      const m = Kin.mTotal(body()), a = st.v / 1;
+      const row = { name: nameOf(sp) + (lab.kExtra ? " + תיק" : ""), m, a };
+      l4rows = l4rows.filter((r) => Math.abs(r.m - m) > 0.01).concat([row]).slice(-4); MP.l4rows = l4rows; P.save();
+      say(`F = 8 N, m = ${fmt(m, 1)} kg → a = ${fmt(a, 2)} m/s².${l4rows.length > 1 ? " מסה גדולה יותר, תאוצה קטנה יותר." : " עכשיו נסו עם מסה אחרת."}`, 3.6);
+      if (l4rows.length > 1) { if (!complete(4)) maybeAsk(); }
+    }
+
+    // ---------------- drawing ----------------
+    const S0 = () => (W / 8) * zoom;                    // 8 m across at zoom 1
+    const VIS = 2.4;                                     // the creature is drawn 2.4× its size, so a 30 cm body can be seen on an 8 m track
+    const gy = () => H * 0.66;
+    const SX = (x) => W * 0.42 + (x - camX) * S0();
+    function draw(now) {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
+      const S = S0(), y0 = gy();
+      // far pencil layer (parallax 0.1)
+      ctx.strokeStyle = "rgba(58,58,64,0.08)"; ctx.lineWidth = 1;
+      for (let i = -2; i < 12; i++) { const px = ((i * 120 - camX * S * 0.1) % (W + 240)) - 120; ctx.beginPath(); ctx.moveTo(px, y0 - 80); ctx.lineTo(px + 40, y0 - 120); ctx.lineTo(px + 80, y0 - 80); ctx.stroke(); }
+      // track and metre marks
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+      ctx.font = "600 11px " + FONT; ctx.fillStyle = "#606671"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      const x0 = Math.floor(camX - W / S), x1 = Math.ceil(camX + W / S);
+      for (let m = x0; m <= x1; m++) { const px = SX(m); ctx.strokeStyle = "#8A8E96"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, y0); ctx.lineTo(px, y0 + (m % 5 ? 6 : 12)); ctx.stroke(); if (m % (S < 40 ? 5 : 1) === 0) ctx.fillText(m + " m", px, y0 + 14); }
+      // origin marker
+      ctx.fillStyle = "#6E48C9"; ctx.fillRect(SX(0) - 1, y0 - 24, 2, 24); ctx.fillText("x = 0", SX(0), y0 - 38);
+      if (level === 5) { const wx = SX(WALL); ctx.fillStyle = "#F4F4F2"; ctx.fillRect(wx, y0 - 120, 30, 120); ctx.fillStyle = "#3a3a40"; ctx.fillRect(wx, y0 - 120, 4, 120); ctx.fillStyle = "#EFE8FC"; ctx.strokeStyle = "#8969C6"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(wx - 16, y0 - 60, 16, 60, 6) : ctx.rect(wx - 16, y0 - 60, 16, 60); ctx.fill(); ctx.stroke();
+        if (st.v > 0.05) { const a = (ctl.pad ? 6 : ctl.foot ? muFoot() * Kin.Q_FOOT * prof().mass_kg * 9.81 : 6) / Kin.mTotal(body()), xs = st.x + Kin.stopping(st.v, a).d, px = SX(xs);
+          ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = xs < WALL - 0.45 ? "#25A06F" : "#CC5794"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, y0 - 70); ctx.lineTo(px, y0); ctx.stroke(); ctx.restore();
+          ctx.fillStyle = xs < WALL - 0.45 ? "#1E7E57" : "#B03F7A"; ctx.font = "700 11px " + FONT; ctx.fillText(`${ctl.pad || ctl.foot ? "" : "אם אבלום עכשיו: "}${fmt(Kin.stopping(st.v, a).d, 1)} m`, px, y0 - 84); } }
+      if (IM.sign.complete && level !== 5) ctx.drawImage(IM.sign, SX(END - 2), y0 - 70, 42, 68);
+      // paint drops every 0.5 s, numbered
+      ctx.textBaseline = "bottom"; ctx.font = "600 9px " + FONT;
+      drops.forEach((d, i) => { const px = SX(d.x); if (px < -10 || px > W + 10) return; ctx.fillStyle = "#2785C7"; ctx.beginPath(); ctx.arc(px, y0 + 36, 4.5, 0, Math.PI * 2); ctx.fill(); if (i % 2 === 0) { ctx.fillStyle = "#8A8E96"; ctx.textBaseline = "top"; ctx.fillText(fmt(d.t, 1) + "s", px, y0 + 42); } });
+      // level 1 flags, the distance walked and the displacement arrow
+      if (level === 1) {
+        for (const [k, col, lab1] of [["s", "#25A06F", "התחלה"], ["e", "#E2574C", "סוף"]]) { const f = flags[k], px = SX(f.x); ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, y0); ctx.lineTo(px, y0 - 64); ctx.stroke(); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(px, y0 - 64); ctx.lineTo(px + 26, y0 - 56); ctx.lineTo(px, y0 - 48); ctx.fill(); ctx.fillStyle = "#3a3a40"; ctx.font = "700 11px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.fillText(lab1, px + 8, y0 - 70); ctx.direction = "ltr"; }
+        if (flags.revealed) { forceArrow(ctx, SX(1), y0 - 100, (3 - 1) * S, 0, "#8A60E8", "Δx = +2 m", { thin: true }); ctx.fillStyle = "#B8741A"; ctx.font = "700 13px " + FONT; ctx.textAlign = "center"; ctx.direction = "rtl"; ctx.fillText(`דרך: 5 + 3 = 8 m`, SX(3.5), y0 - 128); ctx.direction = "ltr"; }
+      }
+      // the cookie (rolls with its real speed: angle = x / r)
+      const ckx = cookie.decor ? cookie.x0 + (introT < 0.65 ? 0 : Math.min(1.5, (introT - 0.65) * 3)) + (introT > 2.4 ? (introT - 2.4) * 3 : 0) : cookie.caught ? st.x + 0.35 : Kin.cookieAt(cookie, st.t);
+      if (!(cookie.decor && SX(ckx) > W + 40) && IM.roll.complete) { const r = 0.16 * S * 1.6, fr = Math.floor(((ckx / 0.16) / (Math.PI * 2) * 8) % 8 + 8) % 8; ctx.drawImage(IM.roll, fr * 128, 0, 128, 128, SX(ckx) - r, y0 - 2 * r, 2 * r, 2 * r); }
+      // the creature on its skateboard: lean with acceleration (pose only, the body point is st.x)
+      const h = prof().height_m * VIS * S, w = img.naturalWidth ? h * img.naturalWidth / img.naturalHeight : h, bx = SX(st.x), bw = Math.max(w * 0.9, 0.5 * S * 1.2);
+      const braking = ctl.pad || ctl.foot, lean = clamp((braking ? -st.a : st.a) * 0.035 * (braking ? -1 : 1), -0.21, 0.21) + (ctl.push ? 0.12 : 0) - (braking && st.v > 0.05 ? -0.12 : 0);
+      const tNow = now / 1000, breathe = 1 + Math.sin(tNow * 2.2) * 0.012, bob = Math.abs(st.v) > 0.2 ? Math.sin(tNow * 9) * 1.2 : 0, squash = 1 - clamp(Math.abs(st.a) * 0.006, 0, 0.03);
+      if (IM.board.complete) ctx.drawImage(IM.board, bx - bw / 2, y0 - bw * 0.33, bw, bw * 0.33);
+      if (ctl.push && IM.lines.complete) { ctx.globalAlpha = 0.7; ctx.drawImage(IM.lines, bx - w * 1.1, y0 - h * 0.7, w * 0.7, w * 0.3); ctx.globalAlpha = 1; }
+      if (img.complete && img.naturalWidth) { ctx.save(); ctx.translate(bx, y0 - bw * 0.26 + bob); ctx.rotate(lean); ctx.scale(breathe / squash * squash, breathe * squash); ctx.drawImage(img, -w / 2, -h, w, h); ctx.restore(); }
+      if (ctl.foot && st.v > 0.05) { ctx.strokeStyle = "#CC5794"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx - w * 0.2, y0 - 6); ctx.lineTo(bx - w * 0.2 - 18, y0); ctx.stroke(); }
+      // velocity (blue) and acceleration (orange) arrows
+      const vy = y0 - h - bw * 0.3 - 26;
+      if (Math.abs(st.v) > 0.02) forceArrow(ctx, bx, vy, clamp(st.v * 16, -170, 170), 0, "#2785C7", "v", { thin: true, dy: -14 });
+      if (Math.abs(st.a) > 0.02) forceArrow(ctx, bx, vy - 30, clamp(st.a * 22, -150, 150), 0, "#E39B28", "a", { thin: true, dy: -14 });
+      // relative motion in the chase
+      if (level === 6 && !cookie.caught) { const gap = Kin.cookieAt(cookie, st.t) - st.x; ctx.fillStyle = "#3a3a40"; ctx.font = "700 12px " + FONT; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText(`פער ${fmt(gap, 2)} m · v_rel = ${fmt(1.2 - st.v, 2)} m/s`, 10, y0 + 56); }
+      // numbers corner
+      ctx.font = "600 11px " + FONT; ctx.fillStyle = "#606671"; ctx.textAlign = "right"; ctx.textBaseline = "top"; ctx.fillText(`t = ${fmt(st.t, 1)} s`, W - 10, y0 + 56);
+      if (level === 4 && l4rows.length) { ctx.textAlign = "left"; ctx.font = "600 11px " + FONT; l4rows.forEach((r, i) => { ctx.fillStyle = "#3a3a40"; ctx.fillText(`m = ${fmt(r.m, 1)} kg → a = ${fmt(r.a, 2)} m/s²`, 10, y0 + 74 + i * 15); }); }
+      // intro title
+      if (introT < 2.2) { ctx.globalAlpha = Math.min(1, (2.2 - introT) * 2); ctx.fillStyle = "#20232A"; ctx.font = "800 20px " + FONT; ctx.textAlign = "center"; ctx.direction = "rtl"; ctx.fillText(level === 6 ? "העוגייה בורחת!" : "מי הזיז את העוגייה?!", W / 2, H * 0.18); ctx.direction = "ltr"; ctx.globalAlpha = 1; }
+    }
+    // the graphs: from the real run; slope and signed area are tappable
+    function drawGraph() {
+      if ($("#kgraph").hidden || !GW) return;
+      const c = gctx; c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, GW, GH); c.direction = "ltr";
+      const L = 38, R = GW - 8, T = 8, B = GH - 20, key = gTab, col = { x: "#2785C7", v: "#2785C7", a: "#E39B28" }[key];
+      const tMax = Math.max(4, st.t), vals = hist.map((p) => p[key]), lo = Math.min(0, ...vals), hi = Math.max(0.5, ...vals), span = hi - lo || 1;
+      const X = (t) => L + t / tMax * (R - L), Y = (v) => B - (v - lo) / span * (B - T);
+      c.fillStyle = "#FBFBFC"; c.fillRect(L, T, R - L, B - T);
+      c.strokeStyle = "#C9CDD3"; c.lineWidth = 1; c.beginPath(); c.moveTo(L, Y(0)); c.lineTo(R, Y(0)); c.stroke(); c.beginPath(); c.moveTo(L, T); c.lineTo(L, B); c.stroke();
+      if (key === "v" && hist.length > 1) { // signed area: above the axis counts +, below counts −
+        for (const [sign, fill] of [[1, "rgba(39,133,199,0.15)"], [-1, "rgba(226,87,76,0.15)"]]) { c.fillStyle = fill; c.beginPath(); c.moveTo(X(hist[0].t), Y(0)); for (const p of hist) c.lineTo(X(p.t), Y(sign > 0 ? Math.max(0, p.v) : Math.min(0, p.v))); c.lineTo(X(hist[hist.length - 1].t), Y(0)); c.closePath(); c.fill(); }
+      }
+      c.strokeStyle = col; c.lineWidth = 2.2; c.beginPath(); hist.forEach((p, i) => (i ? c.lineTo : c.moveTo).call(c, X(p.t), Y(p[key]))); c.stroke();
+      c.fillStyle = "#606671"; c.font = "600 10px " + FONT; c.textAlign = "right"; c.textBaseline = "middle"; c.fillText(fmt(hi, 1), L - 4, Y(hi)); c.fillText("0", L - 4, Y(0)); if (lo < 0) c.fillText(fmt(lo, 1), L - 4, Y(lo));
+      c.textAlign = "center"; c.textBaseline = "top"; c.fillText("t (s)", (L + R) / 2, B + 4); c.fillText(fmt(tMax, 0), R - 6, B + 4);
+      c.save(); c.translate(10, (T + B) / 2); c.rotate(-Math.PI / 2); c.fillStyle = col; c.fillText({ x: "x (m)", v: "v (m/s)", a: "a (m/s²)" }[key], 0, 0); c.restore();
+      if (key === "v") { c.fillStyle = "#3a3a40"; c.textAlign = "right"; c.textBaseline = "top"; c.fillText(`שטח = Δx = ${fmt(st.x - (hist[0] ? hist[0].x : 0), 2)} m`, R - 4, T + 3); }
+    }
+    gcv.addEventListener("pointerdown", (e) => openInfo({ x: "kin_xt", v: "kin_vt", a: "kin_at" }[gTab], { x: e.clientX, y: e.clientY }));
+    // level 1: drag the flags
+    let flagDrag = null;
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen()) return;
+      const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+      if (level === 1 && l1.phase === "done" && !flags.revealed) {
+        for (const k of ["s", "e"]) if (Math.abs(px - SX(flags[k].x)) < 34 && py > gy() - 90 && py < gy() + 10) { flagDrag = k; cv.setPointerCapture(e.pointerId); return; }
+      }
+      openInfo(level === 6 ? "kin_rel" : "kin_v", { x: e.clientX, y: e.clientY });
+    });
+    cv.addEventListener("pointermove", (e) => { if (!flagDrag) return; const r = cv.getBoundingClientRect(); flags[flagDrag].x = camX + (e.clientX - r.left - W * 0.42) / S0(); });
+    cv.addEventListener("pointerup", () => {
+      if (!flagDrag) return; const k = flagDrag; flagDrag = null; const target = k === "s" ? 1 : 3;
+      if (Math.abs(flags[k].x - target) < 0.4) { flags[k].x = target; flags[k].set = true; G.sfx.tick(); } else say(k === "s" ? "לא שם התחלתי. איפה הייתי ב-t = 0?" : "לא שם נגמר. איפה עצרתי בסוף?", 2.4);
+      if (flags.s.set && flags.e.set && !flags.revealed) { flags.revealed = true; say("הלכתי 8 מטר, אבל ההעתק רק +2 מטר! העתק = סוף פחות התחלה.", 4); if (!complete(1)) maybeAsk(); }
+    });
+
+    function readouts() {
+      $("#rX").textContent = fmt(st.x, 2) + " m"; $("#rV").textContent = fmt(st.v, 2) + " m/s"; $("#rA").textContent = fmt(st.a, 2) + " m/s²"; $("#rD").textContent = fmt(st.dist, 2) + " m";
+    }
+    infoLive = () => ({ x: st.x, v: st.v, a: st.a, d: st.dist, t: st.t, m: Kin.mTotal(body()), gap: level === 6 ? Kin.cookieAt(cookie, st.t) - st.x : undefined });
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen() && !document.hidden) { introT += dt; step(dt); }
+      // camera: close-up → dolly back (0.7–1.8 s), then a soft follow that keeps the cookie or the wall in view
+      if (introT < 2.2) zoom = 1.5 - 0.5 * clamp((introT - 0.7) / 1.1, 0, 1) ** 2 * (3 - 2 * clamp((introT - 0.7) / 1.1, 0, 1)) / 1; else zoom = 1;
+      let target = level === 1 ? 2.5 : st.x + 1.6;
+      if (level === 6 && !cookie.caught) { const ck = Kin.cookieAt(cookie, st.t); if (ck - st.x < 6) target = (st.x + ck) / 2 + 0.4; }
+      if (level === 5 && WALL - st.x < 7) target = Math.max(target, WALL - 3.6);
+      camX += (target - camX) * Math.min(1, dt / 0.18);
+      draw(now); drawGraph();
+      if ((fpaint++ & 3) === 0) readouts();
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      raf = requestAnimationFrame(frame);
+    }
+    window.__kin = () => ({ level, phase, st, ctl: { ...ctl } });          // for tests
+    enterLevel(level);
+    raf = requestAnimationFrame(frame);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); try { speechSynthesis && speechSynthesis.cancel(); } catch (e) {} };
   };
 
   // ======================================================================

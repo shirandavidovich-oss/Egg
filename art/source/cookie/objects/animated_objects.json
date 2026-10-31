@@ -1,0 +1,16 @@
+{
+  "coin_flip_8_frames.png": {
+    "frames": 8,
+    "width": 256,
+    "height": 256,
+    "fps": 14,
+    "loop": false
+  },
+  "cookie_roll_8_frames.png": {
+    "frames": 8,
+    "width": 256,
+    "height": 256,
+    "fps": "derived from physical velocity and cookie radius",
+    "loop": true
+  }
+}

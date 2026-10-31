@@ -348,3 +348,30 @@
   .seg-sub button { min-height: 40px; font-size: 13.5px; }
   input.k2 { accent-color: #2B8A64; }
   .lab.say-low .say { top: auto; bottom: 66px; right: auto; left: 12px; max-width: 46%; font-size: 14px; }
+  /* ---------- העוגייה בורחת! ---------- */
+  .kin .kbar { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .kin .lab { height: 44vh; min-height: 290px; }
+  .kin-controls { display: grid; gap: 8px; }
+  .kin-controls .kpads { display: grid; grid-template-columns: 1fr 1fr 56px; gap: 8px; }
+  .kin-controls .kpads:has(> :nth-child(2):last-child) { grid-template-columns: 1fr 56px; }
+  .kin-controls .btn { min-height: 52px; }
+  .kpush { background: #25A06F; color: #fff; font-size: 19px; font-weight: 800; border: 0; box-shadow: 0 3px 0 #1A7A53; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .kpush.on { transform: translateY(2px); box-shadow: 0 1px 0 #1A7A53; background: #1F8F62; }
+  .kbrk { background: #fff; color: #B03F7A; border: 2px solid #E6A9C8; font-size: 18px; font-weight: 800; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .kbrk.on { background: #FBEAF3; }
+  .kre { font-size: 22px; padding: 0; }
+  .kbig { min-height: 56px; font-size: 19px; }
+  .kv0 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kbrake button { min-height: 40px; }
+  .kquiz { align-self: center; text-align: center; font-weight: 700; color: var(--ink-2); }
+  .kgraph { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 6px; display: grid; gap: 4px; }
+  .kgraph .ktabs button { min-height: 34px; font-size: 14px; }
+  .kgraph canvas { width: 100%; height: 130px; display: block; }
+  .kcard { border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; margin: 8px 0; background: #fff; }
+  .kcard .khead { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .kcard .kf { direction: ltr; text-align: center; font: 600 19px "Cambria Math", "STIX Two Math", Georgia, serif; color: #4F33A8; background: #F4F1FD; border-radius: 10px; padding: 6px; margin: 6px 0; }
+  .kcard p { margin: 3px 0; font-size: 13.5px; line-height: 1.45; }
+  .kcard .pit { color: #9A3B6A; }
+  .kspeak { border: 1px solid var(--line); background: #fff; border-radius: 10px; min-width: 44px; min-height: 36px; font-size: 16px; cursor: pointer; }
+  .kgraph { position: relative; }
+  .kgraph canvas { position: relative !important; inset: auto !important; width: 100% !important; height: 130px !important; }

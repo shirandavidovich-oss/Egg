@@ -1,0 +1,137 @@
+{
+  "version": "1.0",
+  "purpose": "Original animated idle states for a cartoon egg character",
+  "style": "monochrome pencil and charcoal",
+  "frame_rate": 12,
+  "frame_count": 32,
+  "frame_size": [
+    384,
+    384
+  ],
+  "sprite_atlas_layout": {
+    "columns": 8,
+    "rows": 4
+  },
+  "animations": [
+    {
+      "id": "01_whistle",
+      "name": "Whistling a tiny melody",
+      "name_he": "שריקה קטנה",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/01_whistle_atlas.png",
+      "gif_preview": "gifs/01_whistle.gif",
+      "frames_folder": "frames/01_whistle",
+      "frame_pattern": "01_whistle_%02d.png"
+    },
+    {
+      "id": "02_foot_tap",
+      "name": "Impatient foot tapping",
+      "name_he": "דפיקת רגל",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/02_foot_tap_atlas.png",
+      "gif_preview": "gifs/02_foot_tap.gif",
+      "frames_folder": "frames/02_foot_tap",
+      "frame_pattern": "02_foot_tap_%02d.png"
+    },
+    {
+      "id": "03_judgmental_stare",
+      "name": "Judgmental look at player",
+      "name_he": "מבט מאשים",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/03_judgmental_stare_atlas.png",
+      "gif_preview": "gifs/03_judgmental_stare.gif",
+      "frames_folder": "frames/03_judgmental_stare",
+      "frame_pattern": "03_judgmental_stare_%02d.png"
+    },
+    {
+      "id": "04_big_yawn",
+      "name": "Elastic giant yawn",
+      "name_he": "פיהוק ענק",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/04_big_yawn_atlas.png",
+      "gif_preview": "gifs/04_big_yawn.gif",
+      "frames_folder": "frames/04_big_yawn",
+      "frame_pattern": "04_big_yawn_%02d.png"
+    },
+    {
+      "id": "05_imaginary_watch",
+      "name": "Checking imaginary watch",
+      "name_he": "בדיקת שעון דמיוני",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/05_imaginary_watch_atlas.png",
+      "gif_preview": "gifs/05_imaginary_watch.gif",
+      "frames_folder": "frames/05_imaginary_watch",
+      "frame_pattern": "05_imaginary_watch_%02d.png"
+    },
+    {
+      "id": "06_drum_solo",
+      "name": "Drumming on own shell",
+      "name_he": "סולו תיפוף",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/06_drum_solo_atlas.png",
+      "gif_preview": "gifs/06_drum_solo.gif",
+      "frames_folder": "frames/06_drum_solo",
+      "frame_pattern": "06_drum_solo_%02d.png"
+    },
+    {
+      "id": "07_invisible_fly",
+      "name": "Chasing an imaginary fly",
+      "name_he": "הזבוב הדמיוני",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/07_invisible_fly_atlas.png",
+      "gif_preview": "gifs/07_invisible_fly.gif",
+      "frames_folder": "frames/07_invisible_fly",
+      "frame_pattern": "07_invisible_fly_%02d.png"
+    },
+    {
+      "id": "08_ballet_spin",
+      "name": "Elegant ballet spin and wobble",
+      "name_he": "סיבוב בלט",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/08_ballet_spin_atlas.png",
+      "gif_preview": "gifs/08_ballet_spin.gif",
+      "frames_folder": "frames/08_ballet_spin",
+      "frame_pattern": "08_ballet_spin_%02d.png"
+    },
+    {
+      "id": "09_snoozing",
+      "name": "Falling asleep on feet",
+      "name_he": "נרדם בעמידה",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/09_snoozing_atlas.png",
+      "gif_preview": "gifs/09_snoozing.gif",
+      "frames_folder": "frames/09_snoozing",
+      "frame_pattern": "09_snoozing_%02d.png"
+    },
+    {
+      "id": "10_tantrum",
+      "name": "Overdramatic boredom tantrum",
+      "name_he": "התקף שעמום",
+      "fps": 12,
+      "frames": 32,
+      "loop": false,
+      "atlas": "atlases/10_tantrum_atlas.png",
+      "gif_preview": "gifs/10_tantrum.gif",
+      "frames_folder": "frames/10_tantrum",
+      "frame_pattern": "10_tantrum_%02d.png"
+    }
+  ]
+}

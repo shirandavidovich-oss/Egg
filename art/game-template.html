@@ -59,6 +59,15 @@
 
   const SOUND = { music: 0.32, effects: 0.8 };
 
+  // boredom: seconds without any touch, shake or tilt before the egg starts amusing itself
+  const IDLE = {
+    after: [8, 20, 40],     // short, then medium, then elaborate animations
+    thenEvery: 25           // after that, another one every so often
+  };
+
+  // the dog that peeks in now and then
+  const DOG = { firstAfter: 35, every: [55, 120], stay: 4.2 };
+
   // ======================================================================
   //  SETUP
   // ======================================================================
@@ -82,6 +91,9 @@
   for (const k in SPR.poses) load("p_" + k, SPR.poses[k].name + ".webp");
   for (const f of SPR.fx) load(f.name, f.name + ".webp");
   for (const k of ["bar_empty", "bar_full", "bar_icon1", "bar_icon2", "bar_icon3", "bar_icon4", "bar_icon5"]) load(k, k + ".webp");
+  for (let n = 1; n <= 5; n++) { const R = SPR.rig["crack" + n]; load(R.body, R.body + ".webp"); load(R.legL.img, R.legL.img + ".webp"); load(R.legR.img, R.legR.img + ".webp"); }
+  load("rig_gloveL", "rig_gloveL.webp"); load("rig_gloveR", "rig_gloveR.webp");
+  load("dog_peek_bottom", "dog_peek_bottom.webp"); load("dog_peek_side", "dog_peek_side.webp");
 
   let W = 0, H = 0, DPR = 1, U = 1;
   let EYE = 1, DEPTH = 1;
@@ -151,6 +163,7 @@
     const now = performance.now();
     if (mag < 9 || now - lastShake < 300 || egg.state !== "stand") return;
     lastShake = now;
+    noteActivity();
     egg.shakeT = 0.9;
     egg.panic = Math.min(1.1, egg.panic + 0.35);
     egg.vSide += (Math.random() - 0.5) * 3;
@@ -174,6 +187,8 @@
   }
   cv.addEventListener("pointerdown", (e) => {
     audio.unlock();
+    noteActivity();
+    if (hitDog(e.clientX, e.clientY)) { dog.quick = true; dog.leaving = 0.0001; sfx.yip(); sparkle(e.clientX, e.clientY, 6); return; }
     if (egg.state !== "arriving" && egg.state !== "falling" && hitEgg(e.clientX, e.clientY)) {
       touch = { id: e.pointerId, x: e.clientX, y: e.clientY, acc: 0 };
       onTap(e.clientX, e.clientY);
@@ -370,8 +385,58 @@
       dizzy() { tone("sine", 1975, 1980, 0.18, 0.05); tone("sine", 1568, 1570, 0.2, 0.05, 0.12); },
       ready() { tone("sine", 98, 98, 1.6, 0.25); api.sparkle(6); },
       magicRise(p) { if (Math.random() < 0.05 + p * 0.12) tone("sine", pick() * (0.5 + p * 0.5), pick(), 0.5, 0.03 + p * 0.03); },
-      magicPulse() { tone("sine", 90, 55, 1.1, 0.6); hiss(1400, 0.5, 0.9, 0.25); api.sparkle(8); }
+      magicPulse() { tone("sine", 90, 55, 1.1, 0.6); hiss(1400, 0.5, 0.9, 0.25); api.sparkle(8); },
+
+      // boredom
+      whistle(f, d) { vib(f, d, 0.09, 7, f * 0.012, "sine"); hiss(4000, 2, d * 0.8, 0.02); },
+      sour() { vib(988, 0.5, 0.12, 9, 30, "sawtooth", 720); vib(1046, 0.5, 0.06, 7, 25, "square", 760); hiss(2500, 1, 0.3, 0.05); },
+      woodTap() { tone("triangle", 820 + Math.random() * 60, 600, 0.05, 0.3); hiss(2000, 3, 0.03, 0.12); },
+      pluck() { tone("triangle", 196, 190, 0.25, 0.2); },
+      hmph(v = 1) { tone("square", 180, 120, 0.22, 0.05 * v); hiss(600, 1, 0.18, 0.12 * v, 0, "lowpass"); },
+      phew() { hiss(900, 0.8, 0.5, 0.12); tone("sine", 520, 300, 0.4, 0.05); },
+      yawn() { vib(330, 1.5, 0.07, 5, 10, "triangle", 170); hiss(700, 0.6, 1.6, 0.12, 0, "lowpass"); },
+      tick() { hiss(5000, 5, 0.015, 0.3); tone("sine", 2400, 2400, 0.03, 0.06); },
+      boing(v = 1) { vib(260, 0.45, 0.25 * v, 16, 60, "sine", 420); },
+      knock(i) { const f = [300, 240, 360, 200][i % 4]; tone("sine", f * 1.6, f, 0.09, 0.45); hiss(1500, 2, 0.03, 0.2); },
+      crash() { hiss(6000, 0.4, 0.9, 0.35, 0, "highpass"); tone("sine", 160, 60, 0.3, 0.5); },
+      swish() { const ac = audio.ac; if (!audio.ok) return; hiss(1800, 1, 0.22, 0.25); },
+      slap() { hiss(1200, 0.7, 0.12, 0.8); tone("sine", 200, 80, 0.1, 0.5); },
+      whoosh() { hiss(900, 0.7, 0.4, 0.25); hiss(1800, 1, 0.3, 0.12, 0.1); },
+      harp() { [523, 659, 784, 1046, 1318].forEach((f, i) => tone("sine", f, f, 0.6, 0.06, i * 0.07)); },
+      thudSoft() { tone("sine", 120, 45, 0.3, 0.6); hiss(300, 0.7, 0.15, 0.3, 0, "lowpass"); },
+      snore() { hiss(220, 3, 0.55, 0.25, 0, "bandpass"); tone("sawtooth", 70, 60, 0.5, 0.05); tone("sine", 900, 1500, 0.4, 0.04, 0.6); },
+      pop() { tone("sine", 900, 1800, 0.06, 0.4); hiss(3000, 1, 0.05, 0.3); },
+      stomp() { tone("sine", 110, 50, 0.16, 0.6); hiss(250, 1, 0.08, 0.3, 0, "lowpass"); },
+      grumble() { const f = 160 + Math.random() * 90; tone("square", f, f * 0.7, 0.25, 0.04); hiss(500, 2, 0.2, 0.08); },
+      buzz(dur, vol = 1) {
+        if (!audio.ok) return null;
+        const ac = audio.ac, t = ac.currentTime;
+        const o = ac.createOscillator(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain(), f = ac.createBiquadFilter();
+        o.type = "sawtooth"; o.frequency.value = 215; lfo.frequency.value = 23; lg.gain.value = 0.02 * vol;
+        f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 1.5;
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.035 * vol, t + 0.1); g.gain.setValueAtTime(0.035 * vol, t + dur - 0.2); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+        lfo.connect(lg); lg.connect(g.gain); o.connect(f); f.connect(g); g.connect(audio.out);
+        for (let i = 0; i < dur * 8; i++) o.frequency.setValueAtTime(200 + Math.random() * 40, t + i / 8);
+        o.start(t); lfo.start(t); o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+        return { stop() { try { g.gain.cancelScheduledValues(ac.currentTime); g.gain.setValueAtTime(0.0001, ac.currentTime); o.stop(); lfo.stop(); } catch (e) {} } };
+      },
+      // dog
+      boof() { tone("sine", 190, 120, 0.18, 0.35); hiss(500, 0.8, 0.14, 0.25, 0, "lowpass"); },
+      sniff() { for (let i = 0; i < 4; i++) hiss(1400, 2.5, 0.07, 0.18, i * 0.11); },
+      pant() { for (let i = 0; i < 6; i++) hiss(1100, 1, 0.09, 0.1, i * 0.18); },
+      yip() { tone("sine", 900, 1400, 0.1, 0.25); tone("sine", 1300, 900, 0.12, 0.2, 0.1); }
     };
+    // a tone with vibrato and an optional glide to f1
+    function vib(f, dur, vol, rate, depth, type, f1) {
+      if (!audio.ok) return;
+      const ac = audio.ac, t = ac.currentTime;
+      const o = ac.createOscillator(), g = ac.createGain(), l = ac.createOscillator(), lg = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      l.frequency.value = rate; lg.gain.value = depth; l.connect(lg); lg.connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.04); g.gain.setValueAtTime(vol, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(audio.out); o.start(t); l.start(t); o.stop(t + dur + 0.05); l.stop(t + dur + 0.05);
+    }
     return api;
   })();
 
@@ -499,8 +564,14 @@
       return;
     }
 
+    const canIdle = egg.state === "stand" && egg.shell > 0 && egg.panic < 0.1 && egg.hitT === 0 && egg.shakeT === 0 && !dog.active && !touch;
+    updateIdle(dt, canIdle);
+    updateDog(dt, egg.state === "stand" && !touch);
+    egg.dogReact = dog.active && !dog.leaving && dog.t > 0.5 ? dog.t : 0;
+
     if (egg.state === "stand") {
       const want = clamp((slope - CALM) / (FALL - CALM), 0, 1.4);
+      if (want > 0.12) noteActivity();
       const prev = egg.panic;
       egg.panic += (want - egg.panic) * (1 - Math.exp(-dt / (want > egg.panic ? 0.15 : 0.5)));
       if (prev < 0.8 && egg.panic >= 0.8) sfx.whoa();
@@ -549,6 +620,12 @@
     if (egg.state === "down") return { name: "lying", mirror: egg.fallDir < 0, rotK: 0 };
     if (egg.state === "rising") return egg.t < 0.45 ? { name: "lying", mirror: egg.fallDir < 0, rotK: 0 } : m("worry1");
     if (egg.hitT > 0) return { name: "wince", mirror: false, rotK: 1 };
+    if (egg.dogReact && egg.panic < 0.3) {
+      // startled by the big face at the window, then nervous until it leaves
+      const toward = dog.kind === "side" ? dog.side : (dog.x < 0.5 ? -1 : 1);
+      const name = egg.dogReact < 1.6 ? "oh" : "nervous";
+      return { name, mirror: LEANS[name] !== -toward, rotK: 0.3 };
+    }
     const p = egg.panic;
     if (egg.shakeT > 0) {
       const f = egg.shakeT > 0.45 ? ["flail3", "flail4"] : ["flail1", "flail2"];
@@ -709,6 +786,12 @@
     }
 
     if (!im || !im.complete || !im.naturalWidth) return;
+    const rigK = idle.anim ? Math.min(1, idle.anim.t / 0.15) : idle.fadeOut / 0.15;
+    if (rigK > 0 && egg.state === "stand") {
+      const RP = idle.anim ? idle.anim.pose : idle.lastPose;
+      if (RP && drawRig(A, RP, alpha * rigK) && rigK >= 1) return;
+      alpha *= 1 - rigK;
+    }
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.translate(x, y);
@@ -908,6 +991,749 @@
   }
 
   // ======================================================================
+  //  BOREDOM  (when nobody plays with it, the egg entertains itself)
+  //  The calm drawing is split into a faceless shell, two legs and two
+  //  gloves, so the face, arms and legs can move freely.
+  // ======================================================================
+  const ss = (a, b, t) => { const k = clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+  // keyframe track: [[time, value], ...] eased between keys
+  function track(t, keys) {
+    if (t <= keys[0][0]) return keys[0][1];
+    for (let i = 1; i < keys.length; i++) {
+      if (t <= keys[i][0]) {
+        const [t0, v0] = keys[i - 1], [t1, v1] = keys[i];
+        return lerp(v0, v1, ss(t0, t1, t));
+      }
+    }
+    return keys[keys.length - 1][1];
+  }
+  const bump = (t, a, b) => (t > a && t < b) ? Math.sin((t - a) / (b - a) * Math.PI) : 0;
+  const fade = (t, a, b, c, d) => ss(a, b, t) * (1 - ss(c, d, t));
+
+  function basePose() {
+    return {
+      x: 0, y: 0, rot: 0, sx: 1, sy: 1, flip: 1, zoom: 1,
+      legL: 0, legR: 0,
+      armL: { a: 0.1, r: 1, bend: 0.25 }, armR: { a: 0.1, r: 1, bend: 0.25 }, armsBehind: false,
+      eyes: { lid: 0.45, lookX: 0.15, lookY: 0.25, shut: null, cross: false, small: false },
+      brows: { l: 0, r: 0, y: 0 },
+      mouth: { type: "smile", open: 0, w: 1 },
+      over: []
+    };
+  }
+
+  // each animation: dur (seconds) and a function that shapes the pose at time t
+  const IDLE_ANIMS = {
+    whistle: { tier: 0, dur: 4.4, f(t, P, A) {
+      const sour = t > 2.7;
+      P.rot = sour ? track(t, [[2.7, 0.05], [3.0, -0.04], [3.4, 0]]) : Math.sin(t * 3.2) * 0.05 * ss(0, 0.5, t);
+      P.armsBehind = !sour || t < 3.3;
+      P.armL = { a: -0.5, r: 0.75, bend: 0.4 }; P.armR = { a: -0.5, r: 0.75, bend: 0.4 };
+      if (!sour) {
+        P.eyes.lookX = 0.7; P.eyes.lookY = -0.6; P.eyes.lid = 0.5; P.brows.y = 0.35;
+        P.mouth = { type: "o", open: 0.3 * ss(0.2, 0.4, t), w: 0.7 };
+        for (const n of [0.5, 0.9, 1.3, 1.75, 2.15]) if (t > n) P.over.push({ k: "note", age: t - n, seed: n });
+      } else {
+        const k = t - 2.7;
+        P.sy = 1 - bump(t, 2.7, 3.0) * 0.1; P.sx = 1 + bump(t, 2.7, 3.0) * 0.06;
+        P.eyes.lid = k < 0.6 ? 0 : 0.35; P.eyes.small = k < 0.6; P.eyes.lookX = k < 0.6 ? 0 : -0.1; P.eyes.lookY = 0.1;
+        P.brows.y = 0.5; P.brows.l = -0.3; P.brows.r = 0.3;
+        P.mouth = k < 0.6 ? { type: "grimace", open: 0.6, w: 1 } : { type: "wavy", open: 0, w: 0.8 };
+        P.over.push({ k: "sour", age: k });
+        if (k > 0.7) P.over.push({ k: "sweat", age: k - 0.7 });
+        if (k > 0.6) { P.armL = { a: track(t, [[3.3, -0.5], [3.7, 0.15]]), r: 1, bend: 0.25 }; P.armR = { ...P.armL }; }
+      }
+      for (const [n, f] of [[0.5, 1318], [0.9, 1568], [1.3, 1760], [1.75, 1568], [2.15, 1318]]) A.cue(n, () => sfx.whistle(f, 0.32));
+      A.cue(2.7, () => sfx.sour());
+    } },
+
+    tap: { tier: 0, dur: 5.2, f(t, P, A) {
+      // arms crossed, the right foot taps faster and faster until it nearly topples
+      P.armL = { tx: 0.5, ty: 0.78, bend: 0.55 }; P.armR = { tx: 0.53, ty: 0.75, bend: 0.55 };
+      P.brows.l = -0.35; P.brows.r = 0.35; P.brows.y = -0.1; P.eyes.lid = 0.6; P.mouth = { type: "flat", w: 0.8 };
+      P.eyes.lookX = t < 1.6 ? -0.6 : 0.05; P.eyes.lookY = t < 1.6 ? 0 : 0.2;
+      if (t < 3.7) {
+        const ph = 1.8 * t + 0.45 * t * t;             // taps speed up from about 2 to 5 a second
+        const s = Math.max(0, Math.sin(ph * Math.PI * 2));
+        P.legR = -0.28 * s; P.y = -0.006 * s;
+        const n = Math.floor(ph + 0.75);
+        if (n > (A.taps || 0)) { A.taps = n; sfx.woodTap(); P.over.push({ k: "tick" }); }
+        if (t > 2.6) P.rot = Math.sin(t * 22) * 0.04 * ss(2.6, 3.7, t);
+      } else if (t < 4.5) {
+        const w = ss(3.7, 3.9, t) * (1 - ss(4.2, 4.5, t));
+        P.rot = Math.sin(t * 13) * 0.3 * w; P.legR = -0.4 * w; P.legL = 0.2 * w;
+        P.armL = { a: 1.5 + Math.sin(t * 20) * 0.5, r: 1, bend: 0.2 }; P.armR = { a: 1.5 + Math.sin(t * 20 + 2) * 0.5, r: 1, bend: 0.2 };
+        P.eyes.lid = 0; P.eyes.small = true; P.mouth = { type: "o", open: 0.8 }; P.brows = { l: 0, r: 0, y: 0.5 };
+      } else {
+        P.eyes.shut = "arc"; P.mouth = { type: "o", open: 0.25, w: 0.6 }; P.brows = { l: 0, r: 0, y: 0.2 };
+        P.armL = { a: track(t, [[4.5, 1], [5.0, 0.1]]), r: 1, bend: 0.25 }; P.armR = { ...P.armL };
+        P.over.push({ k: "sweat", age: t - 4.5 });
+      }
+      A.cue(3.7, () => sfx.whoa());
+      A.cue(4.55, () => sfx.phew());
+    } },
+
+    stare: { tier: 0, dur: 4.6, f(t, P, A) {
+      // leans right up to the glass and gives you a long look
+      P.zoom = track(t, [[0, 1], [0.8, 1.22], [3.7, 1.22], [4.5, 1]]);
+      P.y = (P.zoom - 1) * 0.25;
+      P.eyes.lid = 0.62 + bump(t, 2.1, 2.5) * 0.4; P.eyes.lookX = 0; P.eyes.lookY = 0.12;
+      P.brows.l = -0.12; P.brows.r = 0.28; P.brows.y = 0.05;
+      P.mouth = { type: "flat", w: 0.65 };
+      P.armL = { tx: 0.5, ty: 0.78, bend: 0.55 }; P.armR = { tx: 0.53, ty: 0.75, bend: 0.55 };
+      if (t > 2.6 && t < 3.9) P.over.push({ k: "dots", age: t - 2.6 });
+      A.cue(0.9, () => sfx.pluck());
+      A.cue(2.9, () => sfx.hmph(0.5));
+    } },
+
+    yawn: { tier: 1, dur: 4.4, f(t, P, A) {
+      P.sy = track(t, [[0, 1], [0.45, 0.9], [1.0, 1.16], [2.5, 1.14], [2.9, 0.96], [3.3, 1]]);
+      P.sx = 2 - P.sy * 0.95 - 0.05;
+      const up = track(t, [[0.4, 0.1], [1.0, 2.8], [2.5, 2.8], [3.0, 0.1]]);
+      P.armL = { a: up, r: 1.05, bend: 0.2 }; P.armR = { a: up, r: 1.05, bend: 0.2 };
+      if (t > 0.6 && t < 2.9) { P.eyes.shut = "tight"; P.brows.y = 0.4; }
+      P.mouth = t < 0.5 ? { type: "smile" } : t < 2.9 ? { type: "yawn", open: track(t, [[0.5, 0.2], [1.2, 1], [2.5, 1], [2.9, 0.3]]) }
+        : { type: "o", open: 0.25 * bump(t, 2.9, 3.3) + 0.05 * bump(t, 3.35, 3.6), w: 0.6 };
+      if (t > 3.3) { P.rot = Math.sin(t * 25) * 0.05 * (1 - ss(3.3, 4.0, t)); P.eyes.lid = 0.55; }
+      if (t > 0.9 && t < 2.6) P.rot = Math.sin(t * 30) * 0.008;
+      A.cue(0.6, () => sfx.yawn());
+    } },
+
+    watch: { tier: 1, dur: 5.2, f(t, P, A) {
+      // looks at a wristwatch that is not there
+      const raise = ss(0.1, 0.7, t) * (1 - ss(3.6, 4.0, t));
+      P.armL = raise > 0.01 ? { tx: lerp(0.08, 0.36, raise), ty: lerp(0.9, 0.55, raise), bend: -0.5 * raise, flatHand: raise } : P.armL;
+      P.eyes.lookX = -0.35 * raise; P.eyes.lookY = 0.55 * raise; P.eyes.lid = 0.55;
+      if (t > 2.0 && t < 2.8) {
+        // taps the wrist, shakes it
+        P.armR = { tx: 0.42 + bump(t % 0.25, 0, 0.25) * 0.05, ty: 0.56, bend: 0.3 };
+        P.armL.tx += Math.sin(t * 40) * 0.015;
+        P.brows.r = 0.35; P.brows.y = 0.2; P.mouth = { type: "flat", w: 0.7 };
+      }
+      if (t >= 2.8 && t < 3.6) {
+        // listens to it
+        P.armL = { tx: 0.12, ty: 0.42, bend: -0.6, flatHand: 1 };
+        P.rot = -0.12 * bump(t, 2.8, 3.6); P.eyes.lookX = -0.6; P.eyes.lookY = -0.4;
+        P.brows.l = 0.25; P.brows.y = 0.25; P.mouth = { type: "wavy", w: 0.7 };
+      }
+      if (t > 2.2 && t < 4.6) P.over.push({ k: "question", age: t - 2.2 });
+      if (t >= 3.6) {
+        // shrug
+        const sh = bump(t, 3.7, 4.9);
+        P.armL = { a: 1.25 * sh + 0.1, r: 0.95, bend: -0.4 * sh, palmUp: sh }; P.armR = { a: 1.25 * sh + 0.1, r: 0.95, bend: -0.4 * sh, palmUp: sh };
+        P.sy = 1 + sh * 0.05; P.brows.y = 0.45 * sh; P.mouth = { type: "wavy", w: 0.8 }; P.eyes.lookX = 0; P.eyes.lookY = 0.2;
+      }
+      for (const c of [0.9, 1.2, 1.5, 1.8]) A.cue(c, () => sfx.tick());
+      A.cue(3.75, () => sfx.boing(0.4));
+    } },
+
+    drum: { tier: 1, dur: 5.6, f(t, P, A) {
+      const hits = [0.6, 0.9, 1.2, 1.35, 1.5, 1.8, 2.1, 2.25, 2.4, 2.55, 2.7, 2.85, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5];
+      let lift = { L: 1, R: 1 }, squash = 0;
+      hits.forEach((h, i) => {
+        const side = i % 2 ? "R" : "L";
+        const d = t - h;
+        if (d > -0.12 && d < 0.12) lift[side] = Math.min(lift[side], Math.abs(d) / 0.12);
+        if (d >= 0 && d < 0.15) squash = Math.max(squash, 1 - d / 0.15);
+        A.cue(h, () => { sfx.knock(i); A.hits = (A.hits || 0) + 1; });
+        if (d >= 0 && d < 0.2) P.over.push({ k: "hit", age: d, side });
+      });
+      const fin = t > 3.9 && t < 4.1;
+      if (t < 3.8) {
+        P.armL = { tx: 0.34 - (1 - lift.L) * 0.0 , ty: 0.8 - lift.L * 0.1, bend: -0.4 };
+        P.armR = { tx: 0.66, ty: 0.8 - lift.R * 0.1, bend: 0.4 };
+        P.rot = Math.sin(t * 8) * 0.04; P.eyes.shut = t > 1.1 ? "happy" : null; P.mouth = { type: "grin", open: 0.5 };
+      } else if (t < 4.8) {
+        const up = ss(3.8, 3.95, t);
+        if (fin) { squash = 1; }
+        P.armL = { a: lerp(0.3, 2.3, ss(4.05, 4.3, t)), r: 1, bend: 0.2 }; P.armR = { ...P.armL };
+        P.eyes.lid = 0; P.eyes.lookY = 0.2; P.mouth = { type: "grin", open: 0.9 }; P.brows.y = 0.4 * up;
+      } else {
+        const bow = bump(t, 4.8, 5.6);
+        P.sy = 1 - bow * 0.1; P.y = bow * 0.03; P.eyes.shut = "happy"; P.mouth = { type: "smile" };
+        P.armL = { a: 0.1 + bow * 0.4, r: 1, bend: 0.3 }; P.armR = { ...P.armL };
+      }
+      P.sy *= 1 - squash * 0.05; P.sx *= 1 + squash * 0.03;
+      A.cue(4.0, () => sfx.crash());
+    } },
+
+    fly: { tier: 1, dur: 6.2, f(t, P, A) {
+      // an invisible fly circles its head; it swats, misses, and smacks itself
+      const landed = t > 3.2 && t < 4.05;
+      let fx_ = 0.5 + Math.cos(t * 3.1) * 0.55, fy_ = 0.12 + Math.sin(t * 6.2) * 0.12;
+      if (t > 1.6 && t < 1.9) fx_ += 0.25; if (t > 2.4 && t < 2.7) fx_ -= 0.25;
+      if (landed) { fx_ = 0.5; fy_ = -0.02; }
+      if (t > 4.05) { const k = t - 4.05; fx_ = 0.6 + k * 0.9; fy_ = -0.05 - k * 0.5; }
+      if (t > 0.2 && t < 5.2) P.over.push({ k: "fly", x: fx_, y: fy_, landed, age: t });
+      P.eyes.lookX = clamp((fx_ - 0.5) * 1.6, -1, 1); P.eyes.lookY = clamp((fy_ - 0.35) * 2, -1, 1);
+      P.eyes.lid = 0.3; P.mouth = { type: "flat", w: 0.7 }; P.brows.l = -0.2; P.brows.r = 0.2;
+      const swipeR = bump(t, 1.5, 1.85), swipeL = bump(t, 2.3, 2.65);
+      P.armR = { a: 0.1 + swipeR * 2.6, r: 1.1, bend: 0.1 }; P.armL = { a: 0.1 + swipeL * 2.6, r: 1.1, bend: 0.1 };
+      A.cue(1.55, () => sfx.swish()); A.cue(2.35, () => sfx.swish());
+      if (t > 3.2 && t < 4.05) {
+        const wind = ss(3.3, 3.9, t);
+        P.armR = { tx: lerp(0.9, 0.62, wind), ty: lerp(0.6, -0.05, wind), bend: 0.3 };
+        P.eyes.lookX = 0; P.eyes.lookY = -1; P.eyes.cross = true; P.mouth = { type: "o", open: 0.2, w: 0.5 };
+      }
+      if (t >= 4.05 && t < 5.4) {
+        P.armR = { tx: 0.55, ty: 0.0, bend: 0.3 };
+        const k = t - 4.05;
+        P.sy = 1 - bump(t, 4.05, 4.3) * 0.15; P.sx = 1 + bump(t, 4.05, 4.3) * 0.08;
+        P.eyes.shut = k < 0.5 ? "x" : "spiral"; P.mouth = { type: "wavy" };
+        P.rot = Math.sin(k * 9) * 0.08 * (1 - ss(4.6, 5.4, t));
+        if (k < 0.35) P.over.push({ k: "impact", age: k, x: 0.5, y: 0.0 });
+        P.over.push({ k: "stars", age: k, x: 0.5, y: -0.08 });
+      }
+      if (t >= 5.4) { P.armR = { a: track(t, [[5.4, 0.6], [5.9, 0.1]]), r: 1, bend: 0.25 }; P.mouth = { type: "wavy", w: 0.7 }; }
+      A.cue(0.2, () => A.voice(sfx.buzz(3.0)));
+      A.cue(4.05, () => { A.stopVoices(); sfx.slap(); });
+      A.cue(4.15, () => A.voice(sfx.buzz(1.0, 0.5)));
+    } },
+
+    ballet: { tier: 2, dur: 6.2, f(t, P, A) {
+      if (t < 0.8) {
+        const k = ss(0, 0.7, t);
+        P.armL = { a: 2.6 * k + 0.1, r: 0.95, bend: 0.5 * k }; P.armR = { ...P.armL };
+        P.legR = -0.9 * k; P.y = -0.03 * k; P.eyes.shut = "happy"; P.mouth = { type: "o", open: 0.15, w: 0.5 }; P.brows.y = 0.3;
+      } else if (t < 2.9) {
+        const k = (t - 0.8) / 2.1;
+        const ph = Math.PI * 2 * (2 * k * k);             // two turns, speeding up
+        P.flip = Math.cos(ph);
+        P.armL = { a: 2.7, r: 0.95, bend: 0.5 }; P.armR = { ...P.armL };
+        P.legR = -0.9; P.y = -0.03; P.eyes.shut = "happy"; P.mouth = { type: "o", open: 0.15, w: 0.5 }; P.brows.y = 0.3;
+        P.over.push({ k: "swirl", age: t - 0.8, speed: k });
+        if (Math.floor(ph / Math.PI) > (A.turns || 0)) { A.turns = Math.floor(ph / Math.PI); sfx.whoosh(); }
+      } else if (t < 3.55) {
+        const w = ss(2.9, 3.4, t);
+        P.rot = Math.sin(t * 16) * 0.35 * w; P.legR = -0.5; P.legL = 0.3 * w;
+        P.armL = { a: 1.4 + Math.sin(t * 22) * 0.7, r: 1, bend: 0.2 }; P.armR = { a: 1.4 + Math.sin(t * 22 + 2) * 0.7, r: 1, bend: 0.2 };
+        P.eyes.lid = 0; P.eyes.small = true; P.mouth = { type: "o", open: 0.8 }; P.brows.y = 0.5;
+      } else {
+        // bump! sitting on its bottom with legs out
+        const sit = ss(3.55, 3.7, t) * (1 - ss(5.4, 5.8, t));
+        P.y = 0.17 * sit; P.legL = 1.35 * sit; P.legR = -1.35 * sit;
+        P.sy = 1 - bump(t, 3.65, 3.95) * 0.18; P.sx = 1 + bump(t, 3.65, 3.95) * 0.1;
+        P.armL = { a: 0.9 * sit, r: 0.9, bend: 0.3 }; P.armR = { ...P.armL };
+        P.eyes.shut = t < 5.2 ? "spiral" : null; P.mouth = { type: "wavy" };
+        P.rot = Math.sin(t * 6) * 0.06 * sit;
+        if (t < 5.3) P.over.push({ k: "stars", age: t - 3.6, x: 0.5, y: -0.05 });
+        if (t < 4.3) P.over.push({ k: "dust", age: t - 3.62 });
+      }
+      A.cue(0.1, () => sfx.harp());
+      A.cue(3.62, () => { sfx.thudSoft(); sfx.boing(0.7); });
+    } },
+
+    snooze: { tier: 2, dur: 7.2, f(t, P, A) {
+      if (t < 1.6) {
+        P.eyes.lid = track(t, [[0, 0.45], [0.8, 0.85], [1.0, 0.5], [1.6, 0.95]]);
+        P.y = 0.01 * ss(0.3, 0.8, t) * (1 - bump(t, 0.85, 1.05)); P.sy = 1 - 0.03 * ss(0.3, 1.6, t);
+        P.mouth = { type: "flat", w: 0.6 };
+      } else if (t < 5.1) {
+        const k = t - 1.6, br = Math.sin(k / 1.15 * Math.PI * 2);
+        P.eyes.shut = "sleep"; P.mouth = { type: "o", open: 0.15 + 0.1 * Math.max(0, br), w: 0.5 };
+        P.sy = 0.97 + br * 0.025; P.rot = 0.1 * ss(1.6, 3.5, t);
+        P.armL = { a: 0.05, r: 1.05, bend: 0.1 }; P.armR = { ...P.armL };
+        P.over.push({ k: "bubble", r: 0.35 + 0.65 * (0.5 + 0.5 * br) * ss(1.6, 2.6, t) });
+        P.over.push({ k: "zzz", age: k });
+        const cyc = Math.floor(k / 1.15);
+        if (cyc > (A.breaths ?? -1)) { A.breaths = cyc; sfx.snore(); }
+      } else {
+        const k = t - 5.1;
+        const hop = bump(t, 5.1, 5.5);
+        P.y = -0.12 * hop; P.rot = 0.1 * (1 - ss(5.1, 5.3, t));
+        P.eyes.lid = 0; P.eyes.small = k < 0.8; P.brows.y = 0.55 * (1 - ss(6.0, 6.8, t));
+        P.eyes.lookX = k < 0.8 ? 0 : Math.sin((k - 0.8) * 6) * 0.8; P.eyes.lookY = 0.1;
+        P.armL = { a: 1.9 * (1 - ss(5.5, 6.2, t)) + 0.1, r: 1, bend: 0.2 }; P.armR = { ...P.armL };
+        P.mouth = k < 0.8 ? { type: "o", open: 0.6 } : { type: "wavy", w: 0.7 };
+        if (k < 0.25) P.over.push({ k: "pop", age: k });
+        if (k < 1.2) P.over.push({ k: "bang", age: k });
+        if (k > 1.0) P.over.push({ k: "sweat", age: k - 1.0 });
+      }
+      A.cue(5.1, () => { sfx.pop(); sfx.boing(1); });
+    } },
+
+    tantrum: { tier: 2, dur: 8.2, f(t, P, A) {
+      if (t < 0.6) {
+        const k = ss(0, 0.5, t);
+        P.sy = 1 - 0.12 * k; P.sx = 1 + 0.06 * k; P.eyes.shut = "tight"; P.mouth = { type: "flat", w: 0.6 };
+        P.brows.l = -0.4 * k; P.brows.r = 0.4 * k;
+        P.armL = { a: 0.9 * k, r: 0.8, bend: -0.6 }; P.armR = { ...P.armL };
+      } else if (t < 3.5) {
+        const st = Math.sin((t - 0.6) * Math.PI * 4);
+        P.legL = Math.max(0, st) * 0.45; P.legR = -Math.max(0, -st) * 0.45;
+        P.y = -Math.abs(st) * 0.03; P.rot = Math.sin(t * 17) * 0.05;
+        P.armL = { a: 1.4 + Math.sin(t * 19) * 1.0, r: 1, bend: 0.2 }; P.armR = { a: 1.4 + Math.sin(t * 19 + 1.7) * 1.0, r: 1, bend: 0.2 };
+        P.eyes.shut = "tight"; P.mouth = { type: "shout", open: 0.75 + Math.sin(t * 23) * 0.2 };
+        P.brows.l = -0.45; P.brows.r = 0.45;
+        P.over.push({ k: "steam", age: t - 0.6 });
+        const step = Math.floor((t - 0.6) * 4 + 0.5);
+        if (step > (A.steps ?? -1)) { A.steps = step; sfx.stomp(); }
+        const g = Math.floor((t - 0.6) / 0.55);
+        if (g > (A.grumbles ?? -1)) { A.grumbles = g; sfx.grumble(); }
+      } else if (t < 4.2) {
+        P.armL = { tx: 0.5, ty: 0.78, bend: 0.55 }; P.armR = { tx: 0.53, ty: 0.75, bend: 0.55 };
+        P.sy = 1 + bump(t, 3.5, 3.8) * 0.05; P.mouth = { type: "pout" }; P.brows.l = -0.4; P.brows.r = 0.4;
+        P.eyes.lid = 0.55; P.eyes.lookX = 0.1;
+      } else if (t < 6.7) {
+        // turns its back on you
+        P.flip = track(t, [[4.2, 1], [4.7, -1]]);
+        P.armL = { tx: 0.5, ty: 0.78, bend: 0.55 }; P.armR = { tx: 0.53, ty: 0.75, bend: 0.55 }; P.armsBehind = P.flip < 0;
+        P.mouth = { type: "pout" }; P.brows.l = -0.4; P.brows.r = 0.4;
+        P.sy = 1 + bump(t, 5.4, 6.0) * 0.04;
+        if (t > 4.8) P.over.push({ k: "huff", age: t - 4.8 });
+      } else {
+        P.flip = track(t, [[6.7, -1], [7.2, 1]]);
+        P.eyes.lookX = -0.6; P.eyes.lookY = 0.3; P.eyes.lid = 0.5; P.mouth = { type: "wavy", w: 0.6 };
+        P.armL = { a: 0.1, r: 1, bend: 0.25 }; P.armR = { ...P.armL };
+        if (t > 7.2) P.over.push({ k: "sweat", age: t - 7.2 });
+      }
+      A.cue(3.5, () => sfx.hmph(1));
+      A.cue(4.25, () => sfx.whoosh());
+      A.cue(6.75, () => sfx.whoosh());
+    } }
+  };
+
+  const TIERS = [["whistle", "tap", "stare"], ["yawn", "watch", "drum", "fly"], ["ballet", "snooze", "tantrum"]];
+  const idle = { clock: 0, step: 0, anim: null, last: "", fadeOut: 0 };
+
+  function noteActivity() {
+    idle.clock = 0; idle.step = 0;
+    if (idle.anim) stopIdle();
+  }
+  function stopIdle() {
+    if (!idle.anim) return;
+    idle.anim.stopVoices();
+    idle.fadeOut = 0.15;
+    idle.lastPose = idle.anim.pose;
+    idle.anim = null;
+  }
+  function startIdle(tier) {
+    const pool = (tier < 3 ? TIERS[tier] : TIERS.flat()).filter((n) => n !== idle.last);
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    idle.last = id;
+    const A = {
+      id, t: 0, def: IDLE_ANIMS[id], fired: new Set(), voices: [], pose: null,
+      cue(at, fn) { if (this.t >= at && !this.fired.has(at)) { this.fired.add(at); fn(); } },
+      voice(v) { if (v) this.voices.push(v); },
+      stopVoices() { for (const v of this.voices) { try { v.stop(); } catch (e) {} } this.voices = []; }
+    };
+    idle.anim = A;
+  }
+  function updateIdle(dt, calm) {
+    if (idle.fadeOut > 0) idle.fadeOut = Math.max(0, idle.fadeOut - dt);
+    if (idle.anim) {
+      const A = idle.anim;
+      A.t += dt;
+      const P = basePose();
+      A.def.f(A.t, P, A);
+      A.pose = P;
+      if (A.t >= A.def.dur) { idle.lastPose = P; idle.fadeOut = 0.12; idle.anim = null; }
+      return;
+    }
+    if (!calm) { idle.clock = 0; idle.step = 0; return; }
+    idle.clock += dt;
+    const at = IDLE.after;
+    const next = idle.step < at.length ? at[idle.step] : at[at.length - 1] + IDLE.thenEvery * (idle.step - at.length + 1);
+    if (idle.clock >= next) { startIdle(Math.min(idle.step, 3)); idle.step++; }
+  }
+
+  // ---- drawing the jointed egg ----
+  function drawRig(A, P, alpha) {
+    const st = "crack" + (egg.stage + 1);
+    const R = SPR.rig[st], PS = SPR.poses[st];
+    const body = img[R.body];
+    if (!body || !body.complete || !body.naturalWidth) return false;
+    const s = A.eggH / PS.hgt * P.zoom;
+    const [sx0, sy0, sx1, sy1] = R.shell;
+    const cx = (sx0 + sx1) / 2, hipY = sy1 - 6;
+    const W_ = sx1 - sx0, H_ = sy1 - sy0;
+    const U2 = (u, v) => [sx0 + u * W_, sy0 + v * H_];            // shell-relative to drawing pixels
+    const back = P.flip < 0;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(A.fx + P.x * A.eggH, A.fy + P.y * A.eggH);
+    ctx.rotate(P.rot);
+    ctx.scale(s, s);
+    ctx.translate(-PS.ax, -PS.ay);
+
+    // legs pivot at the hips
+    for (const side of ["L", "R"]) {
+      const lg = R["leg" + side], li = img[lg.img];
+      if (!li || !li.complete) continue;
+      ctx.save();
+      ctx.translate(lg.hipX, lg.hipY);
+      ctx.rotate(side === "L" ? P.legL : P.legR);
+      ctx.drawImage(li, lg.x - lg.hipX, lg.y - lg.hipY, lg.w, lg.h);
+      ctx.restore();
+    }
+    // the shell squashes and stretches from the hips; spinning narrows it
+    ctx.translate(cx, hipY);
+    ctx.scale(P.sx * Math.max(0.06, Math.abs(P.flip)) * (back ? -1 : 1), P.sy);
+    ctx.translate(-cx, -hipY);
+    const arms = () => { drawArm(R, U2, "L", P.armL, back); drawArm(R, U2, "R", P.armR, back); };
+    if (P.armsBehind || back) arms();
+    ctx.drawImage(body, 0, 0, PS.w, PS.h);
+    if (!back && Math.abs(P.flip) > 0.25) drawFace(R, P);
+    if (!(P.armsBehind || back)) arms();
+    for (const o of P.over) drawOver(o, R, U2, P);
+    ctx.restore();
+    return true;
+  }
+
+  const INK = "#262629";
+  function pencil(fn, w) {
+    // a slightly doubled stroke, like the drawings
+    ctx.lineWidth = w; ctx.strokeStyle = INK; ctx.globalAlpha *= 1; fn(0); ctx.stroke();
+    const a = ctx.globalAlpha; ctx.globalAlpha = a * 0.35; ctx.lineWidth = w * 0.6; fn(0.8); ctx.stroke(); ctx.globalAlpha = a;
+  }
+
+  function drawArm(R, U2, side, arm, back) {
+    const sgn = side === "L" ? -1 : 1;
+    const [shX, shY] = R["shoulder" + side];
+    const len = R.armLen * 1.05;
+    let hx, hy;
+    if (arm.tx != null) {
+      [hx, hy] = U2(arm.tx, arm.ty);
+    } else {
+      const a = arm.a;                                   // 0 = hanging, + = swung out and up
+      hx = shX + Math.sin(a) * len * arm.r * sgn + sgn * 4;
+      hy = shY + Math.cos(a) * len * arm.r;
+    }
+    const mx = (shX + hx) / 2, my = (shY + hy) / 2;
+    const dx = hx - shX, dy = hy - shY, d = Math.hypot(dx, dy) || 1;
+    const bend = (arm.bend || 0) * d * 0.45 * sgn;
+    const cx = mx - dy / d * bend, cy = my + dx / d * bend;
+    ctx.lineCap = "round";
+    pencil((o) => { ctx.beginPath(); ctx.moveTo(shX + o, shY); ctx.quadraticCurveTo(cx + o, cy, hx + o, hy); }, 6.5);
+    // glove, pointing along the end of the arm
+    const G = SPR.rig["glove" + side], gi = img[G.img];
+    if (!gi || !gi.complete) return;
+    let ang = Math.atan2(hy - cy, hx - cx) - Math.PI / 2;
+    if (arm.flatHand) ang = lerp(ang, sgn * -Math.PI / 2, arm.flatHand);
+    if (arm.palmUp) ang = lerp(ang, Math.PI * sgn * 0.9, arm.palmUp);
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(ang);
+    ctx.drawImage(gi, -G.wx, -G.wy, G.w, G.h);
+    ctx.restore();
+  }
+
+  function drawFace(R, P) {
+    const F = R.face, E = P.eyes;
+    const box = (b) => ({ x: (b[0] + b[2]) / 2, y: (b[1] + b[3]) / 2, w: b[2] - b[0], h: b[3] - b[1] });
+    const eL = box(F.eyeL), eR = box(F.eyeR), mo = box(F.mouth), bL = box(F.browL), bR = box(F.browR);
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const [e, side] of [[eL, -1], [eR, 1]]) {
+      const rx = e.w * 0.4, ry = e.h * 0.42;
+      if (E.shut) { drawShutEye(e, rx, ry, E.shut, side); continue; }
+      const sc = E.small ? 1.08 : 1;
+      ctx.beginPath(); ctx.ellipse(e.x, e.y, rx * sc, ry * sc, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "#fbfaf7"; ctx.fill();
+      pencil((o) => { ctx.beginPath(); ctx.ellipse(e.x + o, e.y, rx * sc, ry * sc, 0, 0, Math.PI * 2); }, 2.2);
+      let lx = E.lookX, ly = E.lookY;
+      if (E.cross) lx = -side * 0.7;
+      const pr = Math.min(rx, ry) * (E.small ? 0.3 : 0.55);
+      const px = e.x + lx * (rx - pr) * 0.8, py = e.y + ly * (ry - pr) * 0.8;
+      ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fillStyle = "#1d1d20"; ctx.fill();
+      ctx.beginPath(); ctx.arc(px - pr * 0.35, py - pr * 0.4, pr * 0.28, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
+      // eyelid: covers the top of the eye, heavy line at its edge
+      const lid = clamp(E.lid, 0, 1);
+      if (lid > 0.02) {
+        const ly2 = e.y - ry * sc + lid * 2 * ry * sc;
+        ctx.save();
+        ctx.beginPath(); ctx.ellipse(e.x, e.y, rx * sc + 1.5, ry * sc + 1.5, 0, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = "#f2f1ed"; ctx.fillRect(e.x - rx * 2, e.y - ry * 2, rx * 4, ly2 - (e.y - ry * 2));
+        ctx.restore();
+        pencil((o) => { ctx.beginPath(); ctx.moveTo(e.x - rx * 1.08, ly2 + 1 + o); ctx.quadraticCurveTo(e.x, ly2 - 3, e.x + rx * 1.08, ly2 + 1 + o); }, 4);
+      }
+    }
+    // brows
+    for (const [b, side, ang] of [[bL, -1, P.brows.l], [bR, 1, P.brows.r]]) {
+      const y = b.y - P.brows.y * 14;
+      ctx.save(); ctx.translate(b.x, y); ctx.rotate(ang * side * -1);
+      pencil((o) => { ctx.beginPath(); ctx.moveTo(-b.w * 0.5, 2 + o); ctx.quadraticCurveTo(0, -4, b.w * 0.5, 2 + o); }, 4);
+      ctx.restore();
+    }
+    drawMouth(mo, P.mouth);
+  }
+
+  function drawShutEye(e, rx, ry, kind, side) {
+    if (kind === "sleep" || kind === "arc") {
+      pencil((o) => { ctx.beginPath(); ctx.moveTo(e.x - rx, e.y + o); ctx.quadraticCurveTo(e.x, e.y + ry * 0.7, e.x + rx, e.y + o); }, 3.5);
+    } else if (kind === "happy") {
+      pencil((o) => { ctx.beginPath(); ctx.moveTo(e.x - rx, e.y + ry * 0.2 + o); ctx.quadraticCurveTo(e.x, e.y - ry * 0.8, e.x + rx, e.y + ry * 0.2 + o); }, 3.5);
+    } else if (kind === "tight") {
+      pencil((o) => { ctx.beginPath(); ctx.moveTo(e.x - rx * side * -1, e.y - ry * 0.5 + o); ctx.lineTo(e.x + rx * 0.6 * side * -1 * -1, e.y); ctx.lineTo(e.x - rx * side * -1, e.y + ry * 0.5 + o); }, 3.5);
+    } else if (kind === "x") {
+      pencil((o) => { ctx.beginPath(); ctx.moveTo(e.x - rx * 0.6, e.y - ry * 0.6 + o); ctx.lineTo(e.x + rx * 0.6, e.y + ry * 0.6); ctx.moveTo(e.x + rx * 0.6, e.y - ry * 0.6 + o); ctx.lineTo(e.x - rx * 0.6, e.y + ry * 0.6); }, 3.5);
+    } else if (kind === "spiral") {
+      pencil((o) => {
+        ctx.beginPath();
+        for (let i = 0; i <= 40; i++) {
+          const a = i / 40 * Math.PI * 5 + time * 6 * side, r = i / 40 * Math.min(rx, ry) * 0.95;
+          const x = e.x + Math.cos(a) * r + o, y = e.y + Math.sin(a) * r;
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+      }, 2.6);
+    }
+  }
+
+  function drawMouth(m, M) {
+    const w = m.w * 1.25 * (M.w || 1), x = m.x, y = m.y;
+    const open = M.open || 0;
+    if (M.type === "smile") pencil((o) => { ctx.beginPath(); ctx.moveTo(x - w / 2, y - 3 + o); ctx.quadraticCurveTo(x, y + 9, x + w / 2, y - 3 + o); }, 3.4);
+    else if (M.type === "flat") pencil((o) => { ctx.beginPath(); ctx.moveTo(x - w / 2, y + o); ctx.lineTo(x + w / 2, y + o * 0.5); }, 3.4);
+    else if (M.type === "pout") pencil((o) => { ctx.beginPath(); ctx.moveTo(x - w / 2, y + 4 + o); ctx.quadraticCurveTo(x, y - 6, x + w / 2, y + 4 + o); }, 3.4);
+    else if (M.type === "wavy") pencil((o) => {
+      ctx.beginPath();
+      for (let i = 0; i <= 10; i++) { const px = x - w / 2 + w * i / 10, py = y + Math.sin(i * 1.9) * 2.5 + o; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    }, 3);
+    else if (M.type === "o" || M.type === "yawn" || M.type === "shout" || M.type === "grimace" || M.type === "grin") {
+      let rx, ry;
+      if (M.type === "o") { rx = 4 + open * 10; ry = 5 + open * 13; }
+      else if (M.type === "yawn") { rx = 8 + open * 14; ry = 8 + open * 30; }
+      else if (M.type === "shout") { rx = 12 + open * 10; ry = 7 + open * 16; }
+      else if (M.type === "grimace") { rx = 16; ry = 6 + open * 4; }
+      else { rx = 15 + open * 4; ry = 4 + open * 9; }
+      const yy = y + ry * 0.4;
+      ctx.beginPath();
+      if (M.type === "grin") { ctx.moveTo(x - rx, yy - ry * 0.4); ctx.quadraticCurveTo(x, yy + ry * 1.6, x + rx, yy - ry * 0.4); ctx.closePath(); }
+      else if (M.type === "grimace") { ctx.rect(x - rx, yy - ry, rx * 2, ry * 2); }
+      else ctx.ellipse(x, yy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "#2b2a2e"; ctx.fill();
+      if (M.type === "yawn" || M.type === "shout") { ctx.beginPath(); ctx.ellipse(x, yy + ry * 0.55, rx * 0.6, ry * 0.32, 0, 0, Math.PI * 2); ctx.fillStyle = "#77757a"; ctx.fill(); }
+      if (M.type === "grimace" || M.type === "grin") {
+        ctx.strokeStyle = "#f2f0ec"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x - rx + 2, yy - (M.type === "grin" ? ry * 0.2 : 0)); ctx.lineTo(x + rx - 2, yy - (M.type === "grin" ? ry * 0.2 : 0)); ctx.stroke();
+        if (M.type === "grimace") for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * rx / 3, yy - ry); ctx.lineTo(x + i * rx / 3, yy + ry); ctx.stroke(); }
+      }
+      pencil((o) => {
+        ctx.beginPath();
+        if (M.type === "grin") { ctx.moveTo(x - rx, yy - ry * 0.4 + o); ctx.quadraticCurveTo(x, yy + ry * 1.6, x + rx, yy - ry * 0.4 + o); ctx.closePath(); }
+        else if (M.type === "grimace") ctx.rect(x - rx, yy - ry + o, rx * 2, ry * 2);
+        else ctx.ellipse(x + o, yy, rx, ry, 0, 0, Math.PI * 2);
+      }, 2.6);
+    }
+  }
+
+  // little drawn extras around the egg, in drawing pixels
+  function drawOver(o, R, U2, P) {
+    const [sx0, sy0, sx1, sy1] = R.shell, W_ = sx1 - sx0, H_ = sy1 - sy0;
+    const mo = R.face.mouth, mx = (mo[0] + mo[2]) / 2, my = (mo[1] + mo[3]) / 2;
+    const a0 = ctx.globalAlpha;
+    ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineCap = "round";
+    const text = (s, x, y, size, a = 1, rot = 0) => {
+      ctx.save(); ctx.globalAlpha = a0 * a; ctx.translate(x, y); ctx.rotate(rot);
+      ctx.font = `700 ${size}px Georgia, "Times New Roman", serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(s, 0, 0); ctx.restore();
+    };
+    switch (o.k) {
+      case "note": {
+        const a = 1 - o.age / 1.8; if (a <= 0) break;
+        text(o.seed % 0.8 > 0.4 ? "♫" : "♪", mx + 40 + o.age * 70 + Math.sin(o.age * 5 + o.seed) * 10, my - 20 - o.age * 110, 46, a);
+        break;
+      }
+      case "sour": {
+        const a = 1 - o.age / 1.6; if (a <= 0) break;
+        const x = mx + 70 + o.age * 30, y = my - 70 - o.age * 40;
+        text("♪", x, y, 64, a, Math.sin(o.age * 30) * 0.3);
+        ctx.save(); ctx.globalAlpha = a0 * a; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 25, y - 30); for (let i = 1; i < 6; i++) ctx.lineTo(x + 25 + i * 9, y - 30 + (i % 2 ? 12 : -6)); ctx.stroke(); ctx.restore();
+        break;
+      }
+      case "sweat": {
+        const a = Math.min(1, o.age * 4) * Math.max(0, 1 - (o.age - 0.8)); if (a <= 0) break;
+        const x = sx1 - W_ * 0.08, y = sy0 + H_ * 0.3 + o.age * 30;
+        ctx.save(); ctx.globalAlpha = a0 * a; ctx.beginPath();
+        ctx.moveTo(x, y - 16); ctx.quadraticCurveTo(x + 11, y + 2, x, y + 8); ctx.quadraticCurveTo(x - 11, y + 2, x, y - 16);
+        ctx.fillStyle = "#f6f6f8"; ctx.fill(); ctx.lineWidth = 2.4; ctx.stroke(); ctx.restore();
+        break;
+      }
+      case "tick": break;
+      case "dots": {
+        for (let i = 0; i < 3; i++) if (o.age > i * 0.3) text("•", sx1 + 10 + i * 22, sy0 + H_ * 0.25, 30, Math.min(1, (o.age - i * 0.3) * 4));
+        break;
+      }
+      case "question": {
+        const a = Math.min(1, o.age * 4) * (1 - ss(2.0, 2.4, o.age));
+        text("?", sx1 + 20, sy0 + H_ * 0.15 - Math.sin(o.age * 4) * 6, 64, a, Math.sin(o.age * 3) * 0.2);
+        break;
+      }
+      case "hit": {
+        const [hx, hy] = U2(o.side === "L" ? 0.3 : 0.7, 0.78);
+        ctx.save(); ctx.globalAlpha = a0 * (1 - o.age / 0.2); ctx.lineWidth = 3;
+        for (let i = 0; i < 4; i++) { const an = (o.side === "L" ? Math.PI : 0) + (i - 1.5) * 0.4; ctx.beginPath(); ctx.moveTo(hx + Math.cos(an) * 30, hy + Math.sin(an) * 30); ctx.lineTo(hx + Math.cos(an) * 48, hy + Math.sin(an) * 48); ctx.stroke(); }
+        ctx.restore();
+        break;
+      }
+      case "fly": {
+        const [fx_, fy_] = U2(o.x, o.y);
+        ctx.save();
+        if (!o.landed) {
+          ctx.globalAlpha = a0 * 0.35; ctx.setLineDash([4, 7]); ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i <= 12; i++) { const tt = o.age - i * 0.03; const [qx, qy] = U2(0.5 + Math.cos(tt * 3.1) * 0.55, 0.12 + Math.sin(tt * 6.2) * 0.12); i ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy); }
+          ctx.stroke(); ctx.setLineDash([]);
+        }
+        ctx.globalAlpha = a0;
+        const wing = o.landed ? 0.3 : Math.abs(Math.sin(o.age * 60));
+        ctx.fillStyle = "rgba(240,240,245,0.85)"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(fx_ - 5, fy_ - 6, 7, 4 + wing * 3, -0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(fx_ + 5, fy_ - 6, 7, 4 + wing * 3, 0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(fx_, fy_, 6, 4.5, 0, 0, Math.PI * 2); ctx.fillStyle = INK; ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case "impact": {
+        const [x, y] = U2(o.x, o.y), r = 30 + o.age * 80;
+        ctx.save(); ctx.globalAlpha = a0 * (1 - o.age / 0.35); ctx.lineWidth = 3.5;
+        ctx.beginPath(); for (let i = 0; i < 16; i++) { const an = i / 16 * Math.PI * 2, rr = i % 2 ? r * 0.5 : r; i ? ctx.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr * 0.6) : ctx.moveTo(x + rr, y); }
+        ctx.closePath(); ctx.stroke(); ctx.restore();
+        break;
+      }
+      case "stars": {
+        const [x, y] = U2(o.x, o.y);
+        ctx.save(); ctx.globalAlpha = a0 * Math.min(1, o.age * 3);
+        for (let i = 0; i < 3; i++) {
+          const an = time * 5 + i * Math.PI * 2 / 3;
+          const px = x + Math.cos(an) * W_ * 0.32, py = y + Math.sin(an) * 18;
+          ctx.save(); ctx.translate(px, py); ctx.scale(1 / 1, 1);
+          ctx.fillStyle = ["#ffd23f", "#ff4fa3", "#3fc5ff"][i]; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
+          star(0, 0, 14, 5); ctx.fill(); ctx.stroke(); ctx.restore();
+        }
+        ctx.restore();
+        break;
+      }
+      case "swirl": {
+        ctx.save(); ctx.globalAlpha = a0 * 0.45 * Math.min(1, o.age * 2); ctx.lineWidth = 2.5;
+        for (let i = 0; i < 3; i++) {
+          const y = sy0 + H_ * (0.35 + i * 0.2), r = W_ * (0.62 + i * 0.05);
+          const st0 = time * 9 + i;
+          ctx.beginPath(); ctx.ellipse((sx0 + sx1) / 2, y, r, r * 0.16, 0, st0, st0 + 1.4 + o.speed * 1.5); ctx.stroke();
+        }
+        ctx.restore();
+        break;
+      }
+      case "dust": {
+        const a = 1 - o.age / 0.7; if (a <= 0) break;
+        ctx.save(); ctx.globalAlpha = a0 * a; ctx.lineWidth = 2;
+        for (const side of [-1, 1]) for (let i = 0; i < 3; i++) {
+          const x = (sx0 + sx1) / 2 + side * (W_ * 0.45 + o.age * 90 + i * 22), y = sy1 + 40 - i * 10 - o.age * 30;
+          ctx.beginPath(); ctx.arc(x, y, 9 + i * 3 + o.age * 12, 0, Math.PI * 2); ctx.fillStyle = "rgba(235,234,230,0.9)"; ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+        break;
+      }
+      case "bubble": {
+        const r = 6 + o.r * 26, x = mx + 24 + r * 0.7, y = my + 6;
+        ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.fill(); ctx.lineWidth = 2.2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.2, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case "zzz": {
+        for (let i = 0; i < 3; i++) {
+          const k = ((o.age * 0.5 + i / 3) % 1);
+          text("z", sx1 - 10 + k * 70, sy0 + H_ * 0.25 - k * 120, 26 + k * 30, Math.sin(k * Math.PI), -0.2);
+        }
+        break;
+      }
+      case "pop": {
+        const x = mx + 50, y = my + 6, r = 20 + o.age * 120;
+        ctx.save(); ctx.globalAlpha = a0 * (1 - o.age / 0.25); ctx.lineWidth = 3;
+        for (let i = 0; i < 8; i++) { const an = i / 8 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(x + Math.cos(an) * r * 0.6, y + Math.sin(an) * r * 0.6); ctx.lineTo(x + Math.cos(an) * r, y + Math.sin(an) * r); ctx.stroke(); }
+        ctx.restore();
+        break;
+      }
+      case "bang": text("!", sx1 + 10, sy0 + H_ * 0.12, 80, Math.min(1, o.age * 6) * (1 - ss(0.8, 1.2, o.age)), 0.15); break;
+      case "steam": {
+        for (let i = 0; i < 4; i++) {
+          const k = (o.age * 1.3 + i / 4) % 1, side = i % 2 ? 1 : -1;
+          const x = (sx0 + sx1) / 2 + side * (20 + k * 50), y = sy0 - 10 - k * 90, r = 10 + k * 22;
+          ctx.save(); ctx.globalAlpha = a0 * Math.sin(k * Math.PI) * 0.9; ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.arc(x + r * 0.8, y + 4, r * 0.7, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(240,240,242,0.9)"; ctx.fill(); ctx.stroke(); ctx.restore();
+        }
+        break;
+      }
+      case "huff": {
+        const k = (o.age % 1.2) / 1.2;
+        const x = (sx0 + sx1) / 2 + (P.flip < 0 ? -1 : 1) * (W_ * 0.55 + k * 40), y = sy0 + H_ * 0.45 - k * 20;
+        ctx.save(); ctx.globalAlpha = a0 * Math.sin(k * Math.PI) * 0.8; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(x, y, 8 + k * 14, 0, Math.PI * 2); ctx.fillStyle = "rgba(240,240,242,0.9)"; ctx.fill(); ctx.stroke(); ctx.restore();
+        break;
+      }
+    }
+    ctx.globalAlpha = a0;
+  }
+
+  // ======================================================================
+  //  THE DOG  (now and then a big friendly dog peeks in at the window)
+  // ======================================================================
+  const dog = { active: false, t: 0, kind: "bottom", side: 1, x: 0, next: DOG.firstAfter, leaving: 0, box: null };
+  function updateDog(dt, canVisit) {
+    if (!dog.active) {
+      if (canVisit) dog.next -= dt;
+      if (dog.next <= 0 && canVisit) {
+        dog.active = true; dog.t = 0; dog.leaving = 0;
+        dog.kind = dog.forceKind || (Math.random() < 0.5 ? "bottom" : "side"); dog.forceKind = null;
+        dog.side = dog.kind === "side" ? (Math.random() < 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1);
+        dog.x = Math.random() < 0.5 ? 0.22 + Math.random() * 0.12 : 0.66 + Math.random() * 0.12;
+        stopIdle();
+        sfx.boof();
+      }
+      return;
+    }
+    dog.t += dt;
+    if (dog.t > 1.0 && dog.t < 1.1) sfx.sniff();
+    if (dog.t > 2.6 && dog.t < 2.7) sfx.pant();
+    const stay = DOG.stay;
+    if (!dog.leaving && dog.t > stay) dog.leaving = 0.0001;
+    if (dog.leaving) {
+      dog.leaving += dt / (dog.quick ? 0.25 : 0.7);
+      if (dog.leaving >= 1) {
+        dog.active = false; dog.quick = false;
+        dog.next = DOG.every[0] + Math.random() * (DOG.every[1] - DOG.every[0]);
+      }
+    }
+  }
+  function dogShown() {
+    if (!dog.active) return 0;
+    const inK = 1 - Math.pow(1 - Math.min(1, dog.t / 0.8), 3) * 1;
+    const enter = Math.min(1, dog.t / 0.8);
+    const e = enter < 1 ? 1 + 2.2 * Math.pow(enter - 1, 3) + 1.2 * Math.pow(enter - 1, 2) : 1;   // eases in with a little overshoot
+    return dog.leaving ? (1 - dog.leaving * dog.leaving) : e;
+  }
+  function drawDog() {
+    if (!dog.active) return;
+    const k = dogShown();
+    const tilt = Math.sin(dog.t * 1.3) * 0.08 + (dog.t > 1.6 && dog.t < 2.4 ? Math.sin((dog.t - 1.6) / 0.8 * Math.PI) * 0.18 : 0);
+    if (dog.kind === "bottom") {
+      const im = img.dog_peek_bottom, D = SPR.dog.dogBottom;
+      if (!im || !im.complete) return;
+      const w = Math.min(W * 0.85, H * 0.5), h = w * D.h / D.w;
+      const x = W * dog.x, y = H + h * (1 - k) ;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(tilt * 0.5);
+      ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+      dog.box = { x: x - w / 2, y: y - h, w, h };
+    } else {
+      const im = img.dog_peek_side, D = SPR.dog.dogSide;
+      if (!im || !im.complete) return;
+      const h = Math.min(H * 0.62, W * 1.3), w = h * D.w / D.h;
+      const y = H * 0.18;
+      const x = dog.side < 0 ? -w * (1 - k) : W + w * (1 - k);
+      ctx.save(); ctx.translate(x, y + h * 0.3); ctx.rotate(tilt * (dog.side < 0 ? 1 : -1)); ctx.scale(dog.side < 0 ? 1 : -1, 1);
+      ctx.drawImage(im, 0, -h * 0.3, w, h); ctx.restore();
+      dog.box = dog.side < 0 ? { x, y, w, h } : { x: x - w, y, w, h };
+    }
+  }
+  function hitDog(x, y) {
+    const b = dog.box;
+    return dog.active && !dog.leaving && b && x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h;
+  }
+
+  // ======================================================================
   //  FRAME
   // ======================================================================
   let barAlpha = 0;
@@ -953,6 +1779,7 @@
 
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     barAlpha += ((arriving ? 0 : 1) - barAlpha) * (1 - Math.exp(-dt / 0.5));
+    drawDog();
     drawBar(barAlpha);
     drawFx();
   }
@@ -960,6 +1787,11 @@
   // ======================================================================
   //  LOOP
   // ======================================================================
+  // for testing from a desktop browser's console: eggDebug.idle("yawn"), eggDebug.dog("side")
+  window.eggDebug = {
+    idle(id) { if (!IDLE_ANIMS[id]) return Object.keys(IDLE_ANIMS); stopIdle(); idle.fadeOut = 0; startIdle(0); idle.anim.id = id; idle.anim.def = IDLE_ANIMS[id]; idle.last = id; },
+    dog(kind) { dog.next = 0; dog.forceKind = kind; }
+  };
   let arrivedBefore = null;
   try { arrivedBefore = localStorage.getItem("egg.arrived"); } catch (e) {}
   if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {

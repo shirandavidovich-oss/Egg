@@ -156,6 +156,7 @@
     paintCoins();
   }
   function back() {
+    if (document.querySelector(".symtip")) { closeSym(); return; }
     if (document.querySelector(".cloud")) { closeInfo(); return; }
     const sheet = document.querySelector(".sheet-back");
     if (sheet) { sheet.remove(); return; }
@@ -226,72 +227,103 @@
     requestAnimationFrame(() => { const i = screenEl.querySelector(".meter i"); if (i) i.style.width = Math.max(2, overallCoverage() * 100) + "%"; });
     for (const b of screenEl.querySelectorAll(".mode-card")) b.addEventListener("click", () => {
       P.data.physics.path = b.dataset.path; P.save(); G.sfx.pop();
-      if (b.dataset.path === "surprise") show("lever");
-      else show("card", { topic: nextOrdered(), ordered: true });
+      show("lever");
     });
   };
   // the next topic that can actually be played, in the curriculum's order
   const nextOrdered = () => (TOPICS.find((t) => t.ready && familyCoverage(t.id) < 1) || TOPICS.find((t) => t.ready)).id;
 
+  // ======================================================================
+  //  THE PHYSICS MACHINE (V3 art): three reels, a lever with three poses, bulbs
+  //  Surprise → a random topic that really exists; in order → the next one on the path.
+  //  Spinning gives no coins: coins come from discoveries inside the games.
+  // ======================================================================
+  const REEL_OF = { motion: "motion", projectiles: "force", newton: "ramp", circular: "circle", gravitation: "orbit", momentum: "collision", energy: "energy", springs: "spring",
+    charges: "charge", potential: "voltage", circuits: "circuit", batteries: "battery", magnetism: "magnet", induction: "induction", optics: "optics", waves: "waves",
+    photons: "photon", atoms: "atom", nuclear: "nucleus", lab: "lab" };
+  const M3 = "art/machine/v3_";
+  const reelSrc = (id) => `${M3}reel_${REEL_OF[id] || "lab"}.webp`;
   SCREENS.lever = () => {
-    setTitle("מכונת הנושאים", "מושכים את הידית ומגלים נושא");
-    const items = [];
-    for (let r = 0; r < 4; r++) for (const t of TOPICS) items.push(t);
-    const ITEM = 84;
+    const ordered = P.data.physics.path === "ordered";
+    setTitle("מכונת הפיזיקה", ordered ? "משיכה אחת: השלב הבא במסלול" : "משיכה אחת: רעיון חדש לגלות");
+    const strip = (k) => { const out = []; for (let r = 0; r < 3; r++) for (let n = 0; n < TOPICS.length; n++) out.push(TOPICS[(n + k * 7) % TOPICS.length]); return out; };
+    const last = TOPICS.find((t) => t.id === P.data.physics.lastTopic) || TOPICS.find((t) => t.id === nextOrdered());
     screenEl.innerHTML = `
-      <div class="machine-wrap">
-        <div class="machine">
-          <div class="bolts"><span style="top:0;left:0"></span><span style="top:0;right:0"></span><span style="bottom:0;left:0"></span><span style="bottom:0;right:0"></span></div>
-          <div class="reel-window"><div class="reel-mark"></div><div class="reel" id="reel">
-            ${items.map((t) => `<div class="reel-item">${icon(ICON_OF[t.id], t.ready ? "#F49A35" : "#B9BCC2")}<div><b>${esc(t.title_he)}</b><small>${esc(t.world_he)}${t.ready ? "" : " · בפיתוח"}</small></div></div>`).join("")}
-          </div></div>
+      <div class="m3">
+        <div class="m3-stage" id="m3stage">
+          <div class="m3-machine" id="m3machine">
+            <img class="m3-layer" src="${M3}machine_back.webp" alt="">
+            ${[0, 1, 2].map((k) => `<div class="m3-reel" style="left:${[23.1, 41.6, 60.1][k]}%"><div class="m3-strip" id="strip${k}">${strip(k).map((t) => `<img src="${reelSrc(t.id)}" alt="" draggable="false">`).join("")}</div></div>`).join("")}
+            <img class="m3-layer" src="${M3}machine_bezel.webp" alt="">
+            <img class="m3-layer m3-glints" src="${M3}glass_glints.webp" alt="">
+            <div class="m3-label">משוך וגלה!</div>
+            <div class="m3-bulbs" id="m3bulbs">${Array.from({ length: 8 }, (_, k) => `<img src="${M3}bulb_${k % 2 ? "off" : "on"}.webp" alt="" style="left:${15.5 + k * 9.6}%">`).join("")}</div>
+          </div>
+          <div class="m3-lever" id="m3lever" role="button" tabindex="0" aria-label="למשוך את הידית">
+            <img id="m3leverImg" src="${M3}lever_up.webp" alt="" draggable="false">
+            <svg class="m3-hint" viewBox="0 0 24 60" aria-hidden="true"><path d="M12 4v46M5 42l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="m3-status" id="m3status" role="status" aria-live="polite" hidden></div>
         </div>
-        <div class="lever" id="lever" aria-label="ידית: משכו למטה">
-          <div class="track"></div>
-          <svg class="hint" viewBox="0 0 24 60"><path d="M12 4v46M5 42l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div class="knob" id="knob" role="button" tabindex="0" aria-label="למשוך את הידית"></div>
+        <button class="btn primary block m3-pull" id="m3pull" type="button">משוך בידית</button>
+        <div id="result"></div>
+        <div class="card m3-progress">
+          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${pct(overallCoverage())}</span></div>
+          <span class="meter teal"><i data-w="${overallCoverage()}"></i></span>
+          <div class="meter-label" style="margin-top:10px"><span>הנושא הנוכחי: ${esc(last.title_he)}</span><span class="ltr">${pct(familyCoverage(last.id))}</span></div>
+          <span class="meter violet"><i data-w="${familyCoverage(last.id)}"></i></span>
         </div>
-      </div>
-      <div style="text-align:center;margin-top:14px"><button class="btn quiet" id="giveMe" type="button">תן לי משהו</button></div>
-      <div id="result"></div>`;
-    const reel = $("#reel"), knob = $("#knob");
-    let pos = TOPICS.length * 1 + Math.floor(Math.random() * TOPICS.length), spinning = false, drag = null, pulled = 0;
-    const place = (i, anim) => { reel.style.transition = anim ? `transform ${anim}s cubic-bezier(.12,.67,.18,1)` : "none"; reel.style.transform = `translateY(${-(i * ITEM) + ITEM}px)`; };
-    place(pos, 0);
+      </div>`;
+    requestAnimationFrame(() => screenEl.querySelectorAll(".m3-progress .meter i").forEach((i) => (i.style.width = Math.max(2, +i.dataset.w * 100) + "%")));
+    const strips = [0, 1, 2].map((k) => $("#strip" + k)), machine = $("#m3machine"), leverImg = $("#m3leverImg"), lever = $("#m3lever"), status = $("#m3status");
+    const ITEMS = TOPICS.length * 3;
+    const pos = [0, 0, 0];
+    // reels are percent-positioned: one icon = 100% of the reel's height
+    const place = (k, i, dur) => { const el = strips[k]; el.style.transition = dur ? `transform ${dur}s cubic-bezier(.15,.7,.2,1)` : "none"; el.style.transform = `translateY(${-(i / ITEMS) * 100}%)`; pos[k] = i; };
+    strips.forEach((_, k) => place(k, TOPICS.length + Math.floor(Math.random() * TOPICS.length), 0));
+    const setLever = (v) => { leverImg.src = `${M3}lever_${v > 0.7 ? "down" : v > 0.3 ? "half" : "up"}.webp`; };
+    const bulbs = (on) => [...$("#m3bulbs").children].forEach((b, k) => (b.src = `${M3}bulb_${on || k % 2 === 0 ? "on" : "off"}.webp`));
+    let spinning = false, blink = 0;
     function spin() {
       if (spinning) return;
-      spinning = true;
-      $("#result").innerHTML = "";
-      // only topics that really exist can come out; the choice is made first, the reel just shows it
+      spinning = true; G.audio.unlock();
+      $("#result").innerHTML = ""; $("#m3pull").disabled = true;
+      // the choice is made first, from topics that really have a game; the reels only show it
       const ready = TOPICS.filter((t) => t.ready);
-      const pick = ready[Math.floor(Math.random() * ready.length)];
-      const idx = TOPICS.indexOf(pick) + TOPICS.length * 3;
-      place((pos % TOPICS.length) + TOPICS.length, 0);
-      void reel.offsetWidth;
-      pos = idx;
-      const dur = reduceMotion ? 0.01 : 1.35;
-      place(pos, dur);
+      const pick = ordered ? TOPICS.find((t) => t.id === nextOrdered()) : ready[Math.floor(Math.random() * ready.length)];
+      P.data.physics.lastTopic = pick.id; P.save();
+      machine.classList.add("spinning"); setLever(1); bulbs(true);
+      status.hidden = false; status.textContent = "מגרילים את הנושא…";
+      if (!reduceMotion) { let k = 0; blink = setInterval(() => bulbs(++k % 2 === 0), 140); }
+      const durs = reduceMotion ? [0.01, 0.01, 0.01] : [0.95, 1.35, 1.8];
+      strips.forEach((el, k) => {
+        place(k, pos[k] % TOPICS.length, 0); void el.offsetWidth;
+        // land on the picked topic, which sits at (n + 7k) in reel k's order, two laps down
+        const n = (TOPICS.indexOf(pick) - k * 7 + TOPICS.length * 3) % TOPICS.length;
+        place(k, n + TOPICS.length * 2, durs[k]);
+        setTimeout(() => { G.sfx.tick(); G.buzz(12); }, durs[k] * 1000);
+      });
       G.sfx.whoosh();
-      let ticks = 0;
-      const ticker = reduceMotion ? null : setInterval(() => { if (++ticks < 9) G.sfx.tick(); }, 120);
+      setTimeout(() => setLever(0.5), 260); setTimeout(() => setLever(0), 520);
       setTimeout(() => {
-        clearInterval(ticker); spinning = false;
-        G.sfx.boing(0.5); G.buzz(25);
-        $("#result").innerHTML = `<div class="result show card">${icon(ICON_OF[pick.id], "#F49A35").replace("<svg", '<svg style="width:64px;height:64px;color:#3a3a40"')}
+        clearInterval(blink); bulbs(false); machine.classList.remove("spinning"); spinning = false; $("#m3pull").disabled = false;
+        status.textContent = "יצא: " + pick.title_he; G.sfx.boing(0.5); G.buzz(25);
+        $("#result").innerHTML = `<div class="result show card m3-result"><img src="${reelSrc(pick.id)}" alt="">
           <h2>${esc(pick.title_he)}</h2><p>${esc(pick.world_he)} · ${pick.subtopics_he.map(esc).join(" · ")}</p>
           <button class="btn primary block" id="play" type="button">בוא נשחק</button></div>`;
-        $("#play").addEventListener("click", () => show("card", { topic: pick.id }));
+        $("#play").addEventListener("click", () => show("card", { topic: pick.id, ordered }));
         $("#result").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
-      }, dur * 1000 + 80);
+      }, durs[2] * 1000 + 120);
     }
-    // the lever: drag it down at least 70 px (of 110) and let go
-    const setKnob = (d, anim) => { knob.style.transition = anim ? "transform 0.45s cubic-bezier(.3,1.6,.5,1)" : "none"; knob.style.transform = `translateY(${d}px)`; };
-    knob.addEventListener("pointerdown", (e) => { if (spinning) return; drag = { y: e.clientY }; pulled = 0; knob.setPointerCapture(e.pointerId); G.audio.unlock(); });
-    knob.addEventListener("pointermove", (e) => { if (!drag) return; pulled = clamp(e.clientY - drag.y, 0, 110); setKnob(pulled); });
-    const up = () => { if (!drag) return; drag = null; const go = pulled >= 70; setKnob(0, true); if (go) spin(); };
-    knob.addEventListener("pointerup", up); knob.addEventListener("pointercancel", up);
-    knob.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setKnob(90); setTimeout(() => { setKnob(0, true); spin(); }, 150); } });
-    $("#giveMe").addEventListener("click", () => { G.audio.unlock(); setKnob(90); setTimeout(() => { setKnob(0, true); spin(); }, 120); });
+    // the lever: drag down past ~40% of its travel and let go; Enter/Space and the button do the same
+    let drag = null, pulled = 0;
+    lever.addEventListener("pointerdown", (e) => { if (spinning) return; drag = { y: e.clientY, h: lever.getBoundingClientRect().height * 0.35 }; pulled = 0; lever.setPointerCapture(e.pointerId); G.audio.unlock(); });
+    lever.addEventListener("pointermove", (e) => { if (!drag) return; pulled = clamp((e.clientY - drag.y) / drag.h, 0, 1); setLever(pulled); });
+    const up = () => { if (!drag) return; drag = null; if (pulled > 0.4) spin(); else setLever(0); };
+    lever.addEventListener("pointerup", up); lever.addEventListener("pointercancel", () => { drag = null; setLever(0); });
+    lever.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); spin(); } });
+    $("#m3pull").addEventListener("click", spin);
+    cleanup = () => clearInterval(blink);
   };
 
   const GAMES = {
@@ -438,6 +470,7 @@
         <div><div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${pct(all)}</span></div><span class="meter teal"><i data-w="${all}"></i></span></div>
       </div>
       <div class="actions"><button class="btn primary" type="button" data-close>להמשיך לשחק</button></div>`);
+    document.querySelectorAll(".sheet .m").forEach(symbolize);
   }
   // one question: +5 the first time it is answered right; a wrong answer costs nothing
   function askQuestion(pool, onAnswer) {
@@ -539,9 +572,96 @@
     forces: { t: "הכוחות על הדמות", p: "רק שלושה כוחות אמיתיים: הכובד mg (תמיד אנכי למטה), הנורמל N (בניצב למשטח) והחיכוך f (לאורך המשטח). בתצוגת 'רכיבי mg' רואים את הכובד מפורק לשני חלקים, אבל זה אותו כוח, לא כוחות נוספים.",
       eq: ["mg ↓", "N ⟂ משטח", "f ∥ משטח", "mg = mg·sinθ + mg·cosθ (וקטורית)"], live: (c) => c.W !== undefined && `mg = ${f2(c.W, 1)} N · N = ${f2(c.N, 1)} N · f = ${f2(c.f, 1)} N` }
   };
+  // ======================================================================
+  //  EVERY LETTER IN A FORMULA IS TAPPABLE: what it stands for, and its unit
+  // ======================================================================
+  const SYM = {
+    F:   { n: "כוח (Force)", d: "דחיפה או משיכה. יש לו גודל וכיוון (וקטור). בנוסחאות של קפיץ זה הכוח שהקפיץ מפעיל.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    k:   { n: "קבוע הקפיץ / קשיחות", d: "כמה ניוטון צריך כדי למתוח את הקפיץ במטר אחד. מאפיין את הקפיץ, לא את הגוף.", u: "N/m", un: "ניוטון למטר", si: "kg/s²" },
+    s:   { n: "התארכות הקפיץ", d: "בכמה הקפיץ ארוך מהאורך הטבעי שלו. בספרים מסמנים גם Δx או Δl.", u: "m", un: "מטר", si: "m" },
+    x:   { n: "מיקום / מתיחה", d: "המרחק מהנקודה שבה הקפיץ רפוי. חיובי = מתוח, שלילי = דחוס.", u: "m", un: "מטר", si: "m" },
+    "Δx": { n: "שינוי במיקום", d: "Δ (דלתא) פירושה 'שינוי ב-'. Δx = מיקום סופי פחות מיקום התחלתי.", u: "m", un: "מטר", si: "m" },
+    m:   { n: "מסה (mass)", d: "כמות החומר בגוף. לא תלויה במקום: על הירח אותה מסה. היא קובעת את ההתמדה.", u: "kg", un: "קילוגרם", si: "kg" },
+    g:   { n: "תאוצת הכובד", d: "כמה מהר המהירות של גוף נופל גדלה בכל שנייה. ליד כדור הארץ g ≈ 9.81, ובבגרות לרוב 10.", u: "m/s²", un: "מטר לשנייה בריבוע", si: "m/s²" },
+    W:   { n: "משקל (Weight)", d: "הכוח שכדור הארץ מושך בו את הגוף, W = m·g. זה כוח, לא מסה.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    N:   { n: "כוח נורמל", d: "הכוח שהמשטח דוחף בו את הגוף, ניצב (90°) למשטח. בתוך יחידה, N היא גם קיצור של ניוטון.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    E:   { n: "אנרגיה", d: "היכולת לבצע עבודה. בקפיץ: אנרגיה אלסטית שאגורה במתיחה.", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
+    E_k: { n: "אנרגיה קינטית", d: "אנרגיה של תנועה, ½·m·v². גדלה פי 4 כשהמהירות גדלה פי 2.", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
+    E_g: { n: "אנרגיה פוטנציאלית כובדית", d: "אנרגיה של גובה, m·g·h, מדודה מגובה שבוחרים כאפס.", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
+    h:   { n: "גובה", d: "הגובה מעל רמת הייחוס שבחרנו כאפס.", u: "m", un: "מטר", si: "m" },
+    v:   { n: "מהירות (velocity)", d: "כמה מטר עוברים בשנייה, וגם לאיזה כיוון.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    a:   { n: "תאוצה (acceleration)", d: "בכמה המהירות משתנה בכל שנייה. a = ΣF / m.", u: "m/s²", un: "מטר לשנייה בריבוע", si: "m/s²" },
+    t:   { n: "זמן", d: "הזמן שעבר מההתחלה.", u: "s", un: "שנייה", si: "s" },
+    d:   { n: "מרחק (displacement)", d: "כמה הגוף התקדם לאורך המסלול.", u: "m", un: "מטר", si: "m" },
+    T:   { n: "זמן מחזור (Period)", d: "הזמן של תנודה שלמה אחת: הלוך, חזור ובחזרה לאותה נקודה.", u: "s", un: "שנייה", si: "s" },
+    f:   { n: "f: חיכוך, או תדירות", d: "ליד μ ו-N, f הוא כוח החיכוך (ניוטון). ב-f = 1/T, f היא תדירות: כמה תנודות בשנייה (הרץ).", u: "N  או  Hz", un: "ניוטון / הרץ", si: "kg·m/s²  או  1/s" },
+    f_s: { n: "חיכוך סטטי", d: "החיכוך כשהגוף לא זז. גודלו בדיוק מה שצריך כדי לעצור תזוזה, עד מקסימום μs·N.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    f_k: { n: "חיכוך קינטי", d: "החיכוך כשהגוף מחליק. קבוע: μk·N, ומכוון נגד התנועה.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    "μs": { n: "מקדם חיכוך סטטי", d: "מספר בלי יחידות שמתאר את הזוג: הרגליים והמשטח. גדול יותר = קשה יותר להתחיל לזוז.", u: "—", un: "חסר יחידות", si: "—" },
+    "μk": { n: "מקדם חיכוך קינטי", d: "מספר בלי יחידות. בדרך כלל קטן מ-μs: קל יותר להמשיך להחליק מאשר להתחיל.", u: "—", un: "חסר יחידות", si: "—" },
+    "θ": { n: "θ (תטא): זווית", d: "זווית המדרון ביחס לאופק. במחשבון: לוודא שהוא במצב מעלות (DEG).", u: "°", un: "מעלות (או רדיאנים)", si: "rad" },
+    "θ_c": { n: "זווית הסף", d: "הזווית שבה הגוף בדיוק מתחיל להחליק: tanθ_c = μs.", u: "°", un: "מעלות", si: "rad" },
+    sin: { n: "סינוס", d: "במשולש ישר זווית: הניצב שמול הזווית חלקי היתר. כאן הוא נותן את חלק הכובד שבמורד המדרון.", u: "—", un: "מספר בין −1 ל-1", si: "—" },
+    cos: { n: "קוסינוס", d: "הניצב שליד הזווית חלקי היתר. כאן הוא נותן את חלק הכובד שלוחץ אל המשטח.", u: "—", un: "מספר בין −1 ל-1", si: "—" },
+    tan: { n: "טנגנס", d: "sin חלקי cos: הניצב שמול הזווית חלקי הניצב שלידה.", u: "—", un: "מספר", si: "—" },
+    s_eq: { n: "התארכות בשיווי משקל", d: "כמה הקפיץ נמתח כשהגוף תלוי עליו במנוחה: k·s_eq = m·g.", u: "m", un: "מטר", si: "m" },
+    b:   { n: "מקדם בלימה", d: "כמה חזק החומר שמסביב מאט את הגוף. כוח הבלימה −b·v.", u: "N·s/m", un: "ניוטון־שנייה למטר", si: "kg/s" },
+    b_c: { n: "בלימה קריטית", d: "הבלימה שבה בדיוק אין יותר תנודה: 2√(k·m).", u: "N·s/m", un: "ניוטון־שנייה למטר", si: "kg/s" },
+    F_b: { n: "כוח בלימה", d: "כוח שמתנגד למהירות, כמו תנועה בתוך מים.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    "ω": { n: "ω (אומגה): תדירות זוויתית", d: "כמה רדיאנים 'מסתובבת' התנודה בשנייה. ω = 2π/T = √(k/m).", u: "rad/s", un: "רדיאן לשנייה", si: "1/s" },
+    "π": { n: "π (פאי)", d: "קבוע, בערך 3.14: היחס בין היקף מעגל לקוטר שלו. מופיע כי תנודה היא כמו תנועה במעגל.", u: "—", un: "מספר קבוע", si: "—" },
+    "ΣF": { n: "הכוח השקול", d: "Σ (סיגמה) = 'סכום של'. מחברים את כל הכוחות כווקטורים.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    "ΣF⊥": { n: "סכום הכוחות בניצב למשטח", d: "רק החלקים של הכוחות שניצבים למדרון. כשהגוף לא קופץ ולא שוקע, הסכום הזה הוא אפס.", u: "N", un: "ניוטון", si: "kg·m/s²" },
+    L:   { n: "אורך הקפיץ", d: "האורך הנוכחי של הקפיץ.", u: "m", un: "מטר", si: "m" },
+    "L₀": { n: "אורך טבעי", d: "האורך של הקפיץ כשאף כוח לא פועל עליו.", u: "m", un: "מטר", si: "m" },
+    u:   { n: "הסטה משיווי המשקל", d: "המרחק מנקודת שיווי המשקל (לא מהאורך הטבעי).", u: "m", un: "מטר", si: "m" },
+    mg:  { n: "המשקל, m כפול g", d: "כוח הכובד על הגוף. תמיד אנכי כלפי מטה, גם על מדרון.", u: "N", un: "ניוטון", si: "kg·m/s²" }
+  };
+  const SYM_RE = /(s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
+  // turn the text of a formula into tappable symbols (numbers and units in <em> stay as they are)
+  function symbolize(root) {
+    if (!root) return;
+    root.innerHTML = root.innerHTML.replace(/([A-Za-z])<sub>(\w+)<\/sub>/g, (all, a, b) => SYM[a + "_" + b] ? `<button type="button" class="sym" data-sym="${a}_${b}">${a}<sub>${b}</sub></button>` : all);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
+    while (walker.nextNode()) { const n = walker.currentNode; if (!n.parentElement.closest("em, sub, .sym, small")) nodes.push(n); }
+    for (const n of nodes) {
+      const t = n.nodeValue; SYM_RE.lastIndex = 0; if (!SYM_RE.test(t)) continue;
+      const frag = document.createDocumentFragment(); let last = 0; SYM_RE.lastIndex = 0; let mm;
+      while ((mm = SYM_RE.exec(t))) {
+        if (!SYM[mm[0]]) continue;
+        frag.append(t.slice(last, mm.index));
+        const b = document.createElement("button"); b.type = "button"; b.className = "sym"; b.dataset.sym = mm[0];
+        b.innerHTML = esc(mm[0]).replace(/_(\w+)$/, "<sub>$1</sub>"); frag.append(b); last = mm.index + mm[0].length;
+      }
+      frag.append(t.slice(last)); n.replaceWith(frag);
+    }
+  }
+  // formula cards repaint many times a second: rebuild them only when the formulas change, otherwise just the numbers
+  function setFormula(el, html) {
+    const sig = html.replace(/<em>[\s\S]*?<\/em>/g, "<em></em>");
+    if (el.dataset.sig !== sig) { el.innerHTML = html; el.dataset.sig = sig; el.querySelectorAll(".m").forEach(symbolize); return; }
+    const tmp = document.createElement("div"); tmp.innerHTML = html;
+    const now = el.querySelectorAll("em"), next = tmp.querySelectorAll("em");
+    next.forEach((e, i) => { if (now[i] && now[i].innerHTML !== e.innerHTML) now[i].innerHTML = e.innerHTML; });
+  }
+  function closeSym() { document.querySelector(".symtip")?.remove(); }
+  function openSym(key, anchor) {
+    const S = SYM[key]; if (!S) return;
+    closeSym();
+    const el = document.createElement("div"); el.className = "symtip"; el.dir = "rtl";
+    el.innerHTML = `<div class="sym-head"><b class="sym-big" dir="ltr">${esc(key).replace(/_(\w+)$/, "<sub>$1</sub>")}</b><span>${esc(S.n)}</span></div><p>${esc(S.d)}</p>
+      <div class="units"><div><small>יחידה</small><b dir="ltr">${esc(S.u)}</b><span>${esc(S.un)}</span></div><div><small>ביחידות יסוד SI</small><b dir="ltr">${esc(S.si)}</b></div></div>`;
+    document.body.appendChild(el);
+    const r = anchor.getBoundingClientRect(), cw = el.offsetWidth, ch = el.offsetHeight;
+    el.style.left = clamp(r.left + r.width / 2 - cw / 2, 10, innerWidth - cw - 10) + "px";
+    el.style.top = (r.top - ch - 10 > 8 ? r.top - ch - 10 : Math.min(r.bottom + 10, innerHeight - ch - 8)) + "px";
+    document.querySelectorAll(".sym.on").forEach((b) => b.classList.remove("on")); anchor.classList.add("on");
+    G.sfx.pop();
+  }
+
   const infoBtn = (key) => `<button class="info" type="button" data-info="${key}" aria-label="מה זה?">?</button>`;
   let infoOpenedAt = 0;
-  function closeInfo() { document.querySelector(".cloud")?.remove(); }
+  function closeInfo() { document.querySelector(".cloud")?.remove(); closeSym(); }
   function openInfo(key, anchor) {
     const I = INFO[key]; if (!I) return;
     closeInfo();
@@ -550,6 +670,8 @@
     el.className = "cloud"; el.setAttribute("role", "dialog"); el.dir = "rtl";
     el.innerHTML = `<button class="x" type="button" aria-label="סגור">×</button><h4>${esc(I.t)}</h4><p>${esc(I.p)}</p>
       <div class="eqs">${I.eq.map((e) => `<div>${esc(e)}</div>`).join("")}</div>${live ? `<div class="live">${esc(live)}</div>` : ""}`;
+    el.querySelectorAll(".eqs div").forEach(symbolize);
+    el.insertAdjacentHTML("beforeend", `<div class="sym-hint">לחצו על כל אות בנוסחה</div>`);
     document.body.appendChild(el);
     const r = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { left: anchor.x - 20, right: anchor.x + 20, top: anchor.y - 20, bottom: anchor.y + 20, width: 40, height: 40 };
     const cw = el.offsetWidth, ch = el.offsetHeight, below = r.bottom + 14 + ch < innerHeight - 12 || r.top < ch + 26;
@@ -562,6 +684,9 @@
     G.sfx.pop();
   }
   document.addEventListener("click", (e) => {
+    const sb = e.target.closest("[data-sym]");
+    if (sb) { e.preventDefault(); e.stopPropagation(); openSym(sb.dataset.sym, sb); return; }
+    if (!e.target.closest(".symtip")) { closeSym(); document.querySelectorAll(".sym.on").forEach((x) => x.classList.remove("on")); }
     const b = e.target.closest("[data-info]");
     if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info, b); return; }
     if (!e.target.closest(".cloud") && performance.now() - infoOpenedAt > 400) closeInfo();
@@ -763,12 +888,12 @@
     function paintFormula() {
       if ($("#formula").hidden) return;
       const p = sim.p, s = sim.st.s, eq = SP.equilibrium(p);
-      $("#formula").innerHTML = `
+      setFormula($("#formula"), `
         <div class="eq"><span>כוח הקפיץ (חוק הוק)</span><span class="m">F = −k·s<em>${fmt(-p.k * s, 1)} N</em></span></div>
         <div class="eq"><span>אנרגיה אלסטית</span><span class="m">E = ½·k·s²<em>${fmt(SP.elasticEnergy(s, p.k), 2)} J</em></span></div>
         <div class="eq"><span>שיווי משקל</span><span class="m">s<sub>eq</sub> = m·g / k<em>${fmt(eq * 100, 1)} cm</em></span></div>
         <div class="eq"><span>זמן מחזור (בלי בלימה)</span><span class="m">T = 2π·√(m/k)<em>${fmt(SP.period(p))} s</em></span></div>
-        <p class="fine">s היא ההתארכות מהאורך הטבעי של הקפיץ. כוח חיובי פירושו כלפי מטה, ולכן כשהקפיץ מתוח F שלילי: הוא מושך למעלה.</p>`;
+        <p class="fine">s היא ההתארכות מהאורך הטבעי של הקפיץ. כוח חיובי פירושו כלפי מטה, ולכן כשהקפיץ מתוח F שלילי: הוא מושך למעלה.</p>`);
     }
     paintControls();
     const keeper = massKeeper({ say: (t, d) => say(t, d), m0, apply: (m) => { mIn.value = m; sim.reset(params(), 0); trial = null; paintControls(); } });
@@ -1064,13 +1189,13 @@
     function paintFormula() {
       if ($("#formula").hidden) return;
       const p = sim.p, x = sim.st.x;
-      $("#formula").innerHTML = `
+      setFormula($("#formula"), `
         <div class="eq"><span>כוח הקפיץ</span><span class="m">F = −k·x<em>${fmt(-p.k * x, 1)} N</em></span></div>
         <div class="eq"><span>חיכוך קינטי (בזמן תנועה)</span><span class="m">f<sub>k</sub> = μk·m·g<em>${fmt(p.muk * p.m * p.g, 2)} N</em></span></div>
         <div class="eq"><span>נשאר תקוע אם</span><span class="m">|x| ≤ μs·m·g / k<em>${fmt(SP.stickZone(p) * 100, 1)} cm</em></span></div>
         <div class="eq"><span>כל חצי תנודה מאבדת</span><span class="m">Δx = 2·μk·m·g / k<em>${fmt(SP.halfSwingLoss(p) * 100, 1)} cm</em></span></div>
         <div class="eq"><span>זמן מחזור</span><span class="m">T = 2π·√(m/k)<em>${fmt(2 * Math.PI * Math.sqrt(p.m / p.k))} s</em></span></div>
-        <p class="fine">החיכוך לא משנה את קצב התנודה, רק מקטין אותה בכל חצי תנודה עד שהיא נעצרת.</p>`;
+        <p class="fine">החיכוך לא משנה את קצב התנודה, רק מקטין אותה בכל חצי תנודה עד שהיא נעצרת.</p>`);
     }
     paintControls();
     const keeper = massKeeper({ say: (t, d) => say(t, d), m0, apply: (m) => { mIn.value = m; sim.reset(hp(), 0); trial = null; paintControls(); } });
@@ -1597,7 +1722,7 @@
     function paintFormula() {
       if ($("#formula").hidden) return;
       const f = fr, p = prm();
-      $("#formula").innerHTML = `
+      setFormula($("#formula"), `
         <div class="eq"><span>כוח הכובד (תמיד אנכי)</span><span class="m">W = m·g<em>${fmt(f.W, 1)} N</em></span></div>
         <div class="eq"><span>נורמל</span><span class="m">N = mg·cosθ<em>${fmt(f.N, 1)} N</em></span></div>
         <div class="eq"><span>רכיב במורד המדרון</span><span class="m">mg·sinθ<em>${fmt(f.par, 1)} N</em></span></div>
@@ -1605,7 +1730,7 @@
         <div class="eq"><span>חיכוך קינטי</span><span class="m">f<sub>k</sub> = μk·N<em>${fmt(f.fk, 1)} N</em></span></div>
         <div class="eq"><span>תאוצה בהחלקה</span><span class="m">a = g(sinθ − μk·cosθ)<em>${fmt(9.81 * (Math.sin(f.thetaRad) - p.muk * Math.cos(f.thetaRad)), 2)} m/s²</em></span></div>
         <div class="eq"><span>זווית הסף</span><span class="m">tanθ = μs<em>${fmt(f.criticalDeg, 1)}°</em></span></div>
-        <p class="fine">הנורמל אינו "תגובה" לכוח הכובד: שניהם פועלים על אותו גוף. בתמונת הרכיבים אין כוחות חדשים, רק פירוק של mg.</p>`;
+        <p class="fine">הנורמל אינו "תגובה" לכוח הכובד: שניהם פועלים על אותו גוף. בתמונת הרכיבים אין כוחות חדשים, רק פירוק של mg.</p>`);
     }
 
     // ---------- loop ----------

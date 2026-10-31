@@ -68,6 +68,29 @@
   // the dog that peeks in now and then
   const DOG = { firstAfter: 35, every: [55, 120], stay: 4.2 };
 
+  // hatching
+  const HATCH = {
+    readyWait: 2.5,         // seconds glowing with an empty bar before it hatches
+    balloons: 45,
+    size: 0.95,             // creature height compared with the egg
+    colorAfter: 25          // seconds before the creature's color comes in (later: a game milestone)
+  };
+  // how likely each rarity is (relative weights)
+  const RARITY = {
+    common:    { weight: 10 },
+    uncommon:  { weight: 5 },
+    rare:      { weight: 2.5 },
+    epic:      { weight: 1 },
+    legendary: { weight: 0.3 }
+  };
+  // which creature is which rarity (anything not listed is common)
+  const CREATURE_RARITY = {
+    puffhorn: "uncommon", orbit: "uncommon", tweetle: "uncommon", cloudbun: "uncommon",
+    emberwing: "rare", nightflap: "rare", pebblebot: "rare", mossdragon: "rare",
+    flufflet: "epic",
+    moonpaw: "legendary"
+  };
+
   // ======================================================================
   //  SETUP
   // ======================================================================
@@ -189,6 +212,8 @@
     audio.unlock();
     noteActivity();
     if (hitDog(e.clientX, e.clientY)) { dog.quick = true; dog.leaving = 0.0001; sfx.yip(); sparkle(e.clientX, e.clientY, 6); return; }
+    if (egg.state === "hatched" && hitEgg(e.clientX, e.clientY)) { tapCreature(e.clientX, e.clientY); return; }
+    if (egg.state === "hatching") return;
     if (egg.state !== "arriving" && egg.state !== "falling" && hitEgg(e.clientX, e.clientY)) {
       touch = { id: e.pointerId, x: e.clientX, y: e.clientY, acc: 0 };
       onTap(e.clientX, e.clientY);
@@ -326,13 +351,32 @@
       musicBus.gain.setValueAtTime(musicBus.gain.value, t);
       musicBus.gain.linearRampToValueAtTime(SOUND.music, t + 3);
     }
+    const buffers = {}, wanted = {};
+    function fetchSample(name) {
+      if (wanted[name] || !ac) return; wanted[name] = 1;
+      fetch("sound/hatch/" + name + ".mp3").then((r) => r.arrayBuffer()).then((b) => ac.decodeAudioData(b)).then((buf) => { buffers[name] = buf; }).catch(() => {});
+    }
+    function sample(name, vol = 1, loop = false) {
+      if (!ac || ac.state !== "running" || !buffers[name]) { fetchSample(name); return null; }
+      const src = ac.createBufferSource(), g = ac.createGain();
+      src.buffer = buffers[name]; src.loop = loop; g.gain.value = vol;
+      src.connect(g); g.connect(sfxBus); src.start();
+      return { stop(fadeS = 0.1) { const t = ac.currentTime; g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0.0001, t + fadeS); src.stop(t + fadeS + 0.05); } };
+    }
+    function duck(on) {
+      if (!ac || !musicStarted) return;
+      const t = ac.currentTime;
+      musicBus.gain.cancelScheduledValues(t); musicBus.gain.setValueAtTime(musicBus.gain.value, t);
+      musicBus.gain.linearRampToValueAtTime(on ? SOUND.music * 0.15 : SOUND.music, t + (on ? 0.4 : 2.5));
+    }
     function unlock() {
       init();
       if (ac && ac.state === "suspended") ac.resume().then(fadeMusic);
     }
     init();
     return {
-      unlock,
+      unlock, sample, duck,
+      preload(names) { init(); for (const n of names) fetchSample(n); },
       get ok() { return !!ac && ac.state === "running"; },
       get ac() { return ac; },
       get out() { return sfxBus; },
@@ -481,6 +525,7 @@
       p.t += dt;
       if (p.kind === "spark") { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += U * 1.4 * dt; p.vx *= 0.97; }
       if (p.kind === "chip") { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += U * 2.6 * dt; p.rot += p.spin * dt; }
+      if (p.kind === "conf") { p.x += (p.vx + Math.sin(p.t * 3 + p.rot) * U * 0.08) * dt; p.y += p.vy * dt; p.rot += p.spin * dt; }
       if (p.t >= p.life) fx.splice(i, 1);
     }
     screenShake = Math.max(0, screenShake - dt * 1.6);
@@ -507,6 +552,9 @@
       } else if (p.kind === "spark") {
         ctx.save(); ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; ctx.strokeStyle = "#1c1c20"; ctx.lineWidth = 1.2;
         star(p.x, p.y, p.r * (1 + k * 0.5), 5); ctx.fill(); ctx.stroke(); ctx.restore();
+      } else if (p.kind === "conf") {
+        ctx.save(); ctx.globalAlpha = Math.min(1, (p.life - p.t) * 2); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.scale(1, Math.abs(Math.cos(p.t * 6 + p.rot)) + 0.05); ctx.fillStyle = p.col; ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2); ctx.restore();
       } else if (p.kind === "chip") {
         ctx.save(); ctx.globalAlpha = 1 - k * k; ctx.translate(p.x, p.y); ctx.rotate(p.rot);
         ctx.fillStyle = "#f4f2ee"; ctx.strokeStyle = "#2a2a2e"; ctx.lineWidth = 1.2;
@@ -556,6 +604,19 @@
     egg.shakeT = Math.max(0, egg.shakeT - dt);
     egg.shownShell += (egg.shell - egg.shownShell) * (1 - Math.exp(-dt / 0.25));
     updateFx(dt);
+
+    updateParty(dt);
+    if (egg.state === "hatching") { updateHatch(dt); return; }
+    if (egg.state === "hatched") {
+      updateDog(dt, !touch);
+      egg.side += ((-tilt.dx * 0.4) - egg.side) * (1 - Math.exp(-dt / 0.3));
+      return;
+    }
+    if (egg.state === "stand" && egg.shell <= 0) {
+      if (hatch.readyT === 0) { audio.preload(["01_shell_first_crack", "02_rapid_cracks", "03_shell_explosion", "04_balloon_whoosh", "05_happy_celebration_loop", "06_reveal_fanfare", "07_magic_sparkle", "08_comic_oh_no"]); hatch.creature = hatch.creature || rollCreature(); loadCreature(hatch.creature); loadParty(); }
+      hatch.readyT += dt;
+      if (hatch.readyT > HATCH.readyWait && !dog.active) { startHatch(); return; }
+    }
 
     if (egg.state === "arriving") {
       updateMagic(dt);
@@ -1669,6 +1730,204 @@
   }
 
   // ======================================================================
+  //  HATCHING  (the shell gives way, balloons, and a creature in the nest)
+  // ======================================================================
+  const hatch = { t: 0, creature: null, shards: [], balloons: [], confetti: [], flash: 0, colorK: 0, bornAt: 0, hop: 0, readyT: 0, celebrate: null, cues: new Set() };
+  const creatureMeta = (id) => SPR.creatures.find((c) => c.id === id);
+
+  // pick a creature by rarity  (later this roll moves to the server, so it cannot be cheated)
+  function rollCreature() {
+    const pool = SPR.creatures.map((c) => ({ id: c.id, w: RARITY[CREATURE_RARITY[c.id] || "common"].weight }));
+    const total = pool.reduce((s, c) => s + c.w, 0);
+    let r = Math.random() * total;
+    for (const c of pool) { r -= c.w; if (r <= 0) return c.id; }
+    return pool[0].id;
+  }
+  function loadCreature(id) {
+    if (!img["cr_" + id]) { load("cr_" + id, "creatures/" + id + ".webp"); load("crbw_" + id, "creatures/" + id + "_bw.webp"); }
+  }
+  function loadParty() {
+    for (const b of SPR.balloons) if (!img[b.id]) load(b.id, "creatures/" + b.id + ".webp");
+    if (!img.confetti_burst) load("confetti_burst", "creatures/confetti_burst.webp");
+  }
+
+  function startHatch() {
+    hatch.creature = hatch.creature || rollCreature();
+    loadCreature(hatch.creature);
+    loadParty();
+    egg.state = "hatching"; hatch.t = 0; hatch.cues.clear();
+    stopIdle();
+  }
+  function hcue(at, fn) { if (hatch.t >= at && !hatch.cues.has(at)) { hatch.cues.add(at); fn(); } }
+
+  function updateHatch(dt) {
+    hatch.t += dt;
+    const t = hatch.t, s = egg.screen;
+    hcue(0.05, () => { audio.sample("08_comic_oh_no", 0.9); audio.duck(true); });
+    hcue(0.8, () => { audio.sample("01_shell_first_crack", 1); chips(8); shakeScreen(0.3); buzz(30); });
+    hcue(1.25, () => { audio.sample("02_rapid_cracks", 1); });
+    for (const c of [1.3, 1.6, 1.85, 2.05, 2.2, 2.32]) hcue(c, () => { chips(6); shakeScreen(0.25); buzz(15); });
+    hcue(2.5, () => {
+      audio.sample("03_shell_explosion", 1); buzz(150); shakeScreen(1);
+      hatch.flash = 1;
+      // the shell bursts into big pieces
+      for (let i = 0; i < 26; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.8, v = U * (0.6 + Math.random() * 1.1);
+        hatch.shards.push({ x: s.cx + (Math.random() - 0.5) * s.rx, y: s.cy + (Math.random() - 0.5) * s.ry, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+          r: U * (0.025 + Math.random() * 0.045), rot: Math.random() * 6, spin: (Math.random() - 0.5) * 14, sides: 4 + Math.floor(Math.random() * 3), t: 0 });
+      }
+      sparkle(s.cx, s.cy, 24);
+    });
+    hcue(2.9, () => { audio.sample("04_balloon_whoosh", 0.9); });
+    hcue(3.0, () => { hatch.celebrate = audio.sample("05_happy_celebration_loop", 0.55, true); });
+    // balloons drift up from below the screen
+    if (t > 3.0 && t < 6.6) {
+      const want = Math.floor((t - 3.0) / 3.6 * HATCH.balloons);
+      while (hatch.balloons.length < want) {
+        const b = SPR.balloons[Math.floor(Math.random() * SPR.balloons.length)];
+        const sc = 0.7 + Math.random() * 0.7;
+        hatch.balloons.push({ id: b.id, w: b.w, h: b.h, x: Math.random() * W, y: H + U * 0.3, vy: -U * (0.35 + Math.random() * 0.4), drift: (Math.random() - 0.5) * U * 0.15,
+          ph: Math.random() * 6, s: sc * U * 0.22 / b.h * 1.6, t: 0 });
+      }
+    }
+    hcue(4.6, () => { for (let i = 0; i < 3; i++) hatch.confetti.push({ x: W * (0.2 + Math.random() * 0.6), y: H * (0.25 + Math.random() * 0.3), t: 0, rot: Math.random() * 6 }); confettiRain(70); });
+    hcue(6.5, () => { audio.sample("06_reveal_fanfare", 0.9); sparkle(s.cx, s.cy - s.ry * 0.2, 16); hatch.hop = 1; });
+    hcue(7.0, () => { audio.sample("07_magic_sparkle", 0.7); });
+    if (t > 12.5 && hatch.celebrate) { hatch.celebrate.stop(1.5); hatch.celebrate = null; audio.duck(false); }
+    if (t > 9) {
+      egg.state = "hatched"; hatch.bornAt = time;
+      saveCreature();
+    }
+  }
+
+  function confettiRain(n) {
+    const cols = ["#ff4fa3", "#ffd23f", "#3fc5ff", "#8b5cf6", "#5be37d", "#ff7a2f"];
+    for (let i = 0; i < n; i++) fx.push({ kind: "conf", x: Math.random() * W, y: -U * 0.1 - Math.random() * H * 0.4, vx: (Math.random() - 0.5) * U * 0.2, vy: U * (0.25 + Math.random() * 0.35),
+      t: 0, life: 4 + Math.random() * 2, r: U * (0.008 + Math.random() * 0.008), rot: Math.random() * 6, spin: (Math.random() - 0.5) * 10, col: cols[i % cols.length] });
+  }
+
+  function updateParty(dt) {
+    for (let i = hatch.shards.length - 1; i >= 0; i--) {
+      const p = hatch.shards[i];
+      p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += U * 2.4 * dt; p.rot += p.spin * dt;
+      if (p.y > H + U * 0.3) hatch.shards.splice(i, 1);
+    }
+    for (let i = hatch.balloons.length - 1; i >= 0; i--) {
+      const b = hatch.balloons[i];
+      b.t += dt; b.y += b.vy * dt; b.x += Math.sin(b.t * 1.3 + b.ph) * b.drift * dt;
+      if (b.y < -U * 0.6) hatch.balloons.splice(i, 1);
+    }
+    for (let i = hatch.confetti.length - 1; i >= 0; i--) { hatch.confetti[i].t += dt; if (hatch.confetti[i].t > 1.4) hatch.confetti.splice(i, 1); }
+    hatch.flash = Math.max(0, hatch.flash - dt / 0.7);
+    hatch.hop = Math.max(0, hatch.hop - dt / 0.6);
+    // the creature's color comes in later (for now: after a while; later: a game milestone)
+    if (egg.state === "hatched" && time - hatch.bornAt > HATCH.colorAfter && hatch.colorK < 1) {
+      if (hatch.colorK === 0) { audio.sample("07_magic_sparkle", 0.8); sparkle(egg.screen.cx, egg.screen.cy, 20); }
+      hatch.colorK = Math.min(1, hatch.colorK + dt / 2.5);
+    }
+  }
+
+  function saveCreature() {
+    if (DEV.resetShell) return;
+    try { localStorage.setItem("egg.creature", hatch.creature); } catch (e) {}
+  }
+
+  // the egg during hatching: our cracked egg, shaking harder and glowing through the cracks
+  function drawHatchingEgg(L) {
+    const A = eggAnchor(L), t = hatch.t;
+    if (t >= 2.5) return;
+    const name = t < 0.8 ? "oh" : "crack5";
+    const P = SPR.poses[name], im = img["p_" + name];
+    if (!im || !im.complete) return;
+    const amp = t < 0.8 ? 0.04 : 0.04 + (t - 0.8) / 1.7 * 0.14;
+    const rot = Math.sin(t * (t < 0.8 ? 14 : 34)) * amp;
+    const s = A.eggH / P.hgt * (1 + Math.max(0, t - 1.6) * 0.06);
+    egg.screen = { cx: A.fx, cy: A.fy - A.eggH * 0.52, rx: A.eggH * 0.36, ry: A.eggH * 0.5 };
+    // violet light pushing out
+    const cy = A.fy - A.eggH * 0.5, r = A.eggH * (0.7 + t * 0.25 + Math.sin(t * 20) * 0.05);
+    const g = ctx.createRadialGradient(A.fx, cy, 0, A.fx, cy, r);
+    g.addColorStop(0, `rgba(237,228,255,${0.5 + t * 0.15})`); g.addColorStop(0.45, "rgba(167,139,250,0.4)"); g.addColorStop(1, "rgba(139,92,246,0)");
+    ctx.fillStyle = g; ctx.fillRect(A.fx - r, cy - r, r * 2, r * 2);
+    ctx.save();
+    ctx.translate(A.fx, A.fy); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.drawImage(im, -P.ax, -P.ay, P.w, P.h);
+    // light leaking through the cracks
+    if (t > 0.8) {
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = Math.min(0.6, (t - 0.8) * 0.4) * (0.7 + Math.sin(t * 25) * 0.3);
+      ctx.drawImage(im, -P.ax, -P.ay, P.w, P.h);
+    }
+    ctx.restore();
+  }
+
+  function drawCreature(L) {
+    const id = hatch.creature; if (!id) return;
+    const t = hatch.t, born = egg.state === "hatched" ? 1 : ss(6.4, 7.2, t);
+    if (born <= 0) return;
+    const C = creatureMeta(id), bw = img["crbw_" + id], col = img["cr_" + id];
+    if (!bw || !bw.complete || !bw.naturalWidth) return;
+    const A = eggAnchor(L);
+    const hgt = A.eggH * HATCH.size * (0.3 + 0.7 * born);
+    const s = hgt / C.h;
+    const breathe = 1 + Math.sin(time * 2.2) * 0.02;
+    const hop = Math.sin(hatch.hop * Math.PI) * A.eggH * 0.12;
+    const sway = egg.side * 0.6 + Math.sin(time * 1.3) * 0.03;
+    egg.screen = { cx: A.fx, cy: A.fy - hgt * 0.5, rx: C.w * s * 0.45, ry: hgt * 0.5 };
+    ctx.save();
+    ctx.globalAlpha = born;
+    // shadow
+    ctx.save(); ctx.translate(A.fx, A.fy); ctx.scale(1, 0.2);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, C.w * s * 0.45);
+    g.addColorStop(0, "rgba(20,20,24,0.35)"); g.addColorStop(1, "rgba(20,20,24,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, C.w * s * 0.45, 0, 6.2832); ctx.fill(); ctx.restore();
+    ctx.translate(A.fx, A.fy - hop);
+    ctx.rotate(sway);
+    ctx.scale(s * (2 - breathe), s * breathe);
+    ctx.drawImage(bw, -C.w / 2, -C.h + C.h * 0.04, C.w, C.h);
+    if (hatch.colorK > 0 && col && col.complete && col.naturalWidth) {
+      ctx.globalAlpha = born * hatch.colorK;
+      ctx.drawImage(col, -C.w / 2, -C.h + C.h * 0.04, C.w, C.h);
+    }
+    ctx.restore();
+  }
+
+  function drawParty() {
+    for (const p of hatch.shards) {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = "#f4f2ee"; ctx.strokeStyle = "#26262a"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < p.sides; i++) { const a = i / p.sides * Math.PI * 2, rr = p.r * (0.7 + ((i * 37) % 10) / 25); i ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-p.r * 0.3, -p.r * 0.1); ctx.lineTo(p.r * 0.1, p.r * 0.2); ctx.stroke();
+      ctx.restore();
+    }
+    for (const c of hatch.confetti) {
+      const im = img.confetti_burst; if (!im || !im.complete || !im.naturalWidth) continue;
+      const k = c.t / 1.4, sz = U * (0.3 + k * 0.5);
+      ctx.save(); ctx.globalAlpha = 1 - k * k; ctx.translate(c.x, c.y); ctx.rotate(c.rot + k);
+      ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+    }
+    for (const b of hatch.balloons) {
+      const im = img[b.id]; if (!im || !im.complete || !im.naturalWidth) continue;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.sin(b.t * 1.7 + b.ph) * 0.08);
+      ctx.drawImage(im, -b.w * b.s / 2, -b.h * b.s / 2, b.w * b.s, b.h * b.s); ctx.restore();
+    }
+    if (hatch.flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${hatch.flash * 0.9})`; ctx.fillRect(0, 0, W, H);
+      const g = ctx.createRadialGradient(egg.screen.cx, egg.screen.cy, 0, egg.screen.cx, egg.screen.cy, U * 0.8);
+      g.addColorStop(0, `rgba(237,228,255,${hatch.flash})`); g.addColorStop(1, "rgba(167,139,250,0)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function tapCreature(x, y) {
+    hatch.hop = 1;
+    sparkle(x, y, 10);
+    sfx.boing(0.6); sfx.sparkle(3);
+    buzz(20);
+  }
+
+  // ======================================================================
   //  THE DOG  (now and then a big friendly dog peeks in at the window)
   // ======================================================================
   const dog = { active: false, t: 0, kind: "bottom", side: 1, x: 0, next: DOG.firstAfter, leaving: 0, box: null };
@@ -1757,7 +2016,9 @@
       const solid = arriving ? eggSolidity(magic.t) : 1;
       drawNest(L, false);
       drawMagicParticles(L, true);
-      if (solid > 0.01) drawEgg(L, solid);
+      if (egg.state === "hatching") { drawHatchingEgg(L); drawCreature(L); }
+      else if (egg.state === "hatched") drawCreature(L);
+      else if (solid > 0.01) drawEgg(L, solid);
       if (arriving && solid < 1) {
         const A = eggAnchor(L);
         const cy = A.fy - A.eggH * 0.5, r = A.eggH * 0.5;
@@ -1778,9 +2039,10 @@
     ctx.fillStyle = v; ctx.fillRect(-20, -20, W + 40, H + 40);
 
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    barAlpha += ((arriving ? 0 : 1) - barAlpha) * (1 - Math.exp(-dt / 0.5));
+    barAlpha += ((arriving || egg.state === "hatching" || egg.state === "hatched" ? 0 : 1) - barAlpha) * (1 - Math.exp(-dt / 0.5));
     drawDog();
     drawBar(barAlpha);
+    drawParty();
     drawFx();
   }
 
@@ -1790,11 +2052,16 @@
   // for testing from a desktop browser's console: eggDebug.idle("yawn"), eggDebug.dog("side")
   window.eggDebug = {
     idle(id) { if (!IDLE_ANIMS[id]) return Object.keys(IDLE_ANIMS); stopIdle(); idle.fadeOut = 0; startIdle(0); idle.anim.id = id; idle.anim.def = IDLE_ANIMS[id]; idle.last = id; },
-    dog(kind) { dog.next = 0; dog.forceKind = kind; }
+    dog(kind) { dog.next = 0; dog.forceKind = kind; },
+    hatch(id) { if (id) hatch.creature = id; egg.shell = 0; egg.shownShell = 0; hatch.readyT = 0; }
   };
   let arrivedBefore = null;
   try { arrivedBefore = localStorage.getItem("egg.arrived"); } catch (e) {}
-  if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {
+  let savedCreature = null;
+  try { savedCreature = DEV.resetShell ? null : localStorage.getItem("egg.creature"); } catch (e) {}
+  if (savedCreature && creatureMeta(savedCreature)) {
+    hatch.creature = savedCreature; hatch.colorK = 1; egg.state = "hatched"; loadCreature(savedCreature);
+  } else if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {
     egg.state = "arriving";
     try { localStorage.setItem("egg.arrived", "1"); } catch (e) {}
   }

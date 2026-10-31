@@ -20,7 +20,7 @@
 <body>
 <canvas id="world"></canvas>
 <script>
-const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_b01","kind":"burst","w":300,"h":224},{"name":"fx_b02","kind":"burst","w":300,"h":194},{"name":"fx_b03","kind":"burst","w":300,"h":199},{"name":"fx_b04","kind":"burst","w":300,"h":199},{"name":"fx_b10","kind":"burst","w":300,"h":205},{"name":"fx_b11","kind":"burst","w":300,"h":217},{"name":"fx_b12","kind":"burst","w":300,"h":202},{"name":"fx_b13","kind":"burst","w":300,"h":196},{"name":"fx_b14","kind":"burst","w":300,"h":195},{"name":"fx_s00","kind":"stars","w":300,"h":151},{"name":"fx_s01","kind":"stars","w":300,"h":160},{"name":"fx_s02","kind":"stars","w":300,"h":166},{"name":"fx_s03","kind":"stars","w":300,"h":159},{"name":"fx_s04","kind":"stars","w":300,"h":164},{"name":"fx_s10","kind":"stars","w":300,"h":148},{"name":"fx_s11","kind":"stars","w":300,"h":162},{"name":"fx_s12","kind":"stars","w":300,"h":176},{"name":"fx_s13","kind":"stars","w":300,"h":177},{"name":"fx_s14","kind":"stars","w":300,"h":151}],"poses":{"worry1":{"name":"pose_worry1","w":359,"h":510,"ax":191.0,"ay":506.0,"bodyW":326.0,"bodyTop":5.0,"bodyBot":424.0,"top":3.0,"hgt":503.0},"worry2":{"name":"pose_worry2","w":409,"h":517,"ax":224.0,"ay":513.0,"bodyW":333.0,"bodyTop":3.0,"bodyBot":432.0,"top":3.0,"hgt":510.0},"scaredL":{"name":"pose_scaredL","w":418,"h":519,"ax":197.4608938547486,"ay":515.0,"bodyW":397.0,"bodyTop":4.0,"bodyBot":425.0,"top":5.0,"hgt":510.0},"scaredR":{"name":"pose_scaredR","w":446,"h":514,"ax":216.0,"ay":510.0,"bodyW":324.0,"bodyTop":4.0,"bodyBot":419.0,"top":3.0,"hgt":507.0},"oh":{"name":"pose_oh","w":473,"h":530,"ax":212.5,"ay":526.0,"bodyW":355.0,"bodyTop":4.0,"bodyBot":445.0,"top":3.0,"hgt":523.0},"nervous":{"name":"pose_nervous","w":487,"h":523,"ax":271.0,"ay":519.0,"bodyW":356.0,"bodyTop":4.0,"bodyBot":450.0,"top":4.0,"hgt":515.0},"scream":{"name":"pose_scream","w":538,"h":549,"ax":278.5,"ay":545.0,"bodyW":360.0,"bodyTop":4.0,"bodyBot":447.0,"top":3.0,"hgt":542.0},"wince":{"name":"pose_wince","w":368,"h":527,"ax":185.5,"ay":523.0,"bodyW":360.0,"bodyTop":3.0,"bodyBot":454.0,"top":4.0,"hgt":519.0},"flail1":{"name":"pose_flail1","w":413,"h":460,"ax":213.0,"ay":456.0,"bodyW":285.0,"bodyTop":4.0,"bodyBot":381.0,"top":3.0,"hgt":453.0},"flail2":{"name":"pose_flail2","w":460,"h":460,"ax":247.5,"ay":456.0,"bodyW":282.0,"bodyTop":5.0,"bodyBot":380.0,"top":3.0,"hgt":453.0},"flail3":{"name":"pose_flail3","w":528,"h":452,"ax":253.62493874050477,"ay":448.0,"bodyW":408.0,"bodyTop":5.0,"bodyBot":374.0,"top":3.0,"hgt":445.0},"flail4":{"name":"pose_flail4","w":544,"h":458,"ax":261.8454545454546,"ay":454.0,"bodyW":463.0,"bodyTop":5.0,"bodyBot":377.0,"top":4.0,"hgt":450.0},"crack1":{"name":"pose_crack1","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":312.0,"bodyTop":5.0,"bodyBot":411.0,"top":3.0,"hgt":483.0},"crack2":{"name":"pose_crack2","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":313.0,"bodyTop":5.0,"bodyBot":409.0,"top":4.0,"hgt":482.0},"crack3":{"name":"pose_crack3","w":328,"h":501,"ax":164.5,"ay":497.0,"bodyW":318.0,"bodyTop":5.0,"bodyBot":417.0,"top":3.0,"hgt":494.0},"crack4":{"name":"pose_crack4","w":327,"h":503,"ax":163.0,"ay":499.0,"bodyW":319.0,"bodyTop":5.0,"bodyBot":420.0,"top":4.0,"hgt":495.0},"crack5":{"name":"pose_crack5","w":338,"h":502,"ax":169.5,"ay":498.0,"bodyW":330.0,"bodyTop":4.0,"bodyBot":421.0,"top":3.0,"hgt":495.0},"lying":{"name":"pose_lying","w":596,"h":610,"ax":368.0,"ay":558.0,"shellLen":469.28004943743343}},"bar":{"icon1":{"w":198,"h":160},"icon2":{"w":194,"h":174},"icon3":{"w":196,"h":175},"icon4":{"w":210,"h":176},"icon5":{"w":217,"h":194},"empty":{"w":735,"h":133},"full":{"w":762,"h":178}},"rig":{"gloveL":{"img":"rig_gloveL","w":48,"h":56,"wx":19.156626506024097,"wy":2.0},"gloveR":{"img":"rig_gloveR","w":48,"h":56,"wx":28.09638554216866,"wy":2.0},"crack1":{"body":"rig_body1","face":{"browL":[116,152,144,171],"browR":[245,156,272,183],"eyeL":[95,173,162,263],"eyeR":[207,193,275,269],"mouth":[162,251,193,271]},"shell":[4,3,320,413],"legL":{"img":"rig_legL1","x":28,"y":409,"w":136,"h":80,"hipX":114.83018867924528,"hipY":411.0},"legR":{"img":"rig_legR1","x":160,"y":410,"w":110,"h":78,"hipX":203.85185185185185,"hipY":412.0},"shoulderL":[16.0,290.0],"armLen":75.0,"shoulderR":[310.0,290.0]},"crack2":{"body":"rig_body2","face":{"browL":[116,151,145,170],"browR":[246,156,273,182],"eyeL":[95,172,162,262],"eyeR":[208,192,276,268],"mouth":[162,249,194,270]},"shell":[4,3,321,411],"legL":{"img":"rig_legL2","x":29,"y":408,"w":136,"h":80,"hipX":116.73214285714286,"hipY":410.0},"legR":{"img":"rig_legR2","x":161,"y":407,"w":110,"h":79,"hipX":204.74545454545455,"hipY":409.0},"shoulderL":[15.0,288.0],"shoulderR":[311.0,288.0]},"crack3":{"body":"rig_body3","face":{"browL":[118,154,147,173],"browR":[250,159,277,186],"eyeL":[97,175,165,267],"eyeR":[211,196,280,273],"mouth":[165,254,197,275]},"shell":[4,3,326,419],"legL":{"img":"rig_legL3","x":31,"y":416,"w":136,"h":83,"hipX":119.08771929824562,"hipY":418.0},"legR":{"img":"rig_legR3","x":163,"y":416,"w":115,"h":83,"hipX":209.16071428571428,"hipY":418.0},"shoulderL":[16.0,294.0],"shoulderR":[316.0,294.0]},"crack4":{"body":"rig_body4","face":{"browL":[115,155,144,174],"browR":[248,160,275,187],"eyeL":[94,176,162,269],"eyeR":[209,197,278,275],"mouth":[162,256,194,277]},"shell":[1,3,324,422],"legL":{"img":"rig_legL4","x":29,"y":419,"w":136,"h":83,"hipX":118.36206896551724,"hipY":421.0},"legR":{"img":"rig_legR4","x":161,"y":421,"w":116,"h":80,"hipX":207.62295081967213,"hipY":423.0},"shoulderL":[14.0,296.0],"shoulderR":[314.0,296.0]},"crack5":{"body":"rig_body5","face":{"browL":[120,155,150,174],"browR":[257,159,285,187],"eyeL":[98,176,169,269],"eyeR":[217,197,289,275],"mouth":[169,256,202,277]},"shell":[2,2,336,423],"legL":{"img":"rig_legL5","x":35,"y":416,"w":136,"h":85,"hipX":121.51020408163265,"hipY":418.0},"legR":{"img":"rig_legR5","x":167,"y":420,"w":115,"h":78,"hipX":212.85185185185185,"hipY":422.0},"shoulderL":[16.0,296.0],"shoulderR":[324.0,296.0]}},"dog":{"dogBottom":{"w":720,"h":589},"dogSide":{"w":402,"h":720}}};
+const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_b01","kind":"burst","w":300,"h":224},{"name":"fx_b02","kind":"burst","w":300,"h":194},{"name":"fx_b03","kind":"burst","w":300,"h":199},{"name":"fx_b04","kind":"burst","w":300,"h":199},{"name":"fx_b10","kind":"burst","w":300,"h":205},{"name":"fx_b11","kind":"burst","w":300,"h":217},{"name":"fx_b12","kind":"burst","w":300,"h":202},{"name":"fx_b13","kind":"burst","w":300,"h":196},{"name":"fx_b14","kind":"burst","w":300,"h":195},{"name":"fx_s00","kind":"stars","w":300,"h":151},{"name":"fx_s01","kind":"stars","w":300,"h":160},{"name":"fx_s02","kind":"stars","w":300,"h":166},{"name":"fx_s03","kind":"stars","w":300,"h":159},{"name":"fx_s04","kind":"stars","w":300,"h":164},{"name":"fx_s10","kind":"stars","w":300,"h":148},{"name":"fx_s11","kind":"stars","w":300,"h":162},{"name":"fx_s12","kind":"stars","w":300,"h":176},{"name":"fx_s13","kind":"stars","w":300,"h":177},{"name":"fx_s14","kind":"stars","w":300,"h":151}],"poses":{"worry1":{"name":"pose_worry1","w":359,"h":510,"ax":191.0,"ay":506.0,"bodyW":326.0,"bodyTop":5.0,"bodyBot":424.0,"top":3.0,"hgt":503.0},"worry2":{"name":"pose_worry2","w":409,"h":517,"ax":224.0,"ay":513.0,"bodyW":333.0,"bodyTop":3.0,"bodyBot":432.0,"top":3.0,"hgt":510.0},"scaredL":{"name":"pose_scaredL","w":418,"h":519,"ax":197.4608938547486,"ay":515.0,"bodyW":397.0,"bodyTop":4.0,"bodyBot":425.0,"top":5.0,"hgt":510.0},"scaredR":{"name":"pose_scaredR","w":446,"h":514,"ax":216.0,"ay":510.0,"bodyW":324.0,"bodyTop":4.0,"bodyBot":419.0,"top":3.0,"hgt":507.0},"oh":{"name":"pose_oh","w":473,"h":530,"ax":212.5,"ay":526.0,"bodyW":355.0,"bodyTop":4.0,"bodyBot":445.0,"top":3.0,"hgt":523.0},"nervous":{"name":"pose_nervous","w":487,"h":523,"ax":271.0,"ay":519.0,"bodyW":356.0,"bodyTop":4.0,"bodyBot":450.0,"top":4.0,"hgt":515.0},"scream":{"name":"pose_scream","w":538,"h":549,"ax":278.5,"ay":545.0,"bodyW":360.0,"bodyTop":4.0,"bodyBot":447.0,"top":3.0,"hgt":542.0},"wince":{"name":"pose_wince","w":368,"h":527,"ax":185.5,"ay":523.0,"bodyW":360.0,"bodyTop":3.0,"bodyBot":454.0,"top":4.0,"hgt":519.0},"flail1":{"name":"pose_flail1","w":413,"h":460,"ax":213.0,"ay":456.0,"bodyW":285.0,"bodyTop":4.0,"bodyBot":381.0,"top":3.0,"hgt":453.0},"flail2":{"name":"pose_flail2","w":460,"h":460,"ax":247.5,"ay":456.0,"bodyW":282.0,"bodyTop":5.0,"bodyBot":380.0,"top":3.0,"hgt":453.0},"flail3":{"name":"pose_flail3","w":528,"h":452,"ax":253.62493874050477,"ay":448.0,"bodyW":408.0,"bodyTop":5.0,"bodyBot":374.0,"top":3.0,"hgt":445.0},"flail4":{"name":"pose_flail4","w":544,"h":458,"ax":261.8454545454546,"ay":454.0,"bodyW":463.0,"bodyTop":5.0,"bodyBot":377.0,"top":4.0,"hgt":450.0},"crack1":{"name":"pose_crack1","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":312.0,"bodyTop":5.0,"bodyBot":411.0,"top":3.0,"hgt":483.0},"crack2":{"name":"pose_crack2","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":313.0,"bodyTop":5.0,"bodyBot":409.0,"top":4.0,"hgt":482.0},"crack3":{"name":"pose_crack3","w":328,"h":501,"ax":164.5,"ay":497.0,"bodyW":318.0,"bodyTop":5.0,"bodyBot":417.0,"top":3.0,"hgt":494.0},"crack4":{"name":"pose_crack4","w":327,"h":503,"ax":163.0,"ay":499.0,"bodyW":319.0,"bodyTop":5.0,"bodyBot":420.0,"top":4.0,"hgt":495.0},"crack5":{"name":"pose_crack5","w":338,"h":502,"ax":169.5,"ay":498.0,"bodyW":330.0,"bodyTop":4.0,"bodyBot":421.0,"top":3.0,"hgt":495.0},"lying":{"name":"pose_lying","w":596,"h":610,"ax":368.0,"ay":558.0,"shellLen":469.28004943743343}},"bar":{"icon1":{"w":198,"h":160},"icon2":{"w":194,"h":174},"icon3":{"w":196,"h":175},"icon4":{"w":210,"h":176},"icon5":{"w":217,"h":194},"empty":{"w":735,"h":133},"full":{"w":762,"h":178}},"rig":{"gloveL":{"img":"rig_gloveL","w":48,"h":56,"wx":19.156626506024097,"wy":2.0},"gloveR":{"img":"rig_gloveR","w":48,"h":56,"wx":28.09638554216866,"wy":2.0},"crack1":{"body":"rig_body1","face":{"browL":[116,152,144,171],"browR":[245,156,272,183],"eyeL":[95,173,162,263],"eyeR":[207,193,275,269],"mouth":[162,251,193,271]},"shell":[4,3,320,413],"legL":{"img":"rig_legL1","x":28,"y":409,"w":136,"h":80,"hipX":114.83018867924528,"hipY":411.0},"legR":{"img":"rig_legR1","x":160,"y":410,"w":110,"h":78,"hipX":203.85185185185185,"hipY":412.0},"shoulderL":[16.0,290.0],"armLen":75.0,"shoulderR":[310.0,290.0]},"crack2":{"body":"rig_body2","face":{"browL":[116,151,145,170],"browR":[246,156,273,182],"eyeL":[95,172,162,262],"eyeR":[208,192,276,268],"mouth":[162,249,194,270]},"shell":[4,3,321,411],"legL":{"img":"rig_legL2","x":29,"y":408,"w":136,"h":80,"hipX":116.73214285714286,"hipY":410.0},"legR":{"img":"rig_legR2","x":161,"y":407,"w":110,"h":79,"hipX":204.74545454545455,"hipY":409.0},"shoulderL":[15.0,288.0],"shoulderR":[311.0,288.0]},"crack3":{"body":"rig_body3","face":{"browL":[118,154,147,173],"browR":[250,159,277,186],"eyeL":[97,175,165,267],"eyeR":[211,196,280,273],"mouth":[165,254,197,275]},"shell":[4,3,326,419],"legL":{"img":"rig_legL3","x":31,"y":416,"w":136,"h":83,"hipX":119.08771929824562,"hipY":418.0},"legR":{"img":"rig_legR3","x":163,"y":416,"w":115,"h":83,"hipX":209.16071428571428,"hipY":418.0},"shoulderL":[16.0,294.0],"shoulderR":[316.0,294.0]},"crack4":{"body":"rig_body4","face":{"browL":[115,155,144,174],"browR":[248,160,275,187],"eyeL":[94,176,162,269],"eyeR":[209,197,278,275],"mouth":[162,256,194,277]},"shell":[1,3,324,422],"legL":{"img":"rig_legL4","x":29,"y":419,"w":136,"h":83,"hipX":118.36206896551724,"hipY":421.0},"legR":{"img":"rig_legR4","x":161,"y":421,"w":116,"h":80,"hipX":207.62295081967213,"hipY":423.0},"shoulderL":[14.0,296.0],"shoulderR":[314.0,296.0]},"crack5":{"body":"rig_body5","face":{"browL":[120,155,150,174],"browR":[257,159,285,187],"eyeL":[98,176,169,269],"eyeR":[217,197,289,275],"mouth":[169,256,202,277]},"shell":[2,2,336,423],"legL":{"img":"rig_legL5","x":35,"y":416,"w":136,"h":85,"hipX":121.51020408163265,"hipY":418.0},"legR":{"img":"rig_legR5","x":167,"y":420,"w":115,"h":78,"hipX":212.85185185185185,"hipY":422.0},"shoulderL":[16.0,296.0],"shoulderR":[324.0,296.0]}},"dog":{"dogBottom":{"w":720,"h":589},"dogSide":{"w":402,"h":720}},"creatures":[{"id":"winglet","n":1,"w":309,"h":386},{"id":"bloop","n":2,"w":405,"h":369},{"id":"sunspike","n":3,"w":375,"h":384},{"id":"octoodle","n":4,"w":382,"h":384},{"id":"emberwing","n":5,"w":357,"h":386},{"id":"puffhorn","n":6,"w":367,"h":384},{"id":"limefin","n":7,"w":340,"h":383},{"id":"shroomie","n":8,"w":321,"h":386},{"id":"nightflap","n":9,"w":402,"h":384},{"id":"orbit","n":10,"w":310,"h":388},{"id":"petalpop","n":11,"w":305,"h":389},{"id":"pebblebot","n":12,"w":397,"h":383},{"id":"noodle","n":13,"w":260,"h":391},{"id":"tweetle","n":14,"w":268,"h":391},{"id":"mossdragon","n":15,"w":280,"h":384},{"id":"pompom","n":16,"w":316,"h":383},{"id":"clackster","n":17,"w":344,"h":384},{"id":"cloudbun","n":18,"w":325,"h":386},{"id":"flufflet","n":19,"w":385,"h":412},{"id":"moonpaw","n":20,"w":348,"h":412}],"balloons":[{"id":"balloon_01","w":180,"h":290},{"id":"balloon_02","w":180,"h":290},{"id":"balloon_03","w":180,"h":290},{"id":"balloon_04","w":180,"h":290},{"id":"balloon_05","w":180,"h":290},{"id":"balloon_06","w":180,"h":290},{"id":"balloon_07","w":180,"h":290},{"id":"balloon_08","w":180,"h":290}],"confetti":{"w":512,"h":512}};
 (() => {
   "use strict";
 
@@ -67,6 +67,29 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
 
   // the dog that peeks in now and then
   const DOG = { firstAfter: 35, every: [55, 120], stay: 4.2 };
+
+  // hatching
+  const HATCH = {
+    readyWait: 2.5,         // seconds glowing with an empty bar before it hatches
+    balloons: 45,
+    size: 0.95,             // creature height compared with the egg
+    colorAfter: 25          // seconds before the creature's color comes in (later: a game milestone)
+  };
+  // how likely each rarity is (relative weights)
+  const RARITY = {
+    common:    { weight: 10 },
+    uncommon:  { weight: 5 },
+    rare:      { weight: 2.5 },
+    epic:      { weight: 1 },
+    legendary: { weight: 0.3 }
+  };
+  // which creature is which rarity (anything not listed is common)
+  const CREATURE_RARITY = {
+    puffhorn: "uncommon", orbit: "uncommon", tweetle: "uncommon", cloudbun: "uncommon",
+    emberwing: "rare", nightflap: "rare", pebblebot: "rare", mossdragon: "rare",
+    flufflet: "epic",
+    moonpaw: "legendary"
+  };
 
   // ======================================================================
   //  SETUP
@@ -189,6 +212,8 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     audio.unlock();
     noteActivity();
     if (hitDog(e.clientX, e.clientY)) { dog.quick = true; dog.leaving = 0.0001; sfx.yip(); sparkle(e.clientX, e.clientY, 6); return; }
+    if (egg.state === "hatched" && hitEgg(e.clientX, e.clientY)) { tapCreature(e.clientX, e.clientY); return; }
+    if (egg.state === "hatching") return;
     if (egg.state !== "arriving" && egg.state !== "falling" && hitEgg(e.clientX, e.clientY)) {
       touch = { id: e.pointerId, x: e.clientX, y: e.clientY, acc: 0 };
       onTap(e.clientX, e.clientY);
@@ -326,13 +351,32 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       musicBus.gain.setValueAtTime(musicBus.gain.value, t);
       musicBus.gain.linearRampToValueAtTime(SOUND.music, t + 3);
     }
+    const buffers = {}, wanted = {};
+    function fetchSample(name) {
+      if (wanted[name] || !ac) return; wanted[name] = 1;
+      fetch("sound/hatch/" + name + ".mp3").then((r) => r.arrayBuffer()).then((b) => ac.decodeAudioData(b)).then((buf) => { buffers[name] = buf; }).catch(() => {});
+    }
+    function sample(name, vol = 1, loop = false) {
+      if (!ac || ac.state !== "running" || !buffers[name]) { fetchSample(name); return null; }
+      const src = ac.createBufferSource(), g = ac.createGain();
+      src.buffer = buffers[name]; src.loop = loop; g.gain.value = vol;
+      src.connect(g); g.connect(sfxBus); src.start();
+      return { stop(fadeS = 0.1) { const t = ac.currentTime; g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0.0001, t + fadeS); src.stop(t + fadeS + 0.05); } };
+    }
+    function duck(on) {
+      if (!ac || !musicStarted) return;
+      const t = ac.currentTime;
+      musicBus.gain.cancelScheduledValues(t); musicBus.gain.setValueAtTime(musicBus.gain.value, t);
+      musicBus.gain.linearRampToValueAtTime(on ? SOUND.music * 0.15 : SOUND.music, t + (on ? 0.4 : 2.5));
+    }
     function unlock() {
       init();
       if (ac && ac.state === "suspended") ac.resume().then(fadeMusic);
     }
     init();
     return {
-      unlock,
+      unlock, sample, duck,
+      preload(names) { init(); for (const n of names) fetchSample(n); },
       get ok() { return !!ac && ac.state === "running"; },
       get ac() { return ac; },
       get out() { return sfxBus; },
@@ -481,6 +525,7 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       p.t += dt;
       if (p.kind === "spark") { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += U * 1.4 * dt; p.vx *= 0.97; }
       if (p.kind === "chip") { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += U * 2.6 * dt; p.rot += p.spin * dt; }
+      if (p.kind === "conf") { p.x += (p.vx + Math.sin(p.t * 3 + p.rot) * U * 0.08) * dt; p.y += p.vy * dt; p.rot += p.spin * dt; }
       if (p.t >= p.life) fx.splice(i, 1);
     }
     screenShake = Math.max(0, screenShake - dt * 1.6);
@@ -507,6 +552,9 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       } else if (p.kind === "spark") {
         ctx.save(); ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; ctx.strokeStyle = "#1c1c20"; ctx.lineWidth = 1.2;
         star(p.x, p.y, p.r * (1 + k * 0.5), 5); ctx.fill(); ctx.stroke(); ctx.restore();
+      } else if (p.kind === "conf") {
+        ctx.save(); ctx.globalAlpha = Math.min(1, (p.life - p.t) * 2); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.scale(1, Math.abs(Math.cos(p.t * 6 + p.rot)) + 0.05); ctx.fillStyle = p.col; ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2); ctx.restore();
       } else if (p.kind === "chip") {
         ctx.save(); ctx.globalAlpha = 1 - k * k; ctx.translate(p.x, p.y); ctx.rotate(p.rot);
         ctx.fillStyle = "#f4f2ee"; ctx.strokeStyle = "#2a2a2e"; ctx.lineWidth = 1.2;
@@ -556,6 +604,19 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     egg.shakeT = Math.max(0, egg.shakeT - dt);
     egg.shownShell += (egg.shell - egg.shownShell) * (1 - Math.exp(-dt / 0.25));
     updateFx(dt);
+
+    updateParty(dt);
+    if (egg.state === "hatching") { updateHatch(dt); return; }
+    if (egg.state === "hatched") {
+      updateDog(dt, !touch);
+      egg.side += ((-tilt.dx * 0.4) - egg.side) * (1 - Math.exp(-dt / 0.3));
+      return;
+    }
+    if (egg.state === "stand" && egg.shell <= 0) {
+      if (hatch.readyT === 0) { audio.preload(["01_shell_first_crack", "02_rapid_cracks", "03_shell_explosion", "04_balloon_whoosh", "05_happy_celebration_loop", "06_reveal_fanfare", "07_magic_sparkle", "08_comic_oh_no"]); hatch.creature = hatch.creature || rollCreature(); loadCreature(hatch.creature); loadParty(); }
+      hatch.readyT += dt;
+      if (hatch.readyT > HATCH.readyWait && !dog.active) { startHatch(); return; }
+    }
 
     if (egg.state === "arriving") {
       updateMagic(dt);
@@ -1669,6 +1730,204 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   }
 
   // ======================================================================
+  //  HATCHING  (the shell gives way, balloons, and a creature in the nest)
+  // ======================================================================
+  const hatch = { t: 0, creature: null, shards: [], balloons: [], confetti: [], flash: 0, colorK: 0, bornAt: 0, hop: 0, readyT: 0, celebrate: null, cues: new Set() };
+  const creatureMeta = (id) => SPR.creatures.find((c) => c.id === id);
+
+  // pick a creature by rarity  (later this roll moves to the server, so it cannot be cheated)
+  function rollCreature() {
+    const pool = SPR.creatures.map((c) => ({ id: c.id, w: RARITY[CREATURE_RARITY[c.id] || "common"].weight }));
+    const total = pool.reduce((s, c) => s + c.w, 0);
+    let r = Math.random() * total;
+    for (const c of pool) { r -= c.w; if (r <= 0) return c.id; }
+    return pool[0].id;
+  }
+  function loadCreature(id) {
+    if (!img["cr_" + id]) { load("cr_" + id, "creatures/" + id + ".webp"); load("crbw_" + id, "creatures/" + id + "_bw.webp"); }
+  }
+  function loadParty() {
+    for (const b of SPR.balloons) if (!img[b.id]) load(b.id, "creatures/" + b.id + ".webp");
+    if (!img.confetti_burst) load("confetti_burst", "creatures/confetti_burst.webp");
+  }
+
+  function startHatch() {
+    hatch.creature = hatch.creature || rollCreature();
+    loadCreature(hatch.creature);
+    loadParty();
+    egg.state = "hatching"; hatch.t = 0; hatch.cues.clear();
+    stopIdle();
+  }
+  function hcue(at, fn) { if (hatch.t >= at && !hatch.cues.has(at)) { hatch.cues.add(at); fn(); } }
+
+  function updateHatch(dt) {
+    hatch.t += dt;
+    const t = hatch.t, s = egg.screen;
+    hcue(0.05, () => { audio.sample("08_comic_oh_no", 0.9); audio.duck(true); });
+    hcue(0.8, () => { audio.sample("01_shell_first_crack", 1); chips(8); shakeScreen(0.3); buzz(30); });
+    hcue(1.25, () => { audio.sample("02_rapid_cracks", 1); });
+    for (const c of [1.3, 1.6, 1.85, 2.05, 2.2, 2.32]) hcue(c, () => { chips(6); shakeScreen(0.25); buzz(15); });
+    hcue(2.5, () => {
+      audio.sample("03_shell_explosion", 1); buzz(150); shakeScreen(1);
+      hatch.flash = 1;
+      // the shell bursts into big pieces
+      for (let i = 0; i < 26; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.8, v = U * (0.6 + Math.random() * 1.1);
+        hatch.shards.push({ x: s.cx + (Math.random() - 0.5) * s.rx, y: s.cy + (Math.random() - 0.5) * s.ry, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+          r: U * (0.025 + Math.random() * 0.045), rot: Math.random() * 6, spin: (Math.random() - 0.5) * 14, sides: 4 + Math.floor(Math.random() * 3), t: 0 });
+      }
+      sparkle(s.cx, s.cy, 24);
+    });
+    hcue(2.9, () => { audio.sample("04_balloon_whoosh", 0.9); });
+    hcue(3.0, () => { hatch.celebrate = audio.sample("05_happy_celebration_loop", 0.55, true); });
+    // balloons drift up from below the screen
+    if (t > 3.0 && t < 6.6) {
+      const want = Math.floor((t - 3.0) / 3.6 * HATCH.balloons);
+      while (hatch.balloons.length < want) {
+        const b = SPR.balloons[Math.floor(Math.random() * SPR.balloons.length)];
+        const sc = 0.7 + Math.random() * 0.7;
+        hatch.balloons.push({ id: b.id, w: b.w, h: b.h, x: Math.random() * W, y: H + U * 0.3, vy: -U * (0.35 + Math.random() * 0.4), drift: (Math.random() - 0.5) * U * 0.15,
+          ph: Math.random() * 6, s: sc * U * 0.22 / b.h * 1.6, t: 0 });
+      }
+    }
+    hcue(4.6, () => { for (let i = 0; i < 3; i++) hatch.confetti.push({ x: W * (0.2 + Math.random() * 0.6), y: H * (0.25 + Math.random() * 0.3), t: 0, rot: Math.random() * 6 }); confettiRain(70); });
+    hcue(6.5, () => { audio.sample("06_reveal_fanfare", 0.9); sparkle(s.cx, s.cy - s.ry * 0.2, 16); hatch.hop = 1; });
+    hcue(7.0, () => { audio.sample("07_magic_sparkle", 0.7); });
+    if (t > 12.5 && hatch.celebrate) { hatch.celebrate.stop(1.5); hatch.celebrate = null; audio.duck(false); }
+    if (t > 9) {
+      egg.state = "hatched"; hatch.bornAt = time;
+      saveCreature();
+    }
+  }
+
+  function confettiRain(n) {
+    const cols = ["#ff4fa3", "#ffd23f", "#3fc5ff", "#8b5cf6", "#5be37d", "#ff7a2f"];
+    for (let i = 0; i < n; i++) fx.push({ kind: "conf", x: Math.random() * W, y: -U * 0.1 - Math.random() * H * 0.4, vx: (Math.random() - 0.5) * U * 0.2, vy: U * (0.25 + Math.random() * 0.35),
+      t: 0, life: 4 + Math.random() * 2, r: U * (0.008 + Math.random() * 0.008), rot: Math.random() * 6, spin: (Math.random() - 0.5) * 10, col: cols[i % cols.length] });
+  }
+
+  function updateParty(dt) {
+    for (let i = hatch.shards.length - 1; i >= 0; i--) {
+      const p = hatch.shards[i];
+      p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += U * 2.4 * dt; p.rot += p.spin * dt;
+      if (p.y > H + U * 0.3) hatch.shards.splice(i, 1);
+    }
+    for (let i = hatch.balloons.length - 1; i >= 0; i--) {
+      const b = hatch.balloons[i];
+      b.t += dt; b.y += b.vy * dt; b.x += Math.sin(b.t * 1.3 + b.ph) * b.drift * dt;
+      if (b.y < -U * 0.6) hatch.balloons.splice(i, 1);
+    }
+    for (let i = hatch.confetti.length - 1; i >= 0; i--) { hatch.confetti[i].t += dt; if (hatch.confetti[i].t > 1.4) hatch.confetti.splice(i, 1); }
+    hatch.flash = Math.max(0, hatch.flash - dt / 0.7);
+    hatch.hop = Math.max(0, hatch.hop - dt / 0.6);
+    // the creature's color comes in later (for now: after a while; later: a game milestone)
+    if (egg.state === "hatched" && time - hatch.bornAt > HATCH.colorAfter && hatch.colorK < 1) {
+      if (hatch.colorK === 0) { audio.sample("07_magic_sparkle", 0.8); sparkle(egg.screen.cx, egg.screen.cy, 20); }
+      hatch.colorK = Math.min(1, hatch.colorK + dt / 2.5);
+    }
+  }
+
+  function saveCreature() {
+    if (DEV.resetShell) return;
+    try { localStorage.setItem("egg.creature", hatch.creature); } catch (e) {}
+  }
+
+  // the egg during hatching: our cracked egg, shaking harder and glowing through the cracks
+  function drawHatchingEgg(L) {
+    const A = eggAnchor(L), t = hatch.t;
+    if (t >= 2.5) return;
+    const name = t < 0.8 ? "oh" : "crack5";
+    const P = SPR.poses[name], im = img["p_" + name];
+    if (!im || !im.complete) return;
+    const amp = t < 0.8 ? 0.04 : 0.04 + (t - 0.8) / 1.7 * 0.14;
+    const rot = Math.sin(t * (t < 0.8 ? 14 : 34)) * amp;
+    const s = A.eggH / P.hgt * (1 + Math.max(0, t - 1.6) * 0.06);
+    egg.screen = { cx: A.fx, cy: A.fy - A.eggH * 0.52, rx: A.eggH * 0.36, ry: A.eggH * 0.5 };
+    // violet light pushing out
+    const cy = A.fy - A.eggH * 0.5, r = A.eggH * (0.7 + t * 0.25 + Math.sin(t * 20) * 0.05);
+    const g = ctx.createRadialGradient(A.fx, cy, 0, A.fx, cy, r);
+    g.addColorStop(0, `rgba(237,228,255,${0.5 + t * 0.15})`); g.addColorStop(0.45, "rgba(167,139,250,0.4)"); g.addColorStop(1, "rgba(139,92,246,0)");
+    ctx.fillStyle = g; ctx.fillRect(A.fx - r, cy - r, r * 2, r * 2);
+    ctx.save();
+    ctx.translate(A.fx, A.fy); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.drawImage(im, -P.ax, -P.ay, P.w, P.h);
+    // light leaking through the cracks
+    if (t > 0.8) {
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = Math.min(0.6, (t - 0.8) * 0.4) * (0.7 + Math.sin(t * 25) * 0.3);
+      ctx.drawImage(im, -P.ax, -P.ay, P.w, P.h);
+    }
+    ctx.restore();
+  }
+
+  function drawCreature(L) {
+    const id = hatch.creature; if (!id) return;
+    const t = hatch.t, born = egg.state === "hatched" ? 1 : ss(6.4, 7.2, t);
+    if (born <= 0) return;
+    const C = creatureMeta(id), bw = img["crbw_" + id], col = img["cr_" + id];
+    if (!bw || !bw.complete || !bw.naturalWidth) return;
+    const A = eggAnchor(L);
+    const hgt = A.eggH * HATCH.size * (0.3 + 0.7 * born);
+    const s = hgt / C.h;
+    const breathe = 1 + Math.sin(time * 2.2) * 0.02;
+    const hop = Math.sin(hatch.hop * Math.PI) * A.eggH * 0.12;
+    const sway = egg.side * 0.6 + Math.sin(time * 1.3) * 0.03;
+    egg.screen = { cx: A.fx, cy: A.fy - hgt * 0.5, rx: C.w * s * 0.45, ry: hgt * 0.5 };
+    ctx.save();
+    ctx.globalAlpha = born;
+    // shadow
+    ctx.save(); ctx.translate(A.fx, A.fy); ctx.scale(1, 0.2);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, C.w * s * 0.45);
+    g.addColorStop(0, "rgba(20,20,24,0.35)"); g.addColorStop(1, "rgba(20,20,24,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, C.w * s * 0.45, 0, 6.2832); ctx.fill(); ctx.restore();
+    ctx.translate(A.fx, A.fy - hop);
+    ctx.rotate(sway);
+    ctx.scale(s * (2 - breathe), s * breathe);
+    ctx.drawImage(bw, -C.w / 2, -C.h + C.h * 0.04, C.w, C.h);
+    if (hatch.colorK > 0 && col && col.complete && col.naturalWidth) {
+      ctx.globalAlpha = born * hatch.colorK;
+      ctx.drawImage(col, -C.w / 2, -C.h + C.h * 0.04, C.w, C.h);
+    }
+    ctx.restore();
+  }
+
+  function drawParty() {
+    for (const p of hatch.shards) {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = "#f4f2ee"; ctx.strokeStyle = "#26262a"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < p.sides; i++) { const a = i / p.sides * Math.PI * 2, rr = p.r * (0.7 + ((i * 37) % 10) / 25); i ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-p.r * 0.3, -p.r * 0.1); ctx.lineTo(p.r * 0.1, p.r * 0.2); ctx.stroke();
+      ctx.restore();
+    }
+    for (const c of hatch.confetti) {
+      const im = img.confetti_burst; if (!im || !im.complete || !im.naturalWidth) continue;
+      const k = c.t / 1.4, sz = U * (0.3 + k * 0.5);
+      ctx.save(); ctx.globalAlpha = 1 - k * k; ctx.translate(c.x, c.y); ctx.rotate(c.rot + k);
+      ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+    }
+    for (const b of hatch.balloons) {
+      const im = img[b.id]; if (!im || !im.complete || !im.naturalWidth) continue;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.sin(b.t * 1.7 + b.ph) * 0.08);
+      ctx.drawImage(im, -b.w * b.s / 2, -b.h * b.s / 2, b.w * b.s, b.h * b.s); ctx.restore();
+    }
+    if (hatch.flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${hatch.flash * 0.9})`; ctx.fillRect(0, 0, W, H);
+      const g = ctx.createRadialGradient(egg.screen.cx, egg.screen.cy, 0, egg.screen.cx, egg.screen.cy, U * 0.8);
+      g.addColorStop(0, `rgba(237,228,255,${hatch.flash})`); g.addColorStop(1, "rgba(167,139,250,0)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function tapCreature(x, y) {
+    hatch.hop = 1;
+    sparkle(x, y, 10);
+    sfx.boing(0.6); sfx.sparkle(3);
+    buzz(20);
+  }
+
+  // ======================================================================
   //  THE DOG  (now and then a big friendly dog peeks in at the window)
   // ======================================================================
   const dog = { active: false, t: 0, kind: "bottom", side: 1, x: 0, next: DOG.firstAfter, leaving: 0, box: null };
@@ -1757,7 +2016,9 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       const solid = arriving ? eggSolidity(magic.t) : 1;
       drawNest(L, false);
       drawMagicParticles(L, true);
-      if (solid > 0.01) drawEgg(L, solid);
+      if (egg.state === "hatching") { drawHatchingEgg(L); drawCreature(L); }
+      else if (egg.state === "hatched") drawCreature(L);
+      else if (solid > 0.01) drawEgg(L, solid);
       if (arriving && solid < 1) {
         const A = eggAnchor(L);
         const cy = A.fy - A.eggH * 0.5, r = A.eggH * 0.5;
@@ -1778,9 +2039,10 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     ctx.fillStyle = v; ctx.fillRect(-20, -20, W + 40, H + 40);
 
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    barAlpha += ((arriving ? 0 : 1) - barAlpha) * (1 - Math.exp(-dt / 0.5));
+    barAlpha += ((arriving || egg.state === "hatching" || egg.state === "hatched" ? 0 : 1) - barAlpha) * (1 - Math.exp(-dt / 0.5));
     drawDog();
     drawBar(barAlpha);
+    drawParty();
     drawFx();
   }
 
@@ -1790,11 +2052,16 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   // for testing from a desktop browser's console: eggDebug.idle("yawn"), eggDebug.dog("side")
   window.eggDebug = {
     idle(id) { if (!IDLE_ANIMS[id]) return Object.keys(IDLE_ANIMS); stopIdle(); idle.fadeOut = 0; startIdle(0); idle.anim.id = id; idle.anim.def = IDLE_ANIMS[id]; idle.last = id; },
-    dog(kind) { dog.next = 0; dog.forceKind = kind; }
+    dog(kind) { dog.next = 0; dog.forceKind = kind; },
+    hatch(id) { if (id) hatch.creature = id; egg.shell = 0; egg.shownShell = 0; hatch.readyT = 0; }
   };
   let arrivedBefore = null;
   try { arrivedBefore = localStorage.getItem("egg.arrived"); } catch (e) {}
-  if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {
+  let savedCreature = null;
+  try { savedCreature = DEV.resetShell ? null : localStorage.getItem("egg.creature"); } catch (e) {}
+  if (savedCreature && creatureMeta(savedCreature)) {
+    hatch.creature = savedCreature; hatch.colorK = 1; egg.state = "hatched"; loadCreature(savedCreature);
+  } else if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {
     egg.state = "arriving";
     try { localStorage.setItem("egg.arrived", "1"); } catch (e) {}
   }

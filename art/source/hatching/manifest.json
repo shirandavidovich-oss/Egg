@@ -1,0 +1,151 @@
+{
+  "project": "Egg friend hatching party",
+  "version": "1.0",
+  "art_style": "charcoal pencil / graphite; colored balloons and creatures",
+  "fps": 16,
+  "characters": [
+    {
+      "id": "creature_01",
+      "name": "Winglet",
+      "bw": "characters/black_white/creature_01_winglet_bw.png",
+      "color": "characters/color/creature_01_winglet.png"
+    },
+    {
+      "id": "creature_02",
+      "name": "Bloop",
+      "bw": "characters/black_white/creature_02_bloop_bw.png",
+      "color": "characters/color/creature_02_bloop.png"
+    },
+    {
+      "id": "creature_03",
+      "name": "Sunspike",
+      "bw": "characters/black_white/creature_03_sunspike_bw.png",
+      "color": "characters/color/creature_03_sunspike.png"
+    },
+    {
+      "id": "creature_04",
+      "name": "Octoodle",
+      "bw": "characters/black_white/creature_04_octoodle_bw.png",
+      "color": "characters/color/creature_04_octoodle.png"
+    },
+    {
+      "id": "creature_05",
+      "name": "Emberwing",
+      "bw": "characters/black_white/creature_05_emberwing_bw.png",
+      "color": "characters/color/creature_05_emberwing.png"
+    },
+    {
+      "id": "creature_06",
+      "name": "Puffhorn",
+      "bw": "characters/black_white/creature_06_puffhorn_bw.png",
+      "color": "characters/color/creature_06_puffhorn.png"
+    },
+    {
+      "id": "creature_07",
+      "name": "Limefin",
+      "bw": "characters/black_white/creature_07_limefin_bw.png",
+      "color": "characters/color/creature_07_limefin.png"
+    },
+    {
+      "id": "creature_08",
+      "name": "Shroomie",
+      "bw": "characters/black_white/creature_08_shroomie_bw.png",
+      "color": "characters/color/creature_08_shroomie.png"
+    },
+    {
+      "id": "creature_09",
+      "name": "Nightflap",
+      "bw": "characters/black_white/creature_09_nightflap_bw.png",
+      "color": "characters/color/creature_09_nightflap.png"
+    },
+    {
+      "id": "creature_10",
+      "name": "Orbit",
+      "bw": "characters/black_white/creature_10_orbit_bw.png",
+      "color": "characters/color/creature_10_orbit.png"
+    },
+    {
+      "id": "creature_11",
+      "name": "Petalpop",
+      "bw": "characters/black_white/creature_11_petalpop_bw.png",
+      "color": "characters/color/creature_11_petalpop.png"
+    },
+    {
+      "id": "creature_12",
+      "name": "Pebblebot",
+      "bw": "characters/black_white/creature_12_pebblebot_bw.png",
+      "color": "characters/color/creature_12_pebblebot.png"
+    },
+    {
+      "id": "creature_13",
+      "name": "Noodle",
+      "bw": "characters/black_white/creature_13_noodle_bw.png",
+      "color": "characters/color/creature_13_noodle.png"
+    },
+    {
+      "id": "creature_14",
+      "name": "Tweetle",
+      "bw": "characters/black_white/creature_14_tweetle_bw.png",
+      "color": "characters/color/creature_14_tweetle.png"
+    },
+    {
+      "id": "creature_15",
+      "name": "Mossdragon",
+      "bw": "characters/black_white/creature_15_mossdragon_bw.png",
+      "color": "characters/color/creature_15_mossdragon.png"
+    },
+    {
+      "id": "creature_16",
+      "name": "Pompom",
+      "bw": "characters/black_white/creature_16_pompom_bw.png",
+      "color": "characters/color/creature_16_pompom.png"
+    },
+    {
+      "id": "creature_17",
+      "name": "Clackster",
+      "bw": "characters/black_white/creature_17_clackster_bw.png",
+      "color": "characters/color/creature_17_clackster.png"
+    },
+    {
+      "id": "creature_18",
+      "name": "Cloudbun",
+      "bw": "characters/black_white/creature_18_cloudbun_bw.png",
+      "color": "characters/color/creature_18_cloudbun.png"
+    },
+    {
+      "id": "creature_19",
+      "name": "Flufflet",
+      "bw": "characters/black_white/creature_19_flufflet_bw.png",
+      "color": "characters/color/creature_19_flufflet.png"
+    },
+    {
+      "id": "creature_20",
+      "name": "Moonpaw",
+      "bw": "characters/black_white/creature_20_moonpaw_bw.png",
+      "color": "characters/color/creature_20_moonpaw.png"
+    }
+  ],
+  "hatching": {
+    "crack_stages": 11,
+    "folder": "hatching/frames",
+    "balloons": "balloons/png",
+    "demo": "preview/hatching_balloon_reveal_demo.mp4"
+  },
+  "audio": {
+    "folder": "audio",
+    "formats": [
+      "wav",
+      "mp3"
+    ],
+    "clips": [
+      "01_shell_first_crack",
+      "02_rapid_cracks",
+      "03_shell_explosion",
+      "04_balloon_whoosh",
+      "05_happy_celebration_loop",
+      "06_reveal_fanfare",
+      "07_magic_sparkle",
+      "08_comic_oh_no"
+    ]
+  }
+}

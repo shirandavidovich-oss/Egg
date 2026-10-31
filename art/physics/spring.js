@@ -128,7 +128,48 @@ const SpringPhys = (() => {
     get stuck() { return !this.held && !this.st.moving && this.p.k * Math.abs(this.st.x) <= this.p.mus * this.p.m * this.p.g + 1e-12; }
   }
 
+  // ---------------- floor launcher: a body resting on a vertical spring, NOT attached ----------------
+  // y = position of the body's base relative to the spring's natural length, + up (y < 0: spring compressed).
+  // In contact (y <= 0) the spring pushes up with k·(−y); once y reaches 0 the contact ends and only gravity acts.
+  const lparams = (m, k, g = G_EARTH) => ({ m, k, g });
+  const restCompression = (p) => p.m * p.g / p.k;                       // sits compressed by mg/k
+  // leaves the spring only if ½k·c² > m·g·c, i.e. compressed more than 2mg/k
+  const detachCompression = (p) => 2 * p.m * p.g / p.k;
+  const launchSpeed = (p, c) => Math.sqrt(Math.max(0, p.k * c * c / p.m - 2 * p.g * c));      // at the natural length
+  const launchApex = (p, c) => c > detachCompression(p) ? launchSpeed(p, c) ** 2 / (2 * p.g) : 0; // above the natural length
+  const riseFromStart = (p, c) => p.k * c * c / (2 * p.m * p.g);                              // apex above the start point
+  function lstep(st, p, dt, damp = 0) {
+    const touching = st.y <= 0;
+    const a = (touching ? (-p.k * st.y - damp * st.v) / p.m : 0) - p.g;
+    const v = st.v + a * dt, y = st.y + v * dt;
+    return { y, v, touching: y <= 0 };
+  }
+  class LSim {
+    constructor(p) { this.reset(p); }
+    reset(p) { this.p = p; this.st = { y: -restCompression(p), v: 0, touching: true }; this.acc = 0; this.t = 0; this.held = false; this.flights = 0; this.apex = null; this.flying = false; this.landed = false; this.peak = -Infinity; }
+    hold(c) { this.held = true; this.st = { y: -c, v: 0, touching: true }; }
+    release() { this.held = false; this.acc = 0; this.t = 0; this.apex = null; this.flying = false; this.landed = false; this.peak = -Infinity; this.c0 = -this.st.y; }
+    advance(elapsed) {
+      if (this.held) return 0;
+      this.acc += Math.min(elapsed, 0.25);
+      let n = 0;
+      while (this.acc >= DT) {
+        // after a flight it lands and grabs on: a soft catch (damping only after landing), so it comes to rest
+        const damp = this.landed ? 2 * Math.sqrt(this.p.k * this.p.m) * 0.35 : 0;
+        const before = this.st;
+        this.st = lstep(this.st, this.p, DT, damp);
+        if (before.touching && !this.st.touching) { this.flying = true; this.flights++; }
+        if (this.flying) this.peak = Math.max(this.peak, this.st.y);
+        if (this.flying && before.v > 0 && this.st.v <= 0) this.apex = this.st.y;
+        if (this.flying && this.st.touching) { this.flying = false; this.landed = true; }
+        this.acc -= DT; this.t += DT; n++;
+      }
+      return n;
+    }
+  }
+
   return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
-    hparams, stickZone, halfSwingLoss, hstep, HSim };
+    hparams, stickZone, halfSwingLoss, hstep, HSim,
+    lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim };
 })();
 if (typeof module !== "undefined") module.exports = SpringPhys;

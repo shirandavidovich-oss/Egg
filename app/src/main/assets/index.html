@@ -66,7 +66,9 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   };
 
   // the dog that peeks in now and then
-  const DOG = { firstAfter: 35, every: [55, 120], stay: 4.2 };
+  const DOG = { firstAfter: 35, every: [55, 120], stay: 5.4,
+    line: "תשבור תביצה כבר!",   // what the dog says while the egg has not hatched yet
+    voice: { pitch: 0.7, rate: 1.05 } };
 
   // trading creatures between phones
   const TRADE = { swipe: 0.18, lookFor: 45 };   // swipe-up length (part of the screen), seconds to look for the other phone
@@ -2175,7 +2177,7 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     if (!dog.active) {
       if (canVisit) dog.next -= dt;
       if (dog.next <= 0 && canVisit) {
-        dog.active = true; dog.t = 0; dog.leaving = 0;
+        dog.active = true; dog.t = 0; dog.leaving = 0; dog.sniffed = dog.spoke = dog.panted = dog.talking = false;
         dog.kind = dog.forceKind || (Math.random() < 0.5 ? "bottom" : "side"); dog.forceKind = null;
         dog.side = dog.kind === "side" ? (Math.random() < 0.5 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1);
         dog.x = Math.random() < 0.5 ? 0.22 + Math.random() * 0.12 : 0.66 + Math.random() * 0.12;
@@ -2185,8 +2187,18 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       return;
     }
     dog.t += dt;
-    if (dog.t > 1.0 && dog.t < 1.1) sfx.sniff();
-    if (dog.t > 2.6 && dog.t < 2.7) sfx.pant();
+    if (dog.t > 0.9 && !dog.sniffed) { dog.sniffed = true; sfx.sniff(); }
+    if (dog.t > 1.5 && !dog.spoke) {
+      dog.spoke = true;
+      if (egg.state !== "hatched" && egg.state !== "hatching") {
+        dog.talking = true;
+        let said = false;
+        try { if (native && native.speak) { native.speak(DOG.line.replace(/!$/, ""), DOG.voice.pitch, DOG.voice.rate); said = true; } } catch (e) {}
+        if (!said) { sfx.boof(); setTimeout(() => sfx.boof(), 220); }
+        audio.duck(true); setTimeout(() => audio.duck(false), 2600);
+      }
+    }
+    if (dog.t > 4.2 && !dog.panted) { dog.panted = true; sfx.pant(); }
     const stay = DOG.stay;
     if (!dog.leaving && dog.t > stay) dog.leaving = 0.0001;
     if (dog.leaving) {
@@ -2226,6 +2238,39 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       ctx.drawImage(im, 0, -h * 0.3, w, h); ctx.restore();
       dog.box = dog.side < 0 ? { x, y, w, h } : { x: x - w, y, w, h };
     }
+  }
+  // the dog's speech bubble, comic style
+  function drawDogLine() {
+    if (!dog.active || !dog.talking || !dog.box) return;
+    const k = dog.t - 1.5;
+    if (k < 0 || k > 3.2 || dog.leaving) return;
+    const a = Math.min(1, k * 6) * (1 - ss(2.8, 3.2, k));
+    const pop = 0.7 + 0.3 * Math.min(1, k * 5);
+    const fs = Math.round(U * 0.062);
+    ctx.save();
+    ctx.font = `800 ${fs}px "Varela Round", "Rubik", "Arial Hebrew", Arial, sans-serif`;
+    ctx.direction = "rtl";
+    const tw = ctx.measureText(DOG.line).width;
+    const bw = tw + fs * 1.4, bh = fs * 2;
+    const b = dog.box;
+    // above the dog's head, leaning toward the middle of the screen
+    let bx, by, tipX, tipY;
+    if (dog.kind === "bottom") { bx = clamp(b.x + b.w * 0.5 - bw / 2, 10, W - bw - 10); by = b.y - bh - fs * 0.6; tipX = b.x + b.w * 0.5; tipY = b.y + fs * 0.3; }
+    else { bx = dog.side < 0 ? clamp(b.x + b.w * 0.55, 10, W - bw - 10) : clamp(b.x + b.w * 0.45 - bw, 10, W - bw - 10); by = b.y - bh * 0.2; tipX = b.x + b.w * (dog.side < 0 ? 0.6 : 0.4); tipY = b.y + b.h * 0.22; }
+    by = Math.max(H * 0.12, by);
+    ctx.globalAlpha = a;
+    ctx.translate(bx + bw / 2, by + bh / 2); ctx.scale(pop, pop); ctx.translate(-(bx + bw / 2), -(by + bh / 2));
+    ctx.fillStyle = "#fffdf7"; ctx.strokeStyle = "#26262a"; ctx.lineWidth = 3; ctx.lineJoin = "round";
+    ctx.beginPath(); roundRectPath(ctx, bx, by, bw, bh, bh * 0.45); ctx.fill(); ctx.stroke();
+    // the tail pointing at the dog's mouth
+    const mx = clamp(tipX, bx + bh * 0.6, bx + bw - bh * 0.6);
+    ctx.beginPath(); ctx.moveTo(mx - fs * 0.35, by + bh - 1); ctx.lineTo(tipX, Math.max(by + bh + fs * 0.6, Math.min(tipY, by + bh + fs * 1.6))); ctx.lineTo(mx + fs * 0.35, by + bh - 1);
+    ctx.fill(); ctx.stroke();
+    ctx.fillRect(mx - fs * 0.33, by + bh - 4, fs * 0.66, 5);
+    ctx.fillStyle = "#26262a"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const wob = Math.sin(k * 18) * (k < 0.6 ? 2 : 0);
+    ctx.fillText(DOG.line, bx + bw / 2, by + bh / 2 + wob);
+    ctx.restore();
   }
   function hitDog(x, y) {
     const b = dog.box;
@@ -2281,6 +2326,7 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     barAlpha += ((arriving || egg.state === "hatching" || egg.state === "hatched" ? 0 : 1) - barAlpha) * (1 - Math.exp(-dt / 0.5));
     drawDog();
+    drawDogLine();
     drawBar(barAlpha);
     drawParty();
     drawTrade();

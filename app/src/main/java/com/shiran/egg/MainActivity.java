@@ -50,6 +50,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     private Sensor gravity;
     private Sensor motion;
     private PhoneLink link;
+    private android.speech.tts.TextToSpeech tts;
+    private boolean ttsReady = false;
     private long lastShakeSent = 0;
     private boolean pageReady = false;
     private long lastSent = 0;
@@ -96,6 +98,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         });
         setContentView(web);
         loadGame();
+
+        // a voice for the dog (Hebrew, from the phone's own text-to-speech)
+        tts = new android.speech.tts.TextToSpeech(this, status -> {
+            if (status != android.speech.tts.TextToSpeech.SUCCESS) return;
+            int r = tts.setLanguage(new java.util.Locale("he", "IL"));
+            ttsReady = r != android.speech.tts.TextToSpeech.LANG_MISSING_DATA && r != android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED;
+        });
 
         sensors = (SensorManager) getSystemService(SENSOR_SERVICE);
         gravity = sensors.getDefaultSensor(Sensor.TYPE_GRAVITY);
@@ -194,6 +203,14 @@ public class MainActivity extends Activity implements SensorEventListener {
             else v.vibrate(len);
         }
 
+        @JavascriptInterface
+        public void speak(String text, float pitch, float rate) {
+            if (!ttsReady) return;
+            tts.setPitch(pitch);
+            tts.setSpeechRate(rate);
+            tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "dog");
+        }
+
         // the direct phone-to-phone link (see PhoneLink)
         @JavascriptInterface
         public void tradeStart(String name) { main.post(() -> link.start(name)); }
@@ -273,6 +290,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onDestroy() {
         link.stop();
+        if (tts != null) tts.shutdown();
         super.onDestroy();
     }
 

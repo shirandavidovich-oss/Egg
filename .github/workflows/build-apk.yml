@@ -6,6 +6,7 @@ on:
     # changes to the game itself reach phones on their own; no new APK needed
     paths-ignore:
       - "app/src/main/assets/**"
+      - "art/**"
       - "README.md"
   workflow_dispatch:
 
@@ -26,6 +27,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.7"
+
+      - name: Physics and save tests
+        run: |
+          node tests/spring.test.js
+          node tests/profile.test.js
 
       - name: Build
         run: |

@@ -302,6 +302,16 @@ public class MainActivity extends Activity implements SensorEventListener {
         super.onPause();
     }
 
+    // Android back: the game closes its own pages and bubbles first; at home it leaves the app
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onBackPressed() {
+        if (!pageReady) { super.onBackPressed(); return; }
+        web.evaluateJavascript("(window.eggBack && window.eggBack()) ? 'handled' : 'leave'", value -> {
+            if (value == null || !value.contains("handled")) MainActivity.super.onBackPressed();
+        });
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);

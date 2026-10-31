@@ -15,12 +15,18 @@
     -webkit-tap-highlight-color: transparent;
   }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+/*INCLUDE_CSS:physics/ui.css*/
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
 </head>
 <body>
 <canvas id="world"></canvas>
+/*INCLUDE_HTML:physics/ui.html*/
 <script>
 /*SPRITES*/
+/*INCLUDE:physics/spring.js*/
+/*INCLUDE:physics/profile.js*/
 (() => {
   "use strict";
 
@@ -402,6 +408,7 @@
     init();
     return {
       unlock, sample, duck,
+      mute(on) { init(); if (ac) { const t = ac.currentTime; sfxBus.gain.setTargetAtTime(on ? 0 : SOUND.effects, t, 0.05); musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(on ? 0 : SOUND.music, t, 0.1); } },
       preload(names) { init(); for (const n of names) fetchSample(n); },
       get ok() { return !!ac && ac.state === "running"; },
       get ac() { return ac; },
@@ -1828,11 +1835,11 @@
   //  HATCHING  (the shell gives way, balloons, and a creature in the nest)
   // ======================================================================
   const hatch = { t: 0, creature: null, shards: [], balloons: [], confetti: [], flash: 0, colorK: 0, bornAt: 0, hop: 0, readyT: 0, celebrate: null, cues: new Set() };
-  const creatureMeta = (id) => SPR.creatures.find((c) => c.id === id);
+  const creatureMeta = (id) => SPR.creatures.find((c) => c.id === id) || SPR.legacyCreatures.find((c) => c.id === id);
 
   // pick a creature by rarity  (later this roll moves to the server, so it cannot be cheated)
   function rollCreature() {
-    const pool = SPR.creatures.map((c) => ({ id: c.id, w: RARITY[CREATURE_RARITY[c.id] || "common"].weight }));
+    const pool = SPR.creatures.map((c) => ({ id: c.id, w: RARITY[c.rarity || "common"].weight }));
     const total = pool.reduce((s, c) => s + c.w, 0);
     let r = Math.random() * total;
     for (const c of pool) { r -= c.w; if (r <= 0) return c.id; }
@@ -1922,9 +1929,10 @@
     }
   }
 
+  // the hatched creature belongs to the player's profile (with coins and learning kept apart)
   function saveCreature() {
-    if (DEV.resetShell) return;
-    try { localStorage.setItem("egg.creature", hatch.creature); } catch (e) {}
+    if (!EggProfile.active()) EggProfile.addCreature(hatch.creature, "hatch");
+    window.dispatchEvent(new Event("egg:creature"));
   }
 
   // the egg during hatching: our cracked egg, shaking harder and glowing through the cracks
@@ -2099,7 +2107,8 @@
       if (trade.t > 0.9 && hatch.creature !== trade.incoming) {
         // our creature is gone through the top; the other one drops in
         hatch.creature = trade.incoming; hatch.colorK = 1; hatch.hop = 1;
-        saveCreature();
+        EggProfile.tradeActive(trade.incoming);          // the creature moves; coins and learning stay here
+        window.dispatchEvent(new Event("egg:creature"));
         audio.sample("06_reveal_fanfare", 0.8);
       }
       if (trade.t > 2.2) { endTrade(); sparkle(egg.screen.cx, egg.screen.cy, 16); }
@@ -2395,18 +2404,32 @@
   let arrivedBefore = null;
   try { arrivedBefore = localStorage.getItem("egg.arrived"); } catch (e) {}
   setTimeout(() => { if (SERVER.enabled && !account.creature) claimEgg(); }, 1500);
-  let savedCreature = null;
-  try { savedCreature = DEV.resetShell ? null : localStorage.getItem("egg.creature"); } catch (e) {}
-  if (savedCreature && creatureMeta(savedCreature)) {
+  const mine = EggProfile.active();
+  const savedCreature = mine && creatureMeta(mine.species) ? mine.species : null;
+  if (savedCreature) {
     hatch.creature = savedCreature; hatch.colorK = 1; egg.state = "hatched"; loadCreature(savedCreature);
   } else if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {
     egg.state = "arriving";
     try { localStorage.setItem("egg.arrived", "1"); } catch (e) {}
   }
+  // what the physics screens may ask of the game
+  window.__egg = {
+    covered: false,                                    // a full-screen page is over the game: rest
+    hatched: () => egg.state === "hatched",
+    species: () => hatch.creature,
+    meta: creatureMeta,
+    setCreature(species) { hatch.creature = species; hatch.colorK = 1; hatch.hop = 1; loadCreature(species); petSig = ""; },
+    openTrade() { if (egg.state === "hatched") openTrade(); },
+    closeBubble() { if (trade.stage && trade.stage !== "swapping") { if (trade.stage === "offer" || trade.stage === "waiting") link.send({ t: "no" }); endTrade(); return true; } return false; },
+    sfx, audio, buzz,
+    newEgg() { EggProfile.devNewEgg(); try { location.reload(); } catch (e) {} }
+  };
+
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (window.__egg.covered) { requestAnimationFrame(loop); return; }
     // hold the arrival until the drawings are in, so the magic is not missed
     if (pending === 0 || egg.state !== "arriving") update(dt);
     frame(dt);
@@ -2414,6 +2437,9 @@
   }
   requestAnimationFrame(loop);
 })();
+</script>
+<script>
+/*INCLUDE:physics/ui.js*/
 </script>
 </body>
 </html>

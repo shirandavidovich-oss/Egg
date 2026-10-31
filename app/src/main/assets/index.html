@@ -15,12 +15,482 @@
     -webkit-tap-highlight-color: transparent;
   }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  /* ---------- physics screens: white paper, pencil lines, color only where it means something ---------- */
+  :root {
+    --paper: #FFFEFC;
+    --ink: #20232A;
+    --ink-2: #606671;
+    --pencil: #6B6B70;
+    --line: #DFE1E4;
+    --card: #FFFFFF;
+    --blue: #258EF6;
+    --blue-press: #1A74D0;
+    --teal: #25B58B;
+    --violet: #8A60E8;
+    --gold: #F3BE3E;
+    --gold-2: #D99A1C;
+    --orange: #F49A35;
+    --red: #E2574C;
+    --ui-font: "Rubik", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+  }
+  #ui, #hud, #coinLayer { font-family: var(--ui-font); color: var(--ink); }
+  #ui[hidden], #hud[hidden] { display: none !important; }
+  .ltr, .m { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+
+  /* ---- the home-screen overlay over the egg's room ---- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  .hud-coins { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: max(14px, env(safe-area-inset-left, 0px)); pointer-events: auto; }
+  .hud-physics {
+    position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); transform: translateX(-50%);
+    pointer-events: auto; display: flex; align-items: center; gap: 10px;
+    min-height: 56px; padding: 8px 18px 8px 10px; border-radius: 999px;
+    background: rgba(255,254,252,0.94); border: 1.5px solid #3a3a40; color: var(--ink);
+    box-shadow: 0 2px 0 rgba(30,30,34,0.25); font: 700 18px var(--ui-font); cursor: pointer;
+  }
+  .hud-physics:active { transform: translateX(-50%) translateY(2px); box-shadow: none; }
+  .hud-icon { width: 38px; height: 38px; color: #3a3a40; }
+  .hud-icon svg { width: 100%; height: 100%; }
+  .hud-text { display: flex; flex-direction: column; gap: 5px; align-items: stretch; min-width: 92px; }
+  .hud-label { line-height: 1; }
+
+  /* ---- coins ---- */
+  .coins { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-weight: 700; font-size: 17px; direction: ltr; }
+  .coins .num { font-variant-numeric: tabular-nums; min-width: 1.5em; text-align: left; }
+  .coins.bump { animation: bump 0.35s ease-out; }
+  @keyframes bump { 40% { transform: scale(1.14); } }
+  .coin, .fly-coin {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 35% 30%, #FFF3C4 0 18%, var(--gold) 45%, var(--gold-2) 100%);
+    border: 1.5px solid #B57B10; box-shadow: inset 0 -2px 0 rgba(160,100,10,0.35);
+  }
+  #coinLayer { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+  .fly-coin { position: fixed; left: 0; top: 0; will-change: transform, opacity; }
+  .plus { position: fixed; z-index: 31; font: 800 22px var(--ui-font); color: var(--gold-2); pointer-events: none; text-shadow: 0 1px 0 #fff; }
+
+  /* ---- meters ---- */
+  .meter { display: block; height: 12px; border-radius: 8px; background: #ECEEF1; overflow: hidden; direction: rtl; }
+  .meter.thin { height: 6px; }
+  .meter i { display: block; height: 100%; width: 0; border-radius: inherit; transition: width 0.9s cubic-bezier(.2,.8,.2,1); }
+  .meter.teal i { background: linear-gradient(90deg, #4BCFA7, var(--teal)); }
+  .meter.violet i { background: linear-gradient(90deg, #A989F2, var(--violet)); }
+  .meter-row { display: flex; align-items: center; gap: 12px; }
+  .meter-row .meter { flex: 1; }
+  .meter-row .pct { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: left; direction: ltr; }
+  .meter-label { display: flex; justify-content: space-between; font-size: 15px; color: var(--ink-2); margin-bottom: 7px; }
+
+  /* ---- the physics pages ---- */
+  #ui {
+    position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column;
+    background-color: var(--paper);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cg fill='none' stroke='%236B6B70' stroke-opacity='0.11' stroke-width='1.3' stroke-linecap='round'%3E%3Cellipse cx='60' cy='70' rx='26' ry='10'/%3E%3Cellipse cx='60' cy='70' rx='26' ry='10' transform='rotate(60 60 70)'/%3E%3Cellipse cx='60' cy='70' rx='26' ry='10' transform='rotate(-60 60 70)'/%3E%3Cpath d='M280 40c8 0 8 8 0 8s-8 8 0 8 8 8 0 8-8 8 0 8 8 8 0 8'/%3E%3Ccircle cx='300' cy='250' r='22'/%3E%3Cpath d='M300 228v-10M300 282v-10M278 250h-10M332 250h-10'/%3E%3Cpath d='M40 290q30-40 60 0t60 0'/%3E%3Cpath d='M180 150l14 24h-28z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 360px 360px;
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+  }
+  .top { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 8px; }
+  .title-wrap { flex: 1; min-width: 0; }
+  .top h1 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+  .top p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
+  .top p:empty { display: none; }
+  .icon-btn { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink); border-radius: 14px; cursor: pointer; }
+  .icon-btn svg { width: 26px; height: 26px; }
+  .icon-btn:active { background: #F0F1F3; }
+  #screen { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 4px 16px 18px; -webkit-overflow-scrolling: touch; }
+  .screen-in { animation: screenIn 0.28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes screenIn { from { opacity: 0; transform: translateX(-14px); } }
+  .tabs { display: flex; justify-content: space-around; padding: 6px 8px calc(env(safe-area-inset-bottom, 0px) + 6px); border-top: 1px solid var(--line); background: rgba(255,254,252,0.96); }
+  .tabs button { flex: 1; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: none; color: var(--ink-2); font: 500 13px var(--ui-font); cursor: pointer; border-radius: 14px; }
+  .tabs button svg { width: 26px; height: 26px; }
+  .tabs button[aria-current="page"] { color: var(--blue); font-weight: 700; }
+  button:focus-visible { outline: 3px solid rgba(37,142,246,0.5); outline-offset: 2px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 1px 2px rgba(20,24,30,0.04); padding: 18px; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 16px; border: 0; font: 700 18px var(--ui-font); cursor: pointer; text-decoration: none; }
+  .btn.primary { background: var(--blue); color: #fff; box-shadow: 0 3px 0 var(--blue-press); }
+  .btn.primary:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--blue-press); }
+  .btn.secondary { background: #fff; color: var(--ink); border: 1.5px solid #3a3a40; box-shadow: 0 2px 0 rgba(30,30,34,0.2); }
+  .btn.quiet { background: transparent; color: var(--ink-2); min-height: 44px; padding: 0 12px; font-weight: 500; font-size: 16px; }
+  .btn.block { width: 100%; }
+  .btn[disabled] { opacity: 0.45; pointer-events: none; }
+  .tag { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #F1F2F4; color: var(--ink-2); white-space: nowrap; }
+  .tag.open { background: #E3F6EF; color: #137556; }
+  .tag.common { background: #F1F2F4; } .tag.uncommon { background: #E3F6EF; color: #137556; }
+  .tag.rare { background: #E6F0FE; color: #1663B4; } .tag.epic { background: #EFE8FC; color: #5B37B8; } .tag.legendary { background: #FDF2DA; color: #8A5A00; }
+
+  /* speech bubble from a creature */
+  .bubble { position: relative; background: #fff; border: 1.5px solid #3a3a40; border-radius: 18px; padding: 10px 14px; font-size: 16px; font-weight: 500; line-height: 1.35; box-shadow: 0 2px 0 rgba(30,30,34,0.15); }
+
+  /* ---- mode choice ---- */
+  .hello { display: flex; align-items: flex-end; gap: 10px; margin: 6px 0 4px; }
+  .hello img { width: 112px; height: 112px; object-fit: contain; flex: none; animation: idleBob 3.2s ease-in-out infinite; }
+  @keyframes idleBob { 50% { transform: translateY(-4px) rotate(-1.5deg); } }
+  .hello .bubble { margin-bottom: 30px; }
+  .mode-card { width: 100%; text-align: right; display: grid; gap: 6px; cursor: pointer; font: inherit; color: inherit; position: relative; overflow: hidden; }
+  .mode-card h2 { margin: 0; font-size: 24px; font-weight: 800; }
+  .mode-card p { margin: 0 0 10px; color: var(--ink-2); font-size: 16px; max-width: 26ch; }
+  .mode-card.surprise { background: linear-gradient(180deg, #F3F8FF, #fff 70%); border-color: #CFE2FB; padding-block: 22px; }
+  .mode-card .art { position: absolute; left: 14px; top: 16px; width: 82px; height: 82px; color: #3a3a40; }
+  .mode-card .btn { justify-self: start; }
+
+  /* ---- lever machine ---- */
+  .machine-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; }
+  .machine { position: relative; flex: 1; max-width: 300px; padding: 16px; border: 2px solid #3a3a40; border-radius: 26px; background: #fff; box-shadow: 0 4px 0 rgba(30,30,34,0.18), inset 0 0 0 6px #F4F4F2; }
+  .machine::before { content: ""; position: absolute; top: -12px; left: 30%; right: 30%; height: 14px; border: 2px solid #3a3a40; border-bottom: 0; border-radius: 10px 10px 0 0; background: #F4F4F2; }
+  .bolts { position: absolute; inset: 7px; pointer-events: none; }
+  .bolts span { position: absolute; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #6b6b70; background: #fff; }
+  .reel-window { position: relative; height: 252px; overflow: hidden; border: 2px solid #3a3a40; border-radius: 16px; background: #FAFAF8; }
+  .reel-window::before, .reel-window::after { content: ""; position: absolute; left: 0; right: 0; height: 64px; z-index: 2; pointer-events: none; }
+  .reel-window::before { top: 0; background: linear-gradient(#FAFAF8, rgba(250,250,248,0)); }
+  .reel-window::after { bottom: 0; background: linear-gradient(rgba(250,250,248,0), #FAFAF8); }
+  .reel-mark { position: absolute; left: 6px; right: 6px; top: 84px; height: 84px; border: 2px dashed var(--orange); border-radius: 14px; z-index: 3; pointer-events: none; }
+  .reel { will-change: transform; }
+  .reel-item { height: 84px; display: flex; align-items: center; gap: 12px; padding: 0 14px; }
+  .reel-item svg { width: 52px; height: 52px; flex: none; color: #3a3a40; }
+  .reel-item b { font-size: 17px; line-height: 1.25; }
+  .reel-item small { display: block; font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .lever { position: relative; width: 58px; height: 190px; flex: none; touch-action: none; }
+  .lever .track { position: absolute; right: 24px; top: 14px; width: 10px; height: 160px; border-radius: 6px; border: 2px solid #3a3a40; background: #F4F4F2; }
+  .lever .knob { position: absolute; right: 9px; top: 0; width: 40px; height: 40px; border-radius: 50%; cursor: grab;
+    background: radial-gradient(circle at 35% 30%, #FFD9A8 0 14%, var(--orange) 48%, #D9701A 100%); border: 2px solid #3a3a40; box-shadow: 0 3px 0 rgba(30,30,34,0.25); }
+  .lever .knob:active { cursor: grabbing; }
+  .lever .hint { position: absolute; right: -4px; top: 46px; width: 24px; height: 60px; color: var(--orange); animation: nudge 1.4s ease-in-out infinite; }
+  @keyframes nudge { 50% { transform: translateY(10px); } }
+  .result { margin-top: 16px; text-align: center; }
+  .result.show { animation: pop 0.4s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { from { transform: scale(0.85); opacity: 0; } }
+  .result h2 { margin: 6px 0 2px; font-size: 26px; font-weight: 800; }
+  .result p { margin: 0 0 14px; color: var(--ink-2); }
+
+  /* ---- spring intro ---- */
+  .intro { text-align: center; }
+  .intro .scene { position: relative; height: 230px; width: 100%; max-width: 330px; margin: 4px auto 8px; align-self: center; }
+  .intro .scene img { position: absolute; right: 20px; bottom: 0; width: 160px; height: 170px; object-fit: contain; animation: idleBob 2.6s ease-in-out infinite; }
+  .intro .scene svg { position: absolute; left: 28px; bottom: 0; width: 90px; height: 210px; color: #3a3a40; }
+  .intro .bubble { position: absolute; top: 0; right: 0; width: max-content; max-width: 200px; }
+  .intro h2 { margin: 0; font-size: 30px; font-weight: 800; }
+  .path-line { font-size: 14px; color: var(--ink-2); margin: 6px 0 0; }
+
+  /* ---- spring lab ---- */
+  .lab-screen { display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
+  .lab { position: relative; flex: 1 1 auto; min-height: 330px; height: 56vh; border: 1px solid var(--line); border-radius: 22px; background: #fff; overflow: hidden; touch-action: none; }
+  .lab canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .lab .say { position: absolute; top: 12px; right: 12px; max-width: 62%; z-index: 2; font-size: 15px; }
+  .lab .say[hidden] { display: none; }
+  .lab-tools { position: absolute; bottom: 10px; right: 10px; left: 10px; display: flex; justify-content: space-between; gap: 8px; z-index: 2; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 12px 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.95); font: 600 14px var(--ui-font); color: var(--ink); cursor: pointer; }
+  .chip img { width: 34px; height: 34px; object-fit: contain; }
+  .readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .readout { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 6px; text-align: center; min-width: 0; }
+  .readout small { display: block; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .readout b { display: block; font-size: 16px; font-weight: 700; direction: ltr; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .readout b.dim { color: var(--ink-2); font-weight: 500; }
+  .controls { display: grid; gap: 14px; padding: 14px 16px; }
+  .slider-row label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .slider-row .val { font-weight: 700; direction: ltr; font-variant-numeric: tabular-nums; }
+  .slider-row .note { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  input[type=range] { width: 100%; height: 34px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; direction: rtl; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 4px; background: #E6E8EB; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: #fff; border: 2.5px solid var(--blue); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+  input[type=range].mass::-webkit-slider-thumb { border-color: var(--orange); }
+  input[type=range].damp::-webkit-slider-thumb { border-color: var(--pencil); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 4px; background: #E6E8EB; }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2.5px solid var(--blue); }
+  details.adv summary { cursor: pointer; font-size: 14px; color: var(--ink-2); min-height: 32px; display: flex; align-items: center; }
+  .linkish { border: 0; background: none; color: var(--blue); font: 600 13px var(--ui-font); cursor: pointer; padding: 4px; }
+  .formula { display: grid; gap: 8px; }
+  .formula .eq { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .formula .eq:last-child { border-bottom: 0; }
+  .formula .eq span:first-child { font-size: 14px; color: var(--ink-2); }
+  .formula .eq .m { font: 600 17px "Cambria Math", "Times New Roman", serif; color: var(--ink); }
+  .formula .eq .m em { color: var(--blue); font-style: normal; font-family: var(--ui-font); font-size: 14px; margin-inline-start: 6px; }
+  .formula .fine { font-size: 12.5px; color: var(--ink-2); margin: 2px 0 0; }
+
+  /* sheets and cards over the lab */
+  .sheet-back { position: fixed; inset: 0; z-index: 20; background: rgba(32,35,42,0.28); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; } }
+  .sheet { width: 100%; max-width: 520px; background: #fff; border-radius: 24px 24px 0 0; padding: 18px 18px calc(env(safe-area-inset-bottom, 0px) + 18px); animation: sheetUp 0.3s cubic-bezier(.2,.8,.2,1); max-height: 82vh; overflow-y: auto; }
+  @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } }
+  .sheet h3 { margin: 0 0 6px; font-size: 21px; font-weight: 800; }
+  .sheet p { margin: 0 0 12px; color: var(--ink-2); line-height: 1.45; }
+  .sheet .insight { font-size: 18px; color: var(--ink); font-weight: 500; }
+  .sheet .gain { display: flex; align-items: center; gap: 8px; font: 800 20px var(--ui-font); color: var(--gold-2); margin-bottom: 8px; }
+  .sheet .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .sheet .actions .btn { flex: 1; }
+  .options { display: grid; gap: 10px; margin: 12px 0 4px; }
+  .options button { min-height: 52px; text-align: right; padding: 10px 16px; border-radius: 14px; border: 1.5px solid var(--line); background: #fff; font: 600 16px var(--ui-font); color: var(--ink); cursor: pointer; }
+  .options button.right { border-color: var(--teal); background: #E9F8F2; }
+  .options button.wrong { border-color: #F0B3AD; background: #FDF0EE; }
+  .pick-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .pick-list button { border: 1.5px solid var(--line); background: #fff; border-radius: 16px; padding: 8px 4px; display: grid; justify-items: center; gap: 2px; font: 600 13px var(--ui-font); color: var(--ink); cursor: pointer; }
+  .pick-list button img { width: 64px; height: 64px; object-fit: contain; }
+  .pick-list button small { color: var(--ink-2); font-weight: 500; direction: ltr; }
+  .pick-list button[aria-pressed="true"] { border-color: var(--blue); background: #F2F8FF; }
+  .invite { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 3; display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 10px 12px; }
+  .invite span { font-weight: 600; font-size: 15px; }
+
+  /* ---- creatures ---- */
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .ctile { position: relative; display: grid; justify-items: center; gap: 4px; padding: 14px 8px 12px; cursor: pointer; font: inherit; color: inherit; }
+  .ctile img { width: 100%; max-width: 128px; aspect-ratio: 1; object-fit: contain; }
+  .ctile b { font-size: 17px; }
+  .ctile.locked img { filter: grayscale(1) opacity(0.45); }
+  .ctile.active { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,142,246,0.25); }
+  .ctile .corner { position: absolute; top: 10px; right: 10px; }
+  .cdetail { text-align: center; }
+  .cdetail img.big { width: 220px; max-width: 70%; aspect-ratio: 1; object-fit: contain; }
+  .cdetail h2 { margin: 4px 0; font-size: 28px; font-weight: 800; }
+  .props { text-align: right; display: grid; gap: 0; }
+  .props div { display: flex; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px dashed var(--line); font-size: 15.5px; }
+  .props div:last-child { border-bottom: 0; }
+  .props span:first-child { color: var(--ink-2); }
+  .props b { direction: ltr; font-variant-numeric: tabular-nums; }
+  .fine { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+
+  /* ---- map ---- */
+  .world h3 { margin: 18px 4px 8px; font-size: 18px; font-weight: 800; }
+  .fam { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; }
+  .fam + .fam { margin-top: 8px; }
+  .fam svg { width: 40px; height: 40px; color: #3a3a40; }
+  .fam b { font-size: 16px; display: block; }
+  .fam small { color: var(--ink-2); font-size: 13px; }
+  .fam .meter { margin-top: 6px; }
+  .fam.playable { cursor: pointer; border-color: #CFC0F6; }
+  .devtools { margin-top: 22px; padding: 14px; border: 1.5px dashed #C9CCD1; border-radius: 16px; }
+  .devtools h4 { margin: 0 0 8px; font-size: 14px; color: var(--ink-2); }
+  .devtools .btn { min-height: 44px; font-size: 15px; margin: 4px 0 4px 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .screen-in, .hello img, .intro .scene img, .lever .hint, .result.show, .sheet, .sheet-back { animation: none !important; }
+    .meter i { transition: none; }
+  }
+  @media (max-height: 700px) { .lab { height: 48vh; min-height: 280px; } }
+
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
 </head>
 <body>
 <canvas id="world"></canvas>
+<div id="hud" hidden>
+  <div class="coins hud-coins" id="hudCoins" role="status" aria-label="מטבעות"><span class="coin" aria-hidden="true"></span><b class="num">0</b></div>
+  <button id="hudPhysics" class="hud-physics" type="button">
+    <span class="hud-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><ellipse cx="20" cy="20" rx="16" ry="6.5"/><ellipse cx="20" cy="20" rx="16" ry="6.5" transform="rotate(60 20 20)"/><ellipse cx="20" cy="20" rx="16" ry="6.5" transform="rotate(-60 20 20)"/></g><circle cx="20" cy="20" r="3.2" fill="#8A60E8"/></svg></span>
+    <span class="hud-text"><span class="hud-label">פיזיקה</span><span class="meter thin teal"><i id="hudMeter"></i></span></span>
+  </button>
+</div>
+
+<div id="ui" dir="rtl" hidden>
+  <header class="top">
+    <button class="icon-btn" id="uiBack" type="button" aria-label="חזרה"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="title-wrap"><h1 id="uiTitle"></h1><p id="uiSub"></p></div>
+    <button class="icon-btn" id="uiSound" type="button" aria-label="השתקה"></button>
+    <div class="coins" id="uiCoins" role="status" aria-label="מטבעות"><span class="coin" aria-hidden="true"></span><b class="num">0</b></div>
+  </header>
+  <main id="screen"></main>
+  <nav class="tabs" id="tabs" aria-label="ניווט">
+    <button type="button" data-tab="home"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4c5.5 0 9 7 9 13a9 9 0 0 1-18 0c0-6 3.5-13 9-13z"/><path d="M5 24c4 3 18 3 22 0"/></g></svg><span>הביצה</span></button>
+    <button type="button" data-tab="physics"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="16" cy="16" rx="13" ry="5"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(-60 16 16)"/></g></svg><span>פיזיקה</span></button>
+    <button type="button" data-tab="creatures"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="17" r="9"/><path d="M9 11 7 4l6 4M23 11l2-7-6 4"/><circle cx="13" cy="16" r="1.2" fill="currentColor"/><circle cx="19" cy="16" r="1.2" fill="currentColor"/><path d="M14 20.5q2 1.6 4 0"/></g></svg><span>דמויות</span></button>
+    <button type="button" data-tab="map"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l7-3 10 3 7-3v19l-7 3-10-3-7 3z"/><path d="M11 5v19M21 8v19"/></g></svg><span>מפה</span></button>
+  </nav>
+</div>
+
+<div id="coinLayer" aria-hidden="true"></div>
+
 <script>
-const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_b01","kind":"burst","w":300,"h":224},{"name":"fx_b02","kind":"burst","w":300,"h":194},{"name":"fx_b03","kind":"burst","w":300,"h":199},{"name":"fx_b04","kind":"burst","w":300,"h":199},{"name":"fx_b10","kind":"burst","w":300,"h":205},{"name":"fx_b11","kind":"burst","w":300,"h":217},{"name":"fx_b12","kind":"burst","w":300,"h":202},{"name":"fx_b13","kind":"burst","w":300,"h":196},{"name":"fx_b14","kind":"burst","w":300,"h":195},{"name":"fx_s00","kind":"stars","w":300,"h":151},{"name":"fx_s01","kind":"stars","w":300,"h":160},{"name":"fx_s02","kind":"stars","w":300,"h":166},{"name":"fx_s03","kind":"stars","w":300,"h":159},{"name":"fx_s04","kind":"stars","w":300,"h":164},{"name":"fx_s10","kind":"stars","w":300,"h":148},{"name":"fx_s11","kind":"stars","w":300,"h":162},{"name":"fx_s12","kind":"stars","w":300,"h":176},{"name":"fx_s13","kind":"stars","w":300,"h":177},{"name":"fx_s14","kind":"stars","w":300,"h":151}],"poses":{"worry1":{"name":"pose_worry1","w":359,"h":510,"ax":191.0,"ay":506.0,"bodyW":326.0,"bodyTop":5.0,"bodyBot":424.0,"top":3.0,"hgt":503.0},"worry2":{"name":"pose_worry2","w":409,"h":517,"ax":224.0,"ay":513.0,"bodyW":333.0,"bodyTop":3.0,"bodyBot":432.0,"top":3.0,"hgt":510.0},"scaredL":{"name":"pose_scaredL","w":418,"h":519,"ax":197.4608938547486,"ay":515.0,"bodyW":397.0,"bodyTop":4.0,"bodyBot":425.0,"top":5.0,"hgt":510.0},"scaredR":{"name":"pose_scaredR","w":446,"h":514,"ax":216.0,"ay":510.0,"bodyW":324.0,"bodyTop":4.0,"bodyBot":419.0,"top":3.0,"hgt":507.0},"oh":{"name":"pose_oh","w":473,"h":530,"ax":212.5,"ay":526.0,"bodyW":355.0,"bodyTop":4.0,"bodyBot":445.0,"top":3.0,"hgt":523.0},"nervous":{"name":"pose_nervous","w":487,"h":523,"ax":271.0,"ay":519.0,"bodyW":356.0,"bodyTop":4.0,"bodyBot":450.0,"top":4.0,"hgt":515.0},"scream":{"name":"pose_scream","w":538,"h":549,"ax":278.5,"ay":545.0,"bodyW":360.0,"bodyTop":4.0,"bodyBot":447.0,"top":3.0,"hgt":542.0},"wince":{"name":"pose_wince","w":368,"h":527,"ax":185.5,"ay":523.0,"bodyW":360.0,"bodyTop":3.0,"bodyBot":454.0,"top":4.0,"hgt":519.0},"flail1":{"name":"pose_flail1","w":413,"h":460,"ax":213.0,"ay":456.0,"bodyW":285.0,"bodyTop":4.0,"bodyBot":381.0,"top":3.0,"hgt":453.0},"flail2":{"name":"pose_flail2","w":460,"h":460,"ax":247.5,"ay":456.0,"bodyW":282.0,"bodyTop":5.0,"bodyBot":380.0,"top":3.0,"hgt":453.0},"flail3":{"name":"pose_flail3","w":528,"h":452,"ax":253.62493874050477,"ay":448.0,"bodyW":408.0,"bodyTop":5.0,"bodyBot":374.0,"top":3.0,"hgt":445.0},"flail4":{"name":"pose_flail4","w":544,"h":458,"ax":261.8454545454546,"ay":454.0,"bodyW":463.0,"bodyTop":5.0,"bodyBot":377.0,"top":4.0,"hgt":450.0},"crack1":{"name":"pose_crack1","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":312.0,"bodyTop":5.0,"bodyBot":411.0,"top":3.0,"hgt":483.0},"crack2":{"name":"pose_crack2","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":313.0,"bodyTop":5.0,"bodyBot":409.0,"top":4.0,"hgt":482.0},"crack3":{"name":"pose_crack3","w":328,"h":501,"ax":164.5,"ay":497.0,"bodyW":318.0,"bodyTop":5.0,"bodyBot":417.0,"top":3.0,"hgt":494.0},"crack4":{"name":"pose_crack4","w":327,"h":503,"ax":163.0,"ay":499.0,"bodyW":319.0,"bodyTop":5.0,"bodyBot":420.0,"top":4.0,"hgt":495.0},"crack5":{"name":"pose_crack5","w":338,"h":502,"ax":169.5,"ay":498.0,"bodyW":330.0,"bodyTop":4.0,"bodyBot":421.0,"top":3.0,"hgt":495.0},"lying":{"name":"pose_lying","w":596,"h":610,"ax":368.0,"ay":558.0,"shellLen":469.28004943743343}},"bar":{"icon1":{"w":198,"h":160},"icon2":{"w":194,"h":174},"icon3":{"w":196,"h":175},"icon4":{"w":210,"h":176},"icon5":{"w":217,"h":194},"empty":{"w":735,"h":133},"full":{"w":762,"h":178}},"rig":{"gloveL":{"img":"rig_gloveL","w":48,"h":56,"wx":19.156626506024097,"wy":2.0},"gloveR":{"img":"rig_gloveR","w":48,"h":56,"wx":28.09638554216866,"wy":2.0},"crack1":{"body":"rig_body1","face":{"browL":[116,152,144,171],"browR":[245,156,272,183],"eyeL":[95,173,162,263],"eyeR":[207,193,275,269],"mouth":[162,251,193,271]},"shell":[4,3,320,413],"legL":{"img":"rig_legL1","x":28,"y":409,"w":136,"h":80,"hipX":114.83018867924528,"hipY":411.0},"legR":{"img":"rig_legR1","x":160,"y":410,"w":110,"h":78,"hipX":203.85185185185185,"hipY":412.0},"shoulderL":[16.0,290.0],"armLen":75.0,"shoulderR":[310.0,290.0]},"crack2":{"body":"rig_body2","face":{"browL":[116,151,145,170],"browR":[246,156,273,182],"eyeL":[95,172,162,262],"eyeR":[208,192,276,268],"mouth":[162,249,194,270]},"shell":[4,3,321,411],"legL":{"img":"rig_legL2","x":29,"y":408,"w":136,"h":80,"hipX":116.73214285714286,"hipY":410.0},"legR":{"img":"rig_legR2","x":161,"y":407,"w":110,"h":79,"hipX":204.74545454545455,"hipY":409.0},"shoulderL":[15.0,288.0],"shoulderR":[311.0,288.0]},"crack3":{"body":"rig_body3","face":{"browL":[118,154,147,173],"browR":[250,159,277,186],"eyeL":[97,175,165,267],"eyeR":[211,196,280,273],"mouth":[165,254,197,275]},"shell":[4,3,326,419],"legL":{"img":"rig_legL3","x":31,"y":416,"w":136,"h":83,"hipX":119.08771929824562,"hipY":418.0},"legR":{"img":"rig_legR3","x":163,"y":416,"w":115,"h":83,"hipX":209.16071428571428,"hipY":418.0},"shoulderL":[16.0,294.0],"shoulderR":[316.0,294.0]},"crack4":{"body":"rig_body4","face":{"browL":[115,155,144,174],"browR":[248,160,275,187],"eyeL":[94,176,162,269],"eyeR":[209,197,278,275],"mouth":[162,256,194,277]},"shell":[1,3,324,422],"legL":{"img":"rig_legL4","x":29,"y":419,"w":136,"h":83,"hipX":118.36206896551724,"hipY":421.0},"legR":{"img":"rig_legR4","x":161,"y":421,"w":116,"h":80,"hipX":207.62295081967213,"hipY":423.0},"shoulderL":[14.0,296.0],"shoulderR":[314.0,296.0]},"crack5":{"body":"rig_body5","face":{"browL":[120,155,150,174],"browR":[257,159,285,187],"eyeL":[98,176,169,269],"eyeR":[217,197,289,275],"mouth":[169,256,202,277]},"shell":[2,2,336,423],"legL":{"img":"rig_legL5","x":35,"y":416,"w":136,"h":85,"hipX":121.51020408163265,"hipY":418.0},"legR":{"img":"rig_legR5","x":167,"y":420,"w":115,"h":78,"hipX":212.85185185185185,"hipY":422.0},"shoulderL":[16.0,296.0],"shoulderR":[324.0,296.0]}},"dog":{"dogBottom":{"w":720,"h":589},"dogSide":{"w":402,"h":720}},"creatures":[{"id":"winglet","n":1,"w":309,"h":386},{"id":"bloop","n":2,"w":405,"h":369},{"id":"sunspike","n":3,"w":375,"h":384},{"id":"octoodle","n":4,"w":382,"h":384},{"id":"emberwing","n":5,"w":357,"h":386},{"id":"puffhorn","n":6,"w":367,"h":384},{"id":"limefin","n":7,"w":340,"h":383},{"id":"shroomie","n":8,"w":321,"h":386},{"id":"nightflap","n":9,"w":402,"h":384},{"id":"orbit","n":10,"w":310,"h":388},{"id":"petalpop","n":11,"w":305,"h":389},{"id":"pebblebot","n":12,"w":397,"h":383},{"id":"noodle","n":13,"w":260,"h":391},{"id":"tweetle","n":14,"w":268,"h":391},{"id":"mossdragon","n":15,"w":280,"h":384},{"id":"pompom","n":16,"w":316,"h":383},{"id":"clackster","n":17,"w":344,"h":384},{"id":"cloudbun","n":18,"w":325,"h":386},{"id":"flufflet","n":19,"w":385,"h":412},{"id":"moonpaw","n":20,"w":348,"h":412}],"balloons":[{"id":"balloon_01","w":180,"h":290},{"id":"balloon_02","w":180,"h":290},{"id":"balloon_03","w":180,"h":290},{"id":"balloon_04","w":180,"h":290},{"id":"balloon_05","w":180,"h":290},{"id":"balloon_06","w":180,"h":290},{"id":"balloon_07","w":180,"h":290},{"id":"balloon_08","w":180,"h":290}],"confetti":{"w":512,"h":512}};
+const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_b01","kind":"burst","w":300,"h":224},{"name":"fx_b02","kind":"burst","w":300,"h":194},{"name":"fx_b03","kind":"burst","w":300,"h":199},{"name":"fx_b04","kind":"burst","w":300,"h":199},{"name":"fx_b10","kind":"burst","w":300,"h":205},{"name":"fx_b11","kind":"burst","w":300,"h":217},{"name":"fx_b12","kind":"burst","w":300,"h":202},{"name":"fx_b13","kind":"burst","w":300,"h":196},{"name":"fx_b14","kind":"burst","w":300,"h":195},{"name":"fx_s00","kind":"stars","w":300,"h":151},{"name":"fx_s01","kind":"stars","w":300,"h":160},{"name":"fx_s02","kind":"stars","w":300,"h":166},{"name":"fx_s03","kind":"stars","w":300,"h":159},{"name":"fx_s04","kind":"stars","w":300,"h":164},{"name":"fx_s10","kind":"stars","w":300,"h":148},{"name":"fx_s11","kind":"stars","w":300,"h":162},{"name":"fx_s12","kind":"stars","w":300,"h":176},{"name":"fx_s13","kind":"stars","w":300,"h":177},{"name":"fx_s14","kind":"stars","w":300,"h":151}],"poses":{"worry1":{"name":"pose_worry1","w":359,"h":510,"ax":191.0,"ay":506.0,"bodyW":326.0,"bodyTop":5.0,"bodyBot":424.0,"top":3.0,"hgt":503.0},"worry2":{"name":"pose_worry2","w":409,"h":517,"ax":224.0,"ay":513.0,"bodyW":333.0,"bodyTop":3.0,"bodyBot":432.0,"top":3.0,"hgt":510.0},"scaredL":{"name":"pose_scaredL","w":418,"h":519,"ax":197.4608938547486,"ay":515.0,"bodyW":397.0,"bodyTop":4.0,"bodyBot":425.0,"top":5.0,"hgt":510.0},"scaredR":{"name":"pose_scaredR","w":446,"h":514,"ax":216.0,"ay":510.0,"bodyW":324.0,"bodyTop":4.0,"bodyBot":419.0,"top":3.0,"hgt":507.0},"oh":{"name":"pose_oh","w":473,"h":530,"ax":212.5,"ay":526.0,"bodyW":355.0,"bodyTop":4.0,"bodyBot":445.0,"top":3.0,"hgt":523.0},"nervous":{"name":"pose_nervous","w":487,"h":523,"ax":271.0,"ay":519.0,"bodyW":356.0,"bodyTop":4.0,"bodyBot":450.0,"top":4.0,"hgt":515.0},"scream":{"name":"pose_scream","w":538,"h":549,"ax":278.5,"ay":545.0,"bodyW":360.0,"bodyTop":4.0,"bodyBot":447.0,"top":3.0,"hgt":542.0},"wince":{"name":"pose_wince","w":368,"h":527,"ax":185.5,"ay":523.0,"bodyW":360.0,"bodyTop":3.0,"bodyBot":454.0,"top":4.0,"hgt":519.0},"flail1":{"name":"pose_flail1","w":413,"h":460,"ax":213.0,"ay":456.0,"bodyW":285.0,"bodyTop":4.0,"bodyBot":381.0,"top":3.0,"hgt":453.0},"flail2":{"name":"pose_flail2","w":460,"h":460,"ax":247.5,"ay":456.0,"bodyW":282.0,"bodyTop":5.0,"bodyBot":380.0,"top":3.0,"hgt":453.0},"flail3":{"name":"pose_flail3","w":528,"h":452,"ax":253.62493874050477,"ay":448.0,"bodyW":408.0,"bodyTop":5.0,"bodyBot":374.0,"top":3.0,"hgt":445.0},"flail4":{"name":"pose_flail4","w":544,"h":458,"ax":261.8454545454546,"ay":454.0,"bodyW":463.0,"bodyTop":5.0,"bodyBot":377.0,"top":4.0,"hgt":450.0},"crack1":{"name":"pose_crack1","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":312.0,"bodyTop":5.0,"bodyBot":411.0,"top":3.0,"hgt":483.0},"crack2":{"name":"pose_crack2","w":323,"h":490,"ax":162.5,"ay":486.0,"bodyW":313.0,"bodyTop":5.0,"bodyBot":409.0,"top":4.0,"hgt":482.0},"crack3":{"name":"pose_crack3","w":328,"h":501,"ax":164.5,"ay":497.0,"bodyW":318.0,"bodyTop":5.0,"bodyBot":417.0,"top":3.0,"hgt":494.0},"crack4":{"name":"pose_crack4","w":327,"h":503,"ax":163.0,"ay":499.0,"bodyW":319.0,"bodyTop":5.0,"bodyBot":420.0,"top":4.0,"hgt":495.0},"crack5":{"name":"pose_crack5","w":338,"h":502,"ax":169.5,"ay":498.0,"bodyW":330.0,"bodyTop":4.0,"bodyBot":421.0,"top":3.0,"hgt":495.0},"lying":{"name":"pose_lying","w":596,"h":610,"ax":368.0,"ay":558.0,"shellLen":469.28004943743343}},"bar":{"icon1":{"w":198,"h":160},"icon2":{"w":194,"h":174},"icon3":{"w":196,"h":175},"icon4":{"w":210,"h":176},"icon5":{"w":217,"h":194},"empty":{"w":735,"h":133},"full":{"w":762,"h":178}},"rig":{"gloveL":{"img":"rig_gloveL","w":48,"h":56,"wx":19.156626506024097,"wy":2.0},"gloveR":{"img":"rig_gloveR","w":48,"h":56,"wx":28.09638554216866,"wy":2.0},"crack1":{"body":"rig_body1","face":{"browL":[116,152,144,171],"browR":[245,156,272,183],"eyeL":[95,173,162,263],"eyeR":[207,193,275,269],"mouth":[162,251,193,271]},"shell":[4,3,320,413],"legL":{"img":"rig_legL1","x":28,"y":409,"w":136,"h":80,"hipX":114.83018867924528,"hipY":411.0},"legR":{"img":"rig_legR1","x":160,"y":410,"w":110,"h":78,"hipX":203.85185185185185,"hipY":412.0},"shoulderL":[16.0,290.0],"armLen":75.0,"shoulderR":[310.0,290.0]},"crack2":{"body":"rig_body2","face":{"browL":[116,151,145,170],"browR":[246,156,273,182],"eyeL":[95,172,162,262],"eyeR":[208,192,276,268],"mouth":[162,249,194,270]},"shell":[4,3,321,411],"legL":{"img":"rig_legL2","x":29,"y":408,"w":136,"h":80,"hipX":116.73214285714286,"hipY":410.0},"legR":{"img":"rig_legR2","x":161,"y":407,"w":110,"h":79,"hipX":204.74545454545455,"hipY":409.0},"shoulderL":[15.0,288.0],"shoulderR":[311.0,288.0]},"crack3":{"body":"rig_body3","face":{"browL":[118,154,147,173],"browR":[250,159,277,186],"eyeL":[97,175,165,267],"eyeR":[211,196,280,273],"mouth":[165,254,197,275]},"shell":[4,3,326,419],"legL":{"img":"rig_legL3","x":31,"y":416,"w":136,"h":83,"hipX":119.08771929824562,"hipY":418.0},"legR":{"img":"rig_legR3","x":163,"y":416,"w":115,"h":83,"hipX":209.16071428571428,"hipY":418.0},"shoulderL":[16.0,294.0],"shoulderR":[316.0,294.0]},"crack4":{"body":"rig_body4","face":{"browL":[115,155,144,174],"browR":[248,160,275,187],"eyeL":[94,176,162,269],"eyeR":[209,197,278,275],"mouth":[162,256,194,277]},"shell":[1,3,324,422],"legL":{"img":"rig_legL4","x":29,"y":419,"w":136,"h":83,"hipX":118.36206896551724,"hipY":421.0},"legR":{"img":"rig_legR4","x":161,"y":421,"w":116,"h":80,"hipX":207.62295081967213,"hipY":423.0},"shoulderL":[14.0,296.0],"shoulderR":[314.0,296.0]},"crack5":{"body":"rig_body5","face":{"browL":[120,155,150,174],"browR":[257,159,285,187],"eyeL":[98,176,169,269],"eyeR":[217,197,289,275],"mouth":[169,256,202,277]},"shell":[2,2,336,423],"legL":{"img":"rig_legL5","x":35,"y":416,"w":136,"h":85,"hipX":121.51020408163265,"hipY":418.0},"legR":{"img":"rig_legR5","x":167,"y":420,"w":115,"h":78,"hipX":212.85185185185185,"hipY":422.0},"shoulderL":[16.0,296.0],"shoulderR":[324.0,296.0]}},"dog":{"dogBottom":{"w":720,"h":589},"dogSide":{"w":402,"h":720}},"creatures":[{"id":"p_sparkit","pid":"sparkit","n":1,"w":472,"h":560,"name":"Sparkit","name_he":"ספרקיט","theme_he":"חשמלי","rarity":"common","phys":{"mass_kg":1.1,"height_m":0.42,"e":0.62,"mu_s":0.5,"mu_k":0.35,"Cd":1.0,"A":0.0212}},{"id":"p_mossy","pid":"mossy","n":2,"w":426,"h":560,"name":"Mossy","name_he":"מוסי","theme_he":"יער","rarity":"common","phys":{"mass_kg":2.6,"height_m":0.6,"e":0.34,"mu_s":0.8,"mu_k":0.6,"Cd":1.0,"A":0.0432}},{"id":"p_bloop","pid":"bloop","n":3,"w":560,"h":553,"name":"Bloop","name_he":"בלופ","theme_he":"מים","rarity":"common","phys":{"mass_kg":1.4,"height_m":0.48,"e":0.56,"mu_s":0.3,"mu_k":0.19,"Cd":1.0,"A":0.0276}},{"id":"p_cinder","pid":"cinder","n":4,"w":422,"h":560,"name":"Cinder","name_he":"סינדר","theme_he":"אש","rarity":"common","phys":{"mass_kg":1.8,"height_m":0.55,"e":0.52,"mu_s":0.57,"mu_k":0.41,"Cd":1.0,"A":0.0363}},{"id":"p_mooni","pid":"mooni","n":5,"w":482,"h":560,"name":"Mooni","name_he":"מוני","theme_he":"ירח","rarity":"rare","phys":{"mass_kg":1.0,"height_m":0.4,"e":0.48,"mu_s":0.28,"mu_k":0.2,"Cd":1.0,"A":0.0192}},{"id":"p_crystowl","pid":"crystowl","n":6,"w":360,"h":560,"name":"Crystowl","name_he":"קריסטול","theme_he":"קריסטל","rarity":"rare","phys":{"mass_kg":3.2,"height_m":0.67,"e":0.25,"mu_s":0.72,"mu_k":0.48,"Cd":1.0,"A":0.0539}},{"id":"p_pufflet","pid":"pufflet","n":7,"w":465,"h":560,"name":"Pufflet","name_he":"פאפלט","theme_he":"ענן","rarity":"uncommon","phys":{"mass_kg":0.9,"height_m":0.38,"e":0.73,"mu_s":0.23,"mu_k":0.15,"Cd":1.0,"A":0.0173}},{"id":"p_glimm","pid":"glimm","n":8,"w":560,"h":551,"name":"Glimm","name_he":"גלים","theme_he":"אור","rarity":"uncommon","phys":{"mass_kg":1.3,"height_m":0.46,"e":0.64,"mu_s":0.42,"mu_k":0.3,"Cd":1.0,"A":0.0254}},{"id":"p_tumble","pid":"tumble","n":9,"w":473,"h":560,"name":"Tumble","name_he":"טאמבל","theme_he":"אדמה","rarity":"common","phys":{"mass_kg":3.9,"height_m":0.75,"e":0.29,"mu_s":0.9,"mu_k":0.67,"Cd":1.0,"A":0.0675}},{"id":"p_aster","pid":"aster","n":10,"w":560,"h":525,"name":"Aster","name_he":"אסטר","theme_he":"קוסמי","rarity":"legendary","phys":{"mass_kg":1.7,"height_m":0.52,"e":0.58,"mu_s":0.36,"mu_k":0.24,"Cd":1.0,"A":0.0324}}],"balloons":[{"id":"balloon_01","w":180,"h":290},{"id":"balloon_02","w":180,"h":290},{"id":"balloon_03","w":180,"h":290},{"id":"balloon_04","w":180,"h":290},{"id":"balloon_05","w":180,"h":290},{"id":"balloon_06","w":180,"h":290},{"id":"balloon_07","w":180,"h":290},{"id":"balloon_08","w":180,"h":290}],"confetti":{"w":512,"h":512},"legacyCreatures":[{"id":"winglet","n":1,"w":309,"h":386},{"id":"bloop","n":2,"w":405,"h":369},{"id":"sunspike","n":3,"w":375,"h":384},{"id":"octoodle","n":4,"w":382,"h":384},{"id":"emberwing","n":5,"w":357,"h":386},{"id":"puffhorn","n":6,"w":367,"h":384},{"id":"limefin","n":7,"w":340,"h":383},{"id":"shroomie","n":8,"w":321,"h":386},{"id":"nightflap","n":9,"w":402,"h":384},{"id":"orbit","n":10,"w":310,"h":388},{"id":"petalpop","n":11,"w":305,"h":389},{"id":"pebblebot","n":12,"w":397,"h":383},{"id":"noodle","n":13,"w":260,"h":391},{"id":"tweetle","n":14,"w":268,"h":391},{"id":"mossdragon","n":15,"w":280,"h":384},{"id":"pompom","n":16,"w":316,"h":383},{"id":"clackster","n":17,"w":344,"h":384},{"id":"cloudbun","n":18,"w":325,"h":386},{"id":"flufflet","n":19,"w":385,"h":412},{"id":"moonpaw","n":20,"w":348,"h":412}],"topics":[{"id":"motion","title_he":"היצור ממהר לשירותים","world_he":"מכניקה","subtopics_he":["מיקום, דרך והעתק","מהירות","תאוצה","גרפי מקום-זמן ומהירות-זמן"],"order":1,"ready":false},{"id":"projectiles","title_he":"תותח היצורים","world_he":"מכניקה","subtopics_he":["וקטורים","תנועה בשני ממדים","נפילה חופשית","זריקה אנכית אופקית ומשופעת"],"order":2,"ready":false},{"id":"newton","title_he":"מי דוחף את מי?","world_he":"מכניקה","subtopics_he":["חוקי ניוטון","שיווי משקל","כוח נורמלי","חיכוך","מתיחות","מישור משופע"],"order":3,"ready":false},{"id":"circular","title_he":"הקרוסלה המטורפת","world_he":"מכניקה","subtopics_he":["תנועה מעגלית","כוח ותאוצה מרכזיים","מהירות זוויתית","תדירות וזמן מחזור"],"order":4,"ready":false},{"id":"gravitation","title_he":"היצור מקיף את הכוכב","world_he":"מכניקה","subtopics_he":["חוק הכבידה האוניברסלית","שדה כבידה","לוויינים","חוקי קפלר"],"order":5,"ready":false},{"id":"momentum","title_he":"התנגשות יצורים","world_he":"מכניקה","subtopics_he":["תנע","מתקף","שימור תנע","התנגשויות"],"order":6,"ready":false},{"id":"energy","title_he":"רכבת ההרים של היצור","world_he":"מכניקה","subtopics_he":["עבודה","אנרגיה קינטית ופוטנציאלית","שימור אנרגיה","הספק ונצילות"],"order":7,"ready":false},{"id":"springs","title_he":"קפיץ-קפוץ","world_he":"מכניקה","subtopics_he":["חוק הוק","אנרגיה אלסטית","תנודות","תנועה הרמונית פשוטה"],"order":8,"ready":true},{"id":"charges","title_he":"השיער המחושמל","world_he":"חשמל ומגנטיות","subtopics_he":["מטען חשמלי","חוק קולון","שדה חשמלי","מוליכים ומבודדים"],"order":9,"ready":false},{"id":"potential","title_he":"מעלית המטענים","world_he":"חשמל ומגנטיות","subtopics_he":["פוטנציאל חשמלי","מתח","אנרגיה חשמלית","קבלים וקיבול"],"order":10,"ready":false},{"id":"circuits","title_he":"תדליק לי את האור!","world_he":"חשמל ומגנטיות","subtopics_he":["זרם","התנגדות","חוק אוהם","חיבורי נגדים","חוקי קירכהוף","מדידה"],"order":11,"ready":false},{"id":"batteries","title_he":"הסוללה העייפה","world_he":"חשמל ומגנטיות","subtopics_he":["כא״מ","התנגדות פנימית","מתח הדקים","הספק"],"order":12,"ready":false},{"id":"magnetism","title_he":"רכבת המגנטים","world_he":"חשמל ומגנטיות","subtopics_he":["שדה מגנטי","כוח לורנץ","שדה סביב תיל וסליל","כוח על מוליך"],"order":13,"ready":false},{"id":"induction","title_he":"מפעל הברקים","world_he":"חשמל ומגנטיות","subtopics_he":["שטף מגנטי","חוק פאראדיי","חוק לנץ","כא״מ מושרה"],"order":14,"ready":false},{"id":"optics","title_he":"איפה הזנב שלי?","world_he":"קרינה וחומר","subtopics_he":["החזרה ושבירה","חוק סנל","החזרה פנימית מלאה","מראות ועדשות","דמויות"],"order":15,"ready":false},{"id":"waves","title_he":"מסיבת הגלים","world_he":"קרינה וחומר","subtopics_he":["גלים","תדירות ואורך גל","סופרפוזיציה","התאבכות","עקיפה","ניסוי יאנג","גלים אלקטרומגנטיים"],"order":16,"ready":false},{"id":"photons","title_he":"מפעל הפוטונים","world_he":"קרינה וחומר","subtopics_he":["פוטונים","אפקט פוטואלקטרי","דואליות גל-חלקיק","גלי דה ברויי"],"order":17,"ready":false},{"id":"atoms","title_he":"היצור בתוך האטום","world_he":"קרינה וחומר","subtopics_he":["מודלים אטומיים","רמות אנרגיה","מודל בוהר","בליעה ופליטה","ספקטרום קווי"],"order":18,"ready":false},{"id":"nuclear","title_he":"הגרעין המשתגע","world_he":"קרינה וחומר","subtopics_he":["מבנה גרעין","רדיואקטיביות","זמן מחצית חיים","פגם מסה","אנרגיית קשר","ביקוע והיתוך"],"order":19,"ready":false},{"id":"lab","title_he":"המדען הלא-יוצלח","world_he":"מעבדה וחקר","subtopics_he":["תכנון ניסוי","בידוד משתנים","מדידות","אי-ודאות","גרפים","ניתוח תוצאות"],"order":20,"ready":false}]};
+// ======================================================================
+//  Spring physics: a creature hanging from a vertical spring.
+//  y points DOWN. s = extension from the natural length (m), v = ds/dt.
+//  m s'' = m g - k s - b s'        (spec: art/source/physics/docs/06_SPRING_PHYSICS.md)
+//  Pure functions plus a small fixed-step simulator. No drawing here.
+// ======================================================================
+const SpringPhys = (() => {
+  "use strict";
+  const G_EARTH = 9.81;
+  const DT = 1 / 120;                     // fixed step, never the raw frame time
+
+  function positive(name, x) {
+    if (!(Number.isFinite(x) && x > 0)) throw new Error(name + " must be finite and > 0");
+    return x;
+  }
+  function params(m, k, b = 0, g = G_EARTH) {
+    positive("m", m); positive("k", k);
+    if (!(Number.isFinite(b) && b >= 0)) throw new Error("b cannot be negative");
+    positive("g", g);
+    return { m, k, b, g };
+  }
+  const equilibrium = (p) => p.m * p.g / p.k;                  // s_eq = mg/k
+  const period = (p) => 2 * Math.PI * Math.sqrt(p.m / p.k);     // T = 2π√(m/k), no damping
+  const omega = (p) => Math.sqrt(p.k / p.m);
+  const springForce = (s, k) => -k * s;                         // along +y (down)
+  const elasticEnergy = (s, k) => 0.5 * k * s * s;              // from the NATURAL length
+  const accel = (s, v, p) => p.g - (p.k * s + p.b * v) / p.m;
+  // total energy, zero at the natural length: kinetic + elastic + gravity (gravity PE = -m g s with y down)
+  const totalEnergy = (st, p) => 0.5 * p.m * st.v * st.v + elasticEnergy(st.s, p.k) - p.m * p.g * st.s;
+  // underdamped? (b < 2√(km))
+  const underdamped = (p) => p.b < 2 * Math.sqrt(p.k * p.m);
+
+  function step(st, p, dt = DT) {
+    positive("dt", dt);
+    const v = st.v + accel(st.s, st.v, p) * dt;                 // semi-implicit Euler
+    return { s: st.s + v * dt, v };
+  }
+  // start at rest, u below the equilibrium (u = 0 is a true rest state)
+  const fromEquilibrium = (p, u) => ({ s: equilibrium(p) + u, v: 0 });
+
+  // A simulator that advances in fixed steps and measures the real period from the motion.
+  class Sim {
+    constructor(p, u0 = 0) { this.reset(p, u0); }
+    reset(p, u0 = 0) {
+      this.p = p; this.st = fromEquilibrium(p, u0); this.acc = 0; this.t = 0;
+      this.crossings = []; this.lastU = u0; this.held = false; this.maxU = Math.abs(u0);
+    }
+    hold(u) { this.held = true; this.st = { s: equilibrium(this.p) + u, v: 0 }; this.lastU = u; }
+    release() { this.held = false; this.acc = 0; this.t = 0; this.crossings = []; this.maxU = Math.abs(this.u); }
+    get u() { return this.st.s - equilibrium(this.p); }
+    // advance by real elapsed time (capped), in fixed steps; returns the number of steps
+    advance(elapsed) {
+      if (this.held) return 0;
+      this.acc += Math.min(elapsed, 0.25);
+      let n = 0;
+      while (this.acc >= DT) {
+        this.st = step(this.st, this.p, DT);
+        this.acc -= DT; this.t += DT; n++;
+        const u = this.u;
+        // upward pass through equilibrium (u goes from + to -): one per period
+        if (this.lastU > 0 && u <= 0) {
+          const f = this.lastU / (this.lastU - u);
+          this.crossings.push(this.t - DT + f * DT);
+          if (this.crossings.length > 6) this.crossings.shift();
+        }
+        this.lastU = u;
+      }
+      return n;
+    }
+    // the measured period from the last full swings, or null until there are two crossings
+    measuredPeriod() {
+      const c = this.crossings;
+      if (c.length < 2) return null;
+      return (c[c.length - 1] - c[0]) / (c.length - 1);
+    }
+    periods() { return this.crossings.length > 0 ? this.crossings.length : 0; }
+  }
+
+  return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim };
+})();
+
+// ======================================================================
+//  The player's profile: coins, learning progress, owned creatures.
+//  Learning belongs to the PLAYER, never to a creature: switching or trading
+//  a creature changes physics in the experiments, not the progress or coins.
+//  Saved on the phone (localStorage), versioned, with a coin ledger so the
+//  same reward can never be paid twice.
+// ======================================================================
+const EggProfile = (() => {
+  "use strict";
+  const KEY = "egg.player";
+  const VERSION = 2;
+  let p = null;
+
+  const rid = (prefix) => prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  function blank() {
+    return {
+      schema_version: VERSION,
+      player_id: rid("player"),
+      created_at: new Date().toISOString(),
+      wallet: { gold: 0, event_ids: [] },
+      active_instance_id: null,
+      owned: [],                       // [{ instance_id, species, obtained: "hatch"|"trade"|"dev", at }]
+      physics: {
+        completed_subtopic_ids: [],
+        mastery: {},                   // subtopicId -> { correct, attempts }
+        question_history: [],          // [{ id, correct, at }]
+        achievements: [],
+        path: null                     // "surprise" | "ordered"
+      },
+      settings: { sound_on: true }
+    };
+  }
+  function read(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function write(key, val) { try { localStorage.setItem(key, val); return true; } catch (e) { return false; } }
+
+  function load() {
+    let raw = read(KEY), data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
+    if (data && data.schema_version === VERSION) { p = data; return; }
+    // first run, or an older save: keep a backup and carry over what existed
+    if (raw) write(KEY + ".backup", raw);
+    p = blank();
+    const oldCreature = read("egg.creature");           // v1 of the egg game kept only this
+    if (oldCreature) p.owned.push({ instance_id: rid("c"), species: oldCreature, obtained: "hatch", at: new Date().toISOString() });
+    if (p.owned.length) p.active_instance_id = p.owned[0].instance_id;
+    save();
+  }
+  function save() { return write(KEY, JSON.stringify(p)); }
+
+  // ---- coins ----
+  // pays once per eventId; returns the new balance, or null if already paid / not saved
+  function award(eventId, amount) {
+    if (p.wallet.event_ids.includes(eventId)) return null;
+    p.wallet.event_ids.push(eventId);
+    p.wallet.gold += amount;
+    if (!save()) { p.wallet.event_ids.pop(); p.wallet.gold -= amount; return null; }
+    return p.wallet.gold;
+  }
+
+  // ---- learning ----
+  function completeSubtopic(id) {
+    if (p.physics.completed_subtopic_ids.includes(id)) return false;
+    p.physics.completed_subtopic_ids.push(id);
+    save();
+    return true;
+  }
+  function recordAnswer(qid, subtopic, correct) {
+    p.physics.question_history.push({ id: qid, correct, at: new Date().toISOString() });
+    const m = p.physics.mastery[subtopic] || (p.physics.mastery[subtopic] = { correct: 0, attempts: 0 });
+    m.attempts++; if (correct) m.correct++;
+    save();
+  }
+  function achieve(id) { if (p.physics.achievements.includes(id)) return false; p.physics.achievements.push(id); save(); return true; }
+
+  // ---- creatures ----
+  function addCreature(species, how) {
+    const c = { instance_id: rid("c"), species, obtained: how, at: new Date().toISOString() };
+    p.owned.push(c);
+    if (!p.active_instance_id) p.active_instance_id = c.instance_id;
+    save();
+    return c;
+  }
+  function active() { return p.owned.find((c) => c.instance_id === p.active_instance_id) || null; }
+  function setActive(instanceId) { if (p.owned.some((c) => c.instance_id === instanceId)) { p.active_instance_id = instanceId; save(); } }
+  // a trade: the active creature leaves, the friend's one arrives and becomes active. Coins and progress stay.
+  function tradeActive(newSpecies) {
+    const gone = active();
+    if (gone) p.owned = p.owned.filter((c) => c.instance_id !== gone.instance_id);
+    const c = { instance_id: rid("c"), species: newSpecies, obtained: "trade", at: new Date().toISOString() };
+    p.owned.push(c);
+    p.active_instance_id = c.instance_id;
+    save();
+    return c;
+  }
+  function devOwnAll(speciesList) {
+    for (const s of speciesList) if (!p.owned.some((c) => c.species === s)) p.owned.push({ instance_id: rid("c"), species: s, obtained: "dev", at: new Date().toISOString() });
+    save();
+  }
+  // development: a fresh egg, keeping coins and learning
+  function devNewEgg() { p.owned = []; p.active_instance_id = null; save(); }
+
+  load();
+  return {
+    get data() { return p; },
+    get gold() { return p.wallet.gold; },
+    award, completeSubtopic, recordAnswer, achieve, save,
+    addCreature, active, setActive, tradeActive, devOwnAll, devNewEgg,
+    owned: () => p.owned.slice()
+  };
+})();
+
 (() => {
   "use strict";
 
@@ -402,6 +872,7 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     init();
     return {
       unlock, sample, duck,
+      mute(on) { init(); if (ac) { const t = ac.currentTime; sfxBus.gain.setTargetAtTime(on ? 0 : SOUND.effects, t, 0.05); musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(on ? 0 : SOUND.music, t, 0.1); } },
       preload(names) { init(); for (const n of names) fetchSample(n); },
       get ok() { return !!ac && ac.state === "running"; },
       get ac() { return ac; },
@@ -1828,11 +2299,11 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   //  HATCHING  (the shell gives way, balloons, and a creature in the nest)
   // ======================================================================
   const hatch = { t: 0, creature: null, shards: [], balloons: [], confetti: [], flash: 0, colorK: 0, bornAt: 0, hop: 0, readyT: 0, celebrate: null, cues: new Set() };
-  const creatureMeta = (id) => SPR.creatures.find((c) => c.id === id);
+  const creatureMeta = (id) => SPR.creatures.find((c) => c.id === id) || SPR.legacyCreatures.find((c) => c.id === id);
 
   // pick a creature by rarity  (later this roll moves to the server, so it cannot be cheated)
   function rollCreature() {
-    const pool = SPR.creatures.map((c) => ({ id: c.id, w: RARITY[CREATURE_RARITY[c.id] || "common"].weight }));
+    const pool = SPR.creatures.map((c) => ({ id: c.id, w: RARITY[c.rarity || "common"].weight }));
     const total = pool.reduce((s, c) => s + c.w, 0);
     let r = Math.random() * total;
     for (const c of pool) { r -= c.w; if (r <= 0) return c.id; }
@@ -1922,9 +2393,10 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
     }
   }
 
+  // the hatched creature belongs to the player's profile (with coins and learning kept apart)
   function saveCreature() {
-    if (DEV.resetShell) return;
-    try { localStorage.setItem("egg.creature", hatch.creature); } catch (e) {}
+    if (!EggProfile.active()) EggProfile.addCreature(hatch.creature, "hatch");
+    window.dispatchEvent(new Event("egg:creature"));
   }
 
   // the egg during hatching: our cracked egg, shaking harder and glowing through the cracks
@@ -2099,7 +2571,8 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
       if (trade.t > 0.9 && hatch.creature !== trade.incoming) {
         // our creature is gone through the top; the other one drops in
         hatch.creature = trade.incoming; hatch.colorK = 1; hatch.hop = 1;
-        saveCreature();
+        EggProfile.tradeActive(trade.incoming);          // the creature moves; coins and learning stay here
+        window.dispatchEvent(new Event("egg:creature"));
         audio.sample("06_reveal_fanfare", 0.8);
       }
       if (trade.t > 2.2) { endTrade(); sparkle(egg.screen.cx, egg.screen.cy, 16); }
@@ -2395,18 +2868,32 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   let arrivedBefore = null;
   try { arrivedBefore = localStorage.getItem("egg.arrived"); } catch (e) {}
   setTimeout(() => { if (SERVER.enabled && !account.creature) claimEgg(); }, 1500);
-  let savedCreature = null;
-  try { savedCreature = DEV.resetShell ? null : localStorage.getItem("egg.creature"); } catch (e) {}
-  if (savedCreature && creatureMeta(savedCreature)) {
+  const mine = EggProfile.active();
+  const savedCreature = mine && creatureMeta(mine.species) ? mine.species : null;
+  if (savedCreature) {
     hatch.creature = savedCreature; hatch.colorK = 1; egg.state = "hatched"; loadCreature(savedCreature);
   } else if (MAGIC.enabled && (DEV.replayMagic || !arrivedBefore)) {
     egg.state = "arriving";
     try { localStorage.setItem("egg.arrived", "1"); } catch (e) {}
   }
+  // what the physics screens may ask of the game
+  window.__egg = {
+    covered: false,                                    // a full-screen page is over the game: rest
+    hatched: () => egg.state === "hatched",
+    species: () => hatch.creature,
+    meta: creatureMeta,
+    setCreature(species) { hatch.creature = species; hatch.colorK = 1; hatch.hop = 1; loadCreature(species); petSig = ""; },
+    openTrade() { if (egg.state === "hatched") openTrade(); },
+    closeBubble() { if (trade.stage && trade.stage !== "swapping") { if (trade.stage === "offer" || trade.stage === "waiting") link.send({ t: "no" }); endTrade(); return true; } return false; },
+    sfx, audio, buzz,
+    newEgg() { EggProfile.devNewEgg(); try { location.reload(); } catch (e) {} }
+  };
+
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (window.__egg.covered) { requestAnimationFrame(loop); return; }
     // hold the arrival until the drawings are in, so the magic is not missed
     if (pending === 0 || egg.state !== "arriving") update(dt);
     frame(dt);
@@ -2414,6 +2901,776 @@ const SPR = {"fx":[{"name":"fx_b00","kind":"burst","w":300,"h":202},{"name":"fx_
   }
   requestAnimationFrame(loop);
 })();
+</script>
+<script>
+// ======================================================================
+//  PHYSICS  (casual physics with the player's own creature)
+//  Screens: choose a way -> topic machine -> spring intro -> spring lab,
+//  plus creatures and the map. Learning and coins live in EggProfile and
+//  belong to the player; the creature only brings its physical properties.
+// ======================================================================
+(() => {
+  "use strict";
+  const G = window.__egg, P = EggProfile, SP = SpringPhys;
+  const $ = (s, el = document) => el.querySelector(s);
+  const ui = $("#ui"), screenEl = $("#screen"), hud = $("#hud");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fmt = (x, d = 2) => (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d);
+  const FONT = (getComputedStyle(document.documentElement).getPropertyValue("--ui-font") || "Rubik, Arial, sans-serif").trim();
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------------- content ----------------
+  const TOPICS = SPR.topics.slice().sort((a, b) => a.order - b.order);
+  const UNITS = [
+    { id: "springs.hooke", he: "חוק הוק", insight: "ככל שמותחים יותר, הקפיץ מושך חזרה חזק יותר, באותו יחס.", eq: "F = −k·s" },
+    { id: "springs.energy", he: "אנרגיה אלסטית", insight: "מתיחה גדולה פי 2 אוגרת פי 4 אנרגיה, כי האנרגיה תלויה בריבוע המתיחה.", eq: "E = ½·k·s²" },
+    { id: "springs.oscillation", he: "תנודות", insight: "קפיץ קשיח יותר מחזיר מהר יותר, ולכן התנודה מהירה יותר.", eq: "T = 2π·√(m/k)" },
+    { id: "springs.shm", he: "תנועה הרמונית פשוטה", insight: "דמות כבדה יותר מתנודדת לאט יותר, וגודל המשיכה לא משנה את זמן המחזור.", eq: "T = 2π·√(m/k)" }
+  ];
+  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + t.subtopics_he.length, 0);
+  const done = () => P.data.physics.completed_subtopic_ids;
+  const familyCoverage = (id) => id === "springs" ? UNITS.filter((u) => done().includes(u.id)).length / UNITS.length : 0;
+  const overallCoverage = () => UNITS.filter((u) => done().includes(u.id)).length / TOTAL_UNITS;
+  const pct = (x) => Math.round(x * 100) + "%";
+
+  const QUESTIONS = [
+    { id: "q.hooke.double", unit: "springs.hooke", q: "מותחים את הקפיץ פי 2 יותר. הכוח שהקפיץ מפעיל…", a: ["גדל פי 2", "גדל פי 4", "לא משתנה"], right: 0, why: "לפי חוק הוק הכוח יחסי למתיחה: F = k·s." },
+    { id: "q.energy.double", unit: "springs.energy", q: "מותחים פי 2 יותר. האנרגיה האלסטית בקפיץ…", a: ["גדלה פי 2", "גדלה פי 4", "גדלה פי 8"], right: 1, why: "E = ½·k·s², ולכן מתיחה כפולה נותנת אנרגיה פי 4." },
+    { id: "q.mass.four", unit: "springs.shm", q: "מחליפים לדמות כבדה פי 4, אותו קפיץ. זמן המחזור…", a: ["גדל פי 2", "גדל פי 4", "לא משתנה"], right: 0, why: "T = 2π·√(m/k): מסה פי 4 נותנת שורש של 4, כלומר פי 2." },
+    { id: "q.amplitude", unit: "springs.shm", q: "מושכים את הדמות רחוק יותר לפני השחרור. זמן המחזור…", a: ["גדל", "קטן", "לא משתנה"], right: 2, why: "בקפיץ אידאלי זמן המחזור לא תלוי במשרעת, רק ב-m וב-k." },
+    { id: "q.k.equilibrium", unit: "springs.hooke", q: "מגדילים את k פי 2. נקודת שיווי המשקל…", a: ["עולה: הקפיץ נמתח חצי", "יורדת: הקפיץ נמתח פי 2", "לא זזה"], right: 0, why: "בשיווי משקל k·s = m·g, ולכן s = mg/k קטן פי 2." },
+    { id: "q.moon", unit: "springs.oscillation", q: "על הירח g קטן פי 6. זמן המחזור של הדמות על הקפיץ…", a: ["לא משתנה", "גדל", "קטן"], right: 0, why: "g משנה רק את נקודת שיווי המשקל. T = 2π·√(m/k) לא תלוי ב-g." }
+  ];
+
+  // creatures: species id -> art and physical profile
+  const DEFAULT_PHYS = { mass_kg: 1.5, height_m: 0.5, e: 0.5, mu_s: 0.5, mu_k: 0.35, Cd: 1.0, A: 0.03 };
+  const meta = (sp) => G.meta(sp) || null;
+  const phys = (sp) => (meta(sp) && meta(sp).phys) || DEFAULT_PHYS;
+  const nameOf = (sp) => { const m = meta(sp); return m ? (m.name_he || m.id) : sp; };
+  const artOf = (sp) => "art/creatures/" + sp + ".webp";
+  const RARITY_HE = { common: "רגיל", uncommon: "לא שכיח", rare: "נדיר", epic: "אפי", legendary: "אגדי" };
+  const activeSpecies = () => { const a = P.active(); return a ? a.species : G.species(); };
+
+  // ---------------- icons (pencil line, one accent) ----------------
+  const ICON_OF = { motion: "arrow", projectiles: "arc", newton: "push", circular: "orbit", gravitation: "planet", momentum: "balls", energy: "coaster", springs: "spring",
+    charges: "spark", potential: "lift", circuits: "bulb", batteries: "battery", magnetism: "magnet", induction: "bolt", optics: "prism", waves: "wave", photons: "sun", atoms: "atom", nuclear: "nucleus", lab: "flask" };
+  function icon(name, accent = "#8A60E8") {
+    const s = `fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`;
+    const a = `fill="none" stroke="${accent}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"`;
+    const P_ = {
+      spring: `<path ${s} d="M16 6h20M16 46h20"/><path ${a} d="M26 6v4l-9 3 18 4-18 4 18 4-18 4 18 4-9 3v6"/>`,
+      arrow: `<path ${s} d="M6 36h30"/><circle ${s} cx="14" cy="36" r="5"/><circle ${s} cx="32" cy="36" r="5"/><path ${s} d="M10 31l4-9h14l6 9"/><path ${a} d="M38 16h8M42 12l4 4-4 4"/>`,
+      arc: `<path ${s} d="M6 44h40"/><path ${a} stroke-dasharray="3 4" d="M10 40q14-34 32 0"/><circle ${s} cx="42" cy="40" r="3"/>`,
+      push: `<rect ${s} x="22" y="22" width="18" height="18" rx="2"/><path ${s} d="M6 44h40"/><path ${a} d="M6 31h12M14 27l4 4-4 4"/>`,
+      orbit: `<circle ${s} cx="26" cy="26" r="16"/><circle ${s} cx="26" cy="26" r="3"/><circle ${a} cx="42" cy="26" r="4"/><path ${a} d="M38 14l4 4-4 4" transform="rotate(-50 40 18)"/>`,
+      planet: `<circle ${s} cx="26" cy="26" r="11"/><ellipse ${a} cx="26" cy="26" rx="20" ry="6" transform="rotate(-20 26 26)"/>`,
+      balls: `<circle ${s} cx="15" cy="28" r="9"/><circle ${s} cx="37" cy="28" r="9"/><path ${a} d="M24 18l2-6M28 18l-2-6M26 13v-3"/>`,
+      coaster: `<path ${s} d="M4 44h44"/><path ${a} d="M4 36q10-26 20-8t24-14"/><path ${s} d="M12 44v-14M24 44v-14M36 44v-24"/>`,
+      spark: `<path ${s} d="M14 40q-4-14 4-22M38 40q4-14-4-22"/><path ${a} d="M26 8l-4 12h7l-4 12"/>`,
+      lift: `<rect ${s} x="12" y="8" width="28" height="36" rx="3"/><path ${a} d="M26 34V18M20 24l6-6 6 6"/>`,
+      bulb: `<path ${s} d="M18 30a12 12 0 1 1 16 0c-2 2-3 4-3 7H21c0-3-1-5-3-7z"/><path ${s} d="M21 42h10M22 46h8"/><path ${a} d="M24 30l2-6 2 6"/>`,
+      battery: `<rect ${s} x="8" y="16" width="32" height="20" rx="3"/><path ${s} d="M40 22h4v8h-4"/><path ${a} d="M14 26h6M17 23v6M28 26h6"/>`,
+      magnet: `<path ${s} d="M12 8v18a14 14 0 0 0 28 0V8h-8v18a6 6 0 0 1-12 0V8z"/><path ${a} d="M12 14h8M32 14h8"/>`,
+      bolt: `<path ${a} d="M30 4L14 28h11l-4 20 17-26H27z"/>`,
+      prism: `<path ${s} d="M26 10l14 26H12z"/><path ${s} d="M2 26l17-3"/><path ${a} d="M33 26l15-6M33 28l15 0M33 30l15 6"/>`,
+      wave: `<path ${a} d="M2 26q6-14 12 0t12 0 12 0 12 0"/><path ${s} d="M2 40h48"/>`,
+      sun: `<circle ${a} cx="26" cy="26" r="8"/><path ${s} d="M26 6v6M26 40v6M6 26h6M40 26h6M12 12l4 4M36 36l4 4M40 12l-4 4M16 36l-4 4"/>`,
+      atom: `<ellipse ${s} cx="26" cy="26" rx="20" ry="8"/><ellipse ${s} cx="26" cy="26" rx="20" ry="8" transform="rotate(60 26 26)"/><ellipse ${s} cx="26" cy="26" rx="20" ry="8" transform="rotate(-60 26 26)"/><circle cx="26" cy="26" r="3.5" fill="${accent}"/>`,
+      nucleus: `<circle ${s} cx="22" cy="22" r="6"/><circle ${a} cx="30" cy="24" r="6"/><circle ${s} cx="25" cy="31" r="6"/><path ${s} d="M40 10l4-4M44 16h4M8 42l-4 4"/>`,
+      flask: `<path ${s} d="M20 6h12M22 6v14L10 42a3 3 0 0 0 3 4h26a3 3 0 0 0 3-4L30 20V6"/><path ${a} d="M14 36h24"/>`,
+      dice: `<rect ${s} x="8" y="14" width="22" height="22" rx="4" transform="rotate(-12 19 25)"/><rect ${s} x="26" y="18" width="20" height="20" rx="4" transform="rotate(14 36 28)"/><circle cx="15" cy="21" r="1.8" fill="currentColor"/><circle cx="21" cy="27" r="1.8" fill="currentColor"/><circle cx="32" cy="24" r="1.8" fill="currentColor"/><circle cx="40" cy="31" r="1.8" fill="currentColor"/>`,
+      compass: `<circle ${s} cx="26" cy="26" r="18"/><path ${a} d="M26 12l5 14-5 14-5-14z"/>`
+    };
+    return `<svg viewBox="0 0 52 52" aria-hidden="true">${P_[name] || P_.atom}</svg>`;
+  }
+  const soundIcon = (on) => `<svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/>${on ? '<path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>' : '<path d="M17 9l5 6M22 9l-5 6"/>'}</g></svg>`;
+
+  // ---------------- coins ----------------
+  let shownGold = P.gold;
+  function paintCoins() { for (const n of document.querySelectorAll(".coins .num")) n.textContent = shownGold; }
+  function coinTarget() { const el = !ui.hidden ? $("#uiCoins") : $("#hudCoins"); return el.querySelector(".coin").getBoundingClientRect(); }
+  // pays once per eventId; the coins fly only after the reward is saved
+  function reward(eventId, amount, from) {
+    const bal = P.award(eventId, amount);
+    if (bal === null) return false;
+    const t = coinTarget(), tx = t.left + t.width / 2, ty = t.top + t.height / 2;
+    const fx = from ? from.x : innerWidth / 2, fy = from ? from.y : innerHeight / 2;
+    const finish = () => {
+      const step = Math.max(1, Math.round(amount / 8)), tick = () => {
+        shownGold = Math.min(bal, shownGold + step); paintCoins();
+        if (shownGold < bal) setTimeout(tick, 45);
+      };
+      tick();
+      for (const c of document.querySelectorAll(".coins")) { c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); }
+      G.sfx.sparkle(2);
+    };
+    const plus = document.createElement("div");
+    plus.className = "plus"; plus.textContent = "+" + amount;
+    plus.style.left = (reduceMotion ? tx + 18 : fx - 14) + "px"; plus.style.top = (reduceMotion ? ty - 8 : fy - 40) + "px";
+    $("#coinLayer").appendChild(plus);
+    plus.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none", offset: 0.2 }, { opacity: 0, transform: "translateY(-26px)" }], { duration: 1300, easing: "ease-out" }).onfinish = () => plus.remove();
+    if (reduceMotion) { finish(); return true; }
+    const n = 10; let landed = 0;
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement("div");
+      c.className = "fly-coin";
+      $("#coinLayer").appendChild(c);
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.5, r = 40 + Math.random() * 40;
+      const sx = fx + Math.cos(a) * r - 11, sy = fy + Math.sin(a) * r * 0.7 - 11;
+      const dur = 650 + i * 45;
+      c.animate([
+        { transform: `translate(${fx - 11}px, ${fy - 11}px) scale(0.4)`, opacity: 0 },
+        { transform: `translate(${sx}px, ${sy}px) scale(1)`, opacity: 1, offset: 0.3 },
+        { transform: `translate(${tx - 11}px, ${ty - 11}px) scale(0.55)`, opacity: 0.95 }
+      ], { duration: dur, easing: "cubic-bezier(.3,.1,.3,1)", delay: i * 25 }).onfinish = () => {
+        c.remove();
+        if (++landed === n) finish();
+      };
+    }
+    return true;
+  }
+
+  // ---------------- navigation ----------------
+  const stack = [];
+  let current = null, cleanup = null;
+  function setTitle(t, sub = "") { $("#uiTitle").textContent = t; $("#uiSub").textContent = sub; }
+  function show(name, args = {}, push = true) {
+    if (cleanup) { cleanup(); cleanup = null; }
+    if (push && current) stack.push(current);
+    current = { name, args };
+    ui.hidden = false; G.covered = true;
+    screenEl.className = ""; void screenEl.offsetWidth; screenEl.className = "screen-in";
+    screenEl.scrollTop = 0;
+    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
+    for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
+    SCREENS[name](args);
+    paintCoins();
+  }
+  function back() {
+    const sheet = document.querySelector(".sheet-back");
+    if (sheet) { sheet.remove(); return; }
+    if (stack.length) { const s = stack.pop(); show(s.name, s.args, false); }
+    else closeUI();
+  }
+  function closeUI() {
+    if (cleanup) { cleanup(); cleanup = null; }
+    ui.hidden = true; G.covered = false; stack.length = 0; current = null;
+    syncHud();
+  }
+  function openUI(name, args) { stack.length = 0; current = null; show(name, args, false); }
+  $("#uiBack").addEventListener("click", back);
+  for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => {
+    const t = b.dataset.tab;
+    if (t === "home") return closeUI();
+    stack.length = 0; current = null;
+    show(t === "physics" ? "mode" : t, {}, false);
+  });
+  // Android back button
+  window.eggBack = () => {
+    if (!ui.hidden) { back(); return true; }
+    return G.closeBubble();
+  };
+  // sound on / off (kept with the player's settings)
+  function paintSound() { const on = P.data.settings.sound_on !== false; $("#uiSound").innerHTML = soundIcon(on); $("#uiSound").setAttribute("aria-label", on ? "השתקה" : "הפעלת צליל"); G.audio.mute(!on); }
+  $("#uiSound").addEventListener("click", () => { P.data.settings.sound_on = P.data.settings.sound_on === false; P.save(); paintSound(); });
+
+  // ---------------- the home overlay ----------------
+  function syncHud() {
+    const show = G.hatched() && ui.hidden;
+    hud.hidden = !show;
+    if (show) { $("#hudMeter").style.width = Math.max(3, overallCoverage() * 100) + "%"; paintCoins(); }
+  }
+  setInterval(syncHud, 400);
+  window.addEventListener("egg:creature", syncHud);
+  $("#hudPhysics").addEventListener("click", () => { G.audio.unlock(); G.sfx.pop(); openUI("mode"); });
+
+  // ---------------- screens ----------------
+  const SCREENS = {};
+  const creatureImg = (sp, cls = "") => `<img class="${cls}" src="${artOf(sp)}" alt="${esc(nameOf(sp))}" draggable="false">`;
+
+  SCREENS.mode = () => {
+    setTitle("פיזיקה", "מגלים את החוקים שמסבירים את העולם");
+    const sp = activeSpecies();
+    const lines = ["בא לך לגלות משהו קטן?", "יש לי הרגשה שהיום נלמד משהו מוזר.", "אני מוכן! בערך."];
+    screenEl.innerHTML = `
+      <div class="stack">
+        <div class="hello">${creatureImg(sp)}<div class="bubble">${lines[Math.floor(Math.random() * lines.length)]}</div></div>
+        <h2 style="margin:0;font-size:22px;font-weight:800">איך בא לך לגלות פיזיקה היום?</h2>
+        <button class="card mode-card surprise" data-path="surprise" type="button">
+          <span class="art">${icon("dice", "#258EF6")}</span>
+          <h2>תפתיע אותי</h2>
+          <p>ניסוי קטן ומפתיע, בלי להתחייב לשיעור</p>
+          <span class="btn primary">למכונת הנושאים</span>
+        </button>
+        <button class="card mode-card" data-path="ordered" type="button">
+          <span class="art">${icon("compass", "#F49A35")}</span>
+          <h2>לפי הסדר</h2>
+          <p>מסע בנושאים, צעד אחרי צעד</p>
+          <span class="btn secondary">להמשיך במסלול</span>
+        </button>
+        <div class="card">
+          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${UNITS.filter((u) => done().includes(u.id)).length}/${TOTAL_UNITS}</span></div>
+          <div class="meter-row"><span class="meter teal"><i style="width:0"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
+        </div>
+      </div>`;
+    requestAnimationFrame(() => { const i = screenEl.querySelector(".meter i"); if (i) i.style.width = Math.max(2, overallCoverage() * 100) + "%"; });
+    for (const b of screenEl.querySelectorAll(".mode-card")) b.addEventListener("click", () => {
+      P.data.physics.path = b.dataset.path; P.save(); G.sfx.pop();
+      if (b.dataset.path === "surprise") show("lever");
+      else show("card", { topic: nextOrdered(), ordered: true });
+    });
+  };
+  // the next topic that can actually be played, in the curriculum's order
+  const nextOrdered = () => (TOPICS.find((t) => t.ready && familyCoverage(t.id) < 1) || TOPICS.find((t) => t.ready)).id;
+
+  SCREENS.lever = () => {
+    setTitle("מכונת הנושאים", "מושכים את הידית ומגלים נושא");
+    const items = [];
+    for (let r = 0; r < 4; r++) for (const t of TOPICS) items.push(t);
+    const ITEM = 84;
+    screenEl.innerHTML = `
+      <div class="machine-wrap">
+        <div class="machine">
+          <div class="bolts"><span style="top:0;left:0"></span><span style="top:0;right:0"></span><span style="bottom:0;left:0"></span><span style="bottom:0;right:0"></span></div>
+          <div class="reel-window"><div class="reel-mark"></div><div class="reel" id="reel">
+            ${items.map((t) => `<div class="reel-item">${icon(ICON_OF[t.id], t.ready ? "#F49A35" : "#B9BCC2")}<div><b>${esc(t.title_he)}</b><small>${esc(t.world_he)}${t.ready ? "" : " · בפיתוח"}</small></div></div>`).join("")}
+          </div></div>
+        </div>
+        <div class="lever" id="lever" aria-label="ידית: משכו למטה">
+          <div class="track"></div>
+          <svg class="hint" viewBox="0 0 24 60"><path d="M12 4v46M5 42l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="knob" id="knob" role="button" tabindex="0" aria-label="למשוך את הידית"></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:14px"><button class="btn quiet" id="giveMe" type="button">תן לי משהו</button></div>
+      <div id="result"></div>`;
+    const reel = $("#reel"), knob = $("#knob");
+    let pos = TOPICS.length * 1 + Math.floor(Math.random() * TOPICS.length), spinning = false, drag = null, pulled = 0;
+    const place = (i, anim) => { reel.style.transition = anim ? `transform ${anim}s cubic-bezier(.12,.67,.18,1)` : "none"; reel.style.transform = `translateY(${-(i * ITEM) + ITEM}px)`; };
+    place(pos, 0);
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      $("#result").innerHTML = "";
+      // only topics that really exist can come out; the choice is made first, the reel just shows it
+      const ready = TOPICS.filter((t) => t.ready);
+      const pick = ready[Math.floor(Math.random() * ready.length)];
+      const idx = TOPICS.indexOf(pick) + TOPICS.length * 3;
+      place((pos % TOPICS.length) + TOPICS.length, 0);
+      void reel.offsetWidth;
+      pos = idx;
+      const dur = reduceMotion ? 0.01 : 1.35;
+      place(pos, dur);
+      G.sfx.whoosh();
+      let ticks = 0;
+      const ticker = reduceMotion ? null : setInterval(() => { if (++ticks < 9) G.sfx.tick(); }, 120);
+      setTimeout(() => {
+        clearInterval(ticker); spinning = false;
+        G.sfx.boing(0.5); G.buzz(25);
+        $("#result").innerHTML = `<div class="result show card">${icon(ICON_OF[pick.id], "#F49A35").replace("<svg", '<svg style="width:64px;height:64px;color:#3a3a40"')}
+          <h2>${esc(pick.title_he)}</h2><p>${esc(pick.world_he)} · ${pick.subtopics_he.map(esc).join(" · ")}</p>
+          <button class="btn primary block" id="play" type="button">בוא נשחק</button></div>`;
+        $("#play").addEventListener("click", () => show("card", { topic: pick.id }));
+        $("#result").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+      }, dur * 1000 + 80);
+    }
+    // the lever: drag it down at least 70 px (of 110) and let go
+    const setKnob = (d, anim) => { knob.style.transition = anim ? "transform 0.45s cubic-bezier(.3,1.6,.5,1)" : "none"; knob.style.transform = `translateY(${d}px)`; };
+    knob.addEventListener("pointerdown", (e) => { if (spinning) return; drag = { y: e.clientY }; pulled = 0; knob.setPointerCapture(e.pointerId); G.audio.unlock(); });
+    knob.addEventListener("pointermove", (e) => { if (!drag) return; pulled = clamp(e.clientY - drag.y, 0, 110); setKnob(pulled); });
+    const up = () => { if (!drag) return; drag = null; const go = pulled >= 70; setKnob(0, true); if (go) spin(); };
+    knob.addEventListener("pointerup", up); knob.addEventListener("pointercancel", up);
+    knob.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setKnob(90); setTimeout(() => { setKnob(0, true); spin(); }, 150); } });
+    $("#giveMe").addEventListener("click", () => { G.audio.unlock(); setKnob(90); setTimeout(() => { setKnob(0, true); spin(); }, 120); });
+  };
+
+  SCREENS.card = ({ topic = "springs", ordered = false }) => {
+    const t = TOPICS.find((x) => x.id === topic);
+    setTitle("קפיצים ואלסטיות", ordered ? "לפי הסדר" : "");
+    const sp = activeSpecies(), cov = familyCoverage(topic), n = UNITS.filter((u) => done().includes(u.id)).length;
+    screenEl.innerHTML = `
+      <div class="stack intro">
+        <div class="scene">
+          <div class="bubble">תמשוך אותי בעדינות… או שלא!</div>
+          <svg viewBox="0 0 90 210"><path d="M10 6h70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M45 6v14l-22 7 44 9-44 9 44 9-44 9 44 9-44 9 44 9-22 7v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="45" cy="138" r="5" fill="none" stroke="#F49A35" stroke-width="2.6"/></svg>
+          ${creatureImg(sp)}
+        </div>
+        <h2>${esc(t ? t.title_he : "קפיץ־קפוץ")}!</h2>
+        ${ordered ? `<p class="path-line">המסלול: מכניקה ‹ ${esc(t.title_he)} ‹ שלב ${Math.min(n + 1, UNITS.length)} מתוך ${UNITS.length}</p>` : ""}
+        <div class="card" style="text-align:right">
+          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${UNITS.length}</span></div>
+          <div class="meter-row"><span class="meter violet"><i style="width:${Math.max(2, cov * 100)}%"></i></span><span class="pct">${pct(cov)}</span></div>
+        </div>
+        <button class="btn primary block" id="go" type="button">בוא ננסה</button>
+      </div>`;
+    $("#go").addEventListener("click", () => { G.sfx.pop(); show("lab", { topic }); });
+  };
+
+  SCREENS.creatures = () => {
+    setTitle("הדמויות", "כל דמות עם גוף משלה: מסה, גובה, חיכוך");
+    const owned = P.owned();
+    const ownedSpecies = new Set(owned.map((c) => c.species));
+    const act = P.active();
+    const list = SPR.creatures.map((c) => c.id);
+    for (const c of owned) if (!list.includes(c.species)) list.push(c.species);
+    screenEl.innerHTML = `
+      <div class="grid2">
+        ${list.map((sp) => {
+          const m = meta(sp) || {}, mine = ownedSpecies.has(sp), isAct = act && act.species === sp;
+          return `<button class="card ctile ${mine ? "" : "locked"} ${isAct ? "active" : ""}" data-sp="${esc(sp)}" type="button">
+            <span class="corner">${isAct ? '<span class="tag open">פעילה</span>' : mine ? '<span class="tag">שלך</span>' : ""}</span>
+            ${creatureImg(sp)}<b>${esc(nameOf(sp))}</b>
+            <span class="tag ${esc(m.rarity || "common")}">${RARITY_HE[m.rarity] || "רגיל"}</span>
+          </button>`;
+        }).join("")}
+      </div>
+      <p class="fine" style="margin-top:14px">דמות מגיעה מביצה או מהחלפה עם חבר. המטבעות וההתקדמות שלך לא עוברים עם הדמות.</p>`;
+    for (const b of screenEl.querySelectorAll(".ctile")) b.addEventListener("click", () => show("creature", { sp: b.dataset.sp }));
+  };
+
+  SCREENS.creature = ({ sp }) => {
+    const m = meta(sp) || {}, ph = phys(sp);
+    const owned = P.owned().filter((c) => c.species === sp), act = P.active(), isAct = act && act.species === sp;
+    setTitle(nameOf(sp), m.theme_he ? "סוג: " + m.theme_he : "");
+    screenEl.innerHTML = `
+      <div class="stack cdetail">
+        <div>${creatureImg(sp, "big")}<h2>${esc(nameOf(sp))}</h2><span class="tag ${esc(m.rarity || "common")}">${RARITY_HE[m.rarity] || "רגיל"}</span></div>
+        <div class="card props">
+          <div><span>מסה</span><b>m = ${ph.mass_kg} kg</b></div>
+          <div><span>משקל על כדור הארץ</span><b>W = mg = ${fmt(ph.mass_kg * 9.81, 1)} N</b></div>
+          <div><span>גובה</span><b>${Math.round(ph.height_m * 100)} cm</b></div>
+          <div><span>חיכוך עם עץ יבש</span><b>μs ${fmt(ph.mu_s)} · μk ${fmt(ph.mu_k)}</b></div>
+          <div><span>אלסטיות בהתנגשות</span><b>e = ${fmt(ph.e)}</b></div>
+          <div><span>התנגדות אוויר</span><b>Cd·A = ${fmt(ph.Cd * ph.A, 4)} m²</b></div>
+        </div>
+        <div class="stack">
+          ${owned.length && !isAct ? `<button class="btn primary block" id="choose" type="button">בחר דמות</button>` : ""}
+          ${owned.length ? `<button class="btn secondary block" id="compare" type="button">השווה בניסוי הקפיץ</button>` : ""}
+          ${isAct ? `<button class="btn secondary block" id="trade" type="button">החלף עם חבר</button>
+             <p class="fine">החלפה ישירה עם טלפון קרוב: הדמות עוברת, המטבעות וההתקדמות נשארים אצלך.</p>` : ""}
+          ${!owned.length ? `<p class="fine">הדמות הזאת עוד לא שלך. היא יכולה לצאת מביצה או להגיע בהחלפה עם חבר.</p>` : ""}
+        </div>
+      </div>`;
+    const choose = () => { P.setActive(owned[0].instance_id); G.setCreature(sp); G.sfx.sparkle(3); };
+    $("#choose")?.addEventListener("click", () => { choose(); show("creature", { sp }, false); });
+    $("#compare")?.addEventListener("click", () => { if (!isAct) choose(); show("lab", { topic: "springs" }); });
+    $("#trade")?.addEventListener("click", () => { closeUI(); setTimeout(() => G.openTrade(), 250); });
+  };
+
+  SCREENS.map = () => {
+    setTitle("המפה", "כמה מהחומר כבר פגשת");
+    const worlds = [];
+    for (const t of TOPICS) { let w = worlds.find((x) => x.name === t.world_he); if (!w) worlds.push(w = { name: t.world_he, list: [] }); w.list.push(t); }
+    const mast = P.data.physics.mastery, attempts = Object.values(mast).reduce((n, m) => n + m.attempts, 0), correct = Object.values(mast).reduce((n, m) => n + m.correct, 0);
+    screenEl.innerHTML = `
+      <div class="card">
+        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${UNITS.filter((u) => done().includes(u.id)).length}/${TOTAL_UNITS}</span></div>
+        <div class="meter-row"><span class="meter teal"><i style="width:${Math.max(2, overallCoverage() * 100)}%"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
+        <p class="fine" style="margin:10px 0 0">זה מד של חומר שפגשת, לא ציון בגרות. ${attempts >= 3 ? `שאלות קטנות: ${correct} נכונות מתוך ${attempts}.` : ""}</p>
+      </div>
+      ${worlds.map((w) => `<section class="world"><h3>${esc(w.name)}</h3>
+        ${w.list.map((t) => {
+          const cov = familyCoverage(t.id);
+          return `<div class="card fam ${t.ready ? "playable" : ""}" data-topic="${t.id}" ${t.ready ? 'role="button" tabindex="0"' : ""}>
+            ${icon(ICON_OF[t.id], t.ready ? "#8A60E8" : "#B9BCC2")}
+            <div><b>${esc(t.title_he)}</b><small>${t.subtopics_he.map(esc).join(" · ")}</small>
+              ${t.ready ? `<span class="meter thin violet"><i style="width:${Math.max(2, cov * 100)}%"></i></span>` : ""}</div>
+            ${t.ready ? `<span class="tag open">${pct(cov)}</span>` : `<span class="tag">בפיתוח</span>`}
+          </div>`;
+        }).join("")}</section>`).join("")}
+      <p class="fine" style="margin-top:16px">המפה היא טיוטה של 20 משפחות נושאים. היא עוד לא אומתה סעיף-סעיף מול תוכנית הלימודים של משרד החינוך.</p>
+      <div class="devtools"><h4>כלי פיתוח (לבדיקות בלבד)</h4>
+        <button class="btn secondary" id="devAll" type="button">לקבל את כל הדמויות</button>
+        <button class="btn secondary" id="devEgg" type="button">ביצה חדשה (המטבעות וההתקדמות נשמרים)</button>
+      </div>`;
+    for (const f of screenEl.querySelectorAll(".fam.playable")) {
+      const go = () => show("card", { topic: f.dataset.topic });
+      f.addEventListener("click", go); f.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    }
+    $("#devAll").addEventListener("click", () => { P.devOwnAll(SPR.creatures.map((c) => c.id)); G.sfx.sparkle(4); show("creatures", {}, false); });
+    $("#devEgg").addEventListener("click", () => { closeUI(); G.newEgg(); });
+  };
+
+  // ======================================================================
+  //  THE SPRING LAB
+  // ======================================================================
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const L0 = 0.30;                      // natural length of the spring (m)
+  const U_MAX = 0.25;                   // how far below equilibrium it can be pulled (m)
+  const lab = { k: 120, massOverride: null, b: 0, lastU0: 0.12 };
+
+  SCREENS.lab = () => {
+    setTitle("קפיץ־קפוץ", "ניסוי: חוק הוק");
+    let sp = activeSpecies();
+    const m0 = () => phys(sp).mass_kg;
+    const mass = () => lab.massOverride ?? m0();
+    screenEl.innerHTML = `
+      <div class="lab-screen">
+        <div class="lab" id="lab">
+          <canvas id="labCanvas"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="lab-tools">
+            <button class="chip" id="charChip" type="button"></button>
+            <button class="chip" id="formulaBtn" type="button">הצג נוסחה</button>
+          </div>
+        </div>
+        <div class="readouts">
+          <div class="readout"><small>התארכות</small><b id="rS">–</b></div>
+          <div class="readout"><small>כוח קפיץ</small><b id="rF">–</b></div>
+          <div class="readout"><small>אנרגיה</small><b id="rE">–</b></div>
+          <div class="readout"><small>זמן מחזור</small><b id="rT">–</b></div>
+        </div>
+        <div class="card controls">
+          <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k</span><span class="val" id="kVal"></span></label>
+            <input id="kIn" type="range" min="30" max="400" step="5"></div>
+          <div class="slider-row"><label for="mIn"><span>מסה m <span class="note" id="mNote"></span></span><span class="val" id="mVal"></span></label>
+            <input id="mIn" class="mass" type="range" min="0.5" max="4" step="0.1">
+            <button class="linkish" id="mReset" type="button" hidden>חזרה למסת הדמות</button></div>
+          <details class="adv" id="adv"><summary>מתקדם: בלימה b</summary>
+            <div class="slider-row"><label for="bIn"><span>מקדם בלימה b</span><span class="val" id="bVal"></span></label>
+              <input id="bIn" class="damp" type="range" min="0" max="3" step="0.1"></div>
+            <p class="fine">עם בלימה התנודה דועכת, וזמן המחזור כבר לא בדיוק 2π√(m/k).</p>
+          </details>
+        </div>
+        <div class="card formula" id="formula" hidden></div>
+      </div>`;
+
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab");
+    let W = 0, H = 0, DPR = 1;
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); };
+    resize();
+    const ro = new ResizeObserver(resize); ro.observe(box);
+
+    const img = new Image(); let imgSp = null;
+    const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } };
+    loadImg();
+
+    const params = () => SP.params(mass(), lab.k, lab.b);
+    const sim = new SP.Sim(params(), 0);
+    let scale = 300, formulaOpen = false, dragging = null, everDragged = false, sayT = 0, raf = 0, lastT = performance.now();
+    const releases = [];                                     // what the player has tried this visit
+    let trial = null, questionCooldown = 1, sheetOpen = false;
+
+    // ---- controls ----
+    const kIn = $("#kIn"), mIn = $("#mIn"), bIn = $("#bIn");
+    kIn.value = lab.k; mIn.value = mass(); bIn.value = lab.b;
+    function paintControls() {
+      $("#kVal").textContent = lab.k + " N/m";
+      $("#mVal").textContent = fmt(mass(), 1) + " kg";
+      $("#bVal").textContent = fmt(lab.b, 1) + " N·s/m";
+      const own = lab.massOverride === null;
+      $("#mNote").textContent = own ? "(מסת " + nameOf(sp) + ")" : "(מסה בניסוי)";
+      $("#mReset").hidden = own;
+      $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><span>${esc(nameOf(sp))} · <span class="ltr">${fmt(m0(), 1)} kg</span></span><span aria-hidden="true">⇄</span>`;
+    }
+    // any change: start again at rest at the NEW equilibrium, and say what moved
+    function reconfigure(why) {
+      const before = { eq: SP.equilibrium(sim.p), T: SP.period(sim.p) };
+      sim.reset(params(), 0);
+      trial = null;
+      const after = { eq: SP.equilibrium(sim.p), T: SP.period(sim.p) };
+      if (why) say(`${why} שיווי המשקל: ${fmt(before.eq * 100, 1)} ← ${fmt(after.eq * 100, 1)} ס״מ. T: ${fmt(before.T)} ← ${fmt(after.T)} שנ׳.`, 4);
+      paintControls(); paintFormula();
+    }
+    kIn.addEventListener("input", () => { lab.k = +kIn.value; reconfigure(); });
+    kIn.addEventListener("change", () => reconfigure("הקפיץ הוחלף."));
+    mIn.addEventListener("input", () => { lab.massOverride = Math.abs(+mIn.value - m0()) < 0.05 ? null : +mIn.value; reconfigure(); });
+    mIn.addEventListener("change", () => reconfigure("המסה השתנתה."));
+    bIn.addEventListener("input", () => { lab.b = +bIn.value; reconfigure(); });
+    $("#mReset").addEventListener("click", () => { lab.massOverride = null; mIn.value = m0(); reconfigure("חזרה למסת הדמות."); });
+    $("#formulaBtn").addEventListener("click", () => {
+      formulaOpen = !$("#formula").hidden ? false : true;
+      $("#formula").hidden = !formulaOpen;
+      $("#formulaBtn").textContent = formulaOpen ? "הסתר נוסחה" : "הצג נוסחה";
+      if (formulaOpen) { P.data.physics.formulaSeen = true; P.save(); paintFormula(); $("#formula").scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    });
+    function paintFormula() {
+      if ($("#formula").hidden) return;
+      const p = sim.p, s = sim.st.s, eq = SP.equilibrium(p);
+      $("#formula").innerHTML = `
+        <div class="eq"><span>כוח הקפיץ (חוק הוק)</span><span class="m">F = −k·s<em>${fmt(-p.k * s, 1)} N</em></span></div>
+        <div class="eq"><span>אנרגיה אלסטית</span><span class="m">E = ½·k·s²<em>${fmt(SP.elasticEnergy(s, p.k), 2)} J</em></span></div>
+        <div class="eq"><span>שיווי משקל</span><span class="m">s<sub>eq</sub> = m·g / k<em>${fmt(eq * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>זמן מחזור (בלי בלימה)</span><span class="m">T = 2π·√(m/k)<em>${fmt(SP.period(p))} s</em></span></div>
+        <p class="fine">s היא ההתארכות מהאורך הטבעי של הקפיץ. כוח חיובי פירושו כלפי מטה, ולכן כשהקפיץ מתוח F שלילי: הוא מושך למעלה.</p>`;
+    }
+    paintControls();
+
+    // ---- switching creature: same k, same pull below equilibrium, a fair comparison ----
+    $("#charChip").addEventListener("click", () => {
+      const owned = P.owned();
+      const back = document.createElement("div");
+      back.className = "sheet-back";
+      back.innerHTML = `<div class="sheet" role="dialog" aria-label="החלפת דמות"><h3>להחליף דמות בניסוי</h3>
+        <p>אותו קפיץ, אותה משיכה. רק המסה משתנה.</p>
+        <div class="pick-list">${owned.map((c) => `<button type="button" data-id="${c.instance_id}" aria-pressed="${c.species === sp}">${creatureImg(c.species)}<span>${esc(nameOf(c.species))}</span><small>${fmt(phys(c.species).mass_kg, 1)} kg</small></button>`).join("")}</div>
+        ${owned.length < 2 ? `<p class="fine" style="margin-top:12px">יש לך דמות אחת. דמות נוספת מגיעה מהחלפה עם חבר, ואז ההבדל בפיזיקה מתגלה כאן.</p>` : ""}
+        <div class="actions"><button class="btn quiet" type="button" data-close>סגור</button></div></div>`;
+      document.body.appendChild(back);
+      back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) back.remove(); });
+      for (const b of back.querySelectorAll("[data-id]")) b.addEventListener("click", () => {
+        const c = owned.find((x) => x.instance_id === b.dataset.id); back.remove();
+        if (!c || c.species === sp) return;
+        const oldName = nameOf(sp), oldT = SP.period(sim.p);
+        P.setActive(c.instance_id); G.setCreature(c.species);
+        sp = c.species; lab.massOverride = null; mIn.value = m0(); loadImg();
+        const u0 = Math.max(0.05, lab.lastU0);
+        sim.reset(params(), u0); sim.release();
+        trial = startRelease(u0);
+        paintControls(); paintFormula();
+        say(`עם ${nameOf(sp)} המסה אחרת, אז זמן המחזור משתנה: ${fmt(oldT)} ← ${fmt(SP.period(sim.p))} שנ׳ (${oldName} ← ${nameOf(sp)}).`, 5);
+        G.sfx.whoosh();
+      });
+    });
+
+    // ---- speech ----
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    const DRAG_LINES = ["תפסיק למשוך, אני לא גומייה!", "עוד קצת ואתה מודד לי את האישיות בניוטון.", "אוי, זה מותח."];
+    const RELEASE_LINES = ["אני לא קופץ, אני מתנודד!", "וואו. שוב!", "למעלה, למטה, למעלה…"];
+
+    // ---- geometry: metres to pixels, everything in one coordinate system ----
+    const TOP = 22;
+    const hookY = (s) => TOP + (L0 + s) * scale;
+    function targetScale() {
+      const ph = phys(sp), eq = SP.equilibrium(sim.p);
+      return clamp((H - TOP - 30) / (L0 + eq + U_MAX + ph.height_m * 1.02), 60, 900);
+    }
+    function creatureRect(s) {
+      const h = phys(sp).height_m * scale, w = img.naturalWidth ? h * img.naturalWidth / img.naturalHeight : h;
+      const cx = W * 0.58, y = hookY(s);
+      return { x: cx - w / 2, y, w, h, cx };
+    }
+
+    // ---- dragging: hold the creature below equilibrium, let go to release ----
+    function pointerPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener("pointerdown", (e) => {
+      if (sheetOpen) return;
+      const p = pointerPos(e), r = creatureRect(sim.st.s);
+      if (p.x < r.x - 30 || p.x > r.x + r.w + 30 || p.y < r.y - 40 || p.y > r.y + r.h + 30) return;
+      G.audio.unlock();
+      dragging = { dy: p.y - hookY(sim.st.s) };
+      cv.setPointerCapture(e.pointerId);
+      sim.hold(sim.u);
+      trial = null;
+      if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
+      say(DRAG_LINES[Math.floor(Math.random() * DRAG_LINES.length)], 2);
+    });
+    cv.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const p = pointerPos(e);
+      const eqY = hookY(SP.equilibrium(sim.p));
+      const u = clamp((p.y - dragging.dy - eqY) / scale, 0, U_MAX);
+      sim.hold(u);
+    });
+    const letGo = () => {
+      if (!dragging) return;
+      dragging = null;
+      const u0 = sim.u;
+      if (u0 < 0.02) { sim.reset(sim.p, 0); return; }        // too small: it just settles
+      lab.lastU0 = u0;
+      sim.release();
+      trial = startRelease(u0);
+      G.sfx.boing(0.6); G.buzz(15);
+      say(RELEASE_LINES[Math.floor(Math.random() * RELEASE_LINES.length)], 1.8);
+    };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+
+    // ---- what counts as learning: watching real swings, and comparing ----
+    function startRelease(u0) { return { k: lab.k, m: mass(), b: lab.b, u0, seen: false }; }
+    const same = (a, b) => Math.abs(a - b) / Math.max(a, b) < 0.03;
+    function observe() {
+      if (!trial || trial.seen || sim.held) return;
+      if (sim.periods() < 2 && sim.t < SP.period(sim.p) * 1.2) return;   // at least one full swing
+      trial.seen = true; releases.push(trial);
+      const r = releases, c = trial;
+      const got = [];
+      if (c.u0 >= 0.03) got.push("springs.hooke");
+      if ((formulaOpen || P.data.physics.formulaSeen) && c.u0 >= 0.10) got.push("springs.energy");
+      if (r.some((x) => x !== c && same(x.m, c.m) && Math.max(x.k, c.k) / Math.min(x.k, c.k) >= 1.5)) got.push("springs.oscillation");
+      if (r.some((x) => x !== c && same(x.k, c.k) && Math.max(x.m, c.m) / Math.min(x.m, c.m) >= 1.5)) got.push("springs.shm");
+      const fresh = got.filter((id) => P.completeSubtopic(id));
+      if (fresh.length) { celebrate(fresh); questionCooldown = 2; return; }
+      if (!P.data.physics.formulaSeen && c.u0 >= 0.10 && done().includes("springs.hooke")) say("רוצה לראות כמה אנרגיה נאגרה? לחצו על 'הצג נוסחה'.", 3.5);
+      else if (!done().includes("springs.oscillation") && releases.length >= 2) say("נסו קפיץ קשיח יותר ותראו מה קורה לקצב.", 3);
+      else if (!done().includes("springs.shm") && done().includes("springs.oscillation")) say("ומה אם הדמות כבדה יותר? הזיזו את המסה או החליפו דמות.", 3.5);
+      maybeAsk();
+    }
+
+    function celebrate(ids) {
+      const unit = UNITS.find((u) => u.id === ids[0]);
+      const r = creatureRect(sim.st.s), cr = cv.getBoundingClientRect();
+      ids.forEach((id, i) => setTimeout(() => reward("sub:" + id, 10, { x: cr.left + r.cx, y: cr.top + r.y + r.h / 2 }), i * 500));
+      G.sfx.harp(); G.buzz(40);
+      const fam = familyCoverage("springs"), all = overallCoverage();
+      sheet(`
+        <div class="gain"><span class="coin"></span> +${10 * ids.length}</div>
+        <h3>גילית: ${esc(ids.map((id) => UNITS.find((u) => u.id === id).he).join(", "))}</h3>
+        <p class="insight">${esc(unit.insight)}</p>
+        <details><summary class="linkish">הצג נוסחה</summary><p class="m" style="font:600 20px 'Cambria Math','Times New Roman',serif;margin:8px 0">${esc(unit.eq)}</p></details>
+        <div style="display:grid;gap:12px;margin-top:10px">
+          <div><div class="meter-label"><span>קפיצים ואלסטיות</span><span class="ltr">${pct(fam)}</span></div><span class="meter violet"><i data-w="${fam}"></i></span></div>
+          <div><div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${pct(all)}</span></div><span class="meter teal"><i data-w="${all}"></i></span></div>
+        </div>
+        <div class="actions"><button class="btn primary" type="button" data-close>להמשיך לשחק</button></div>`);
+    }
+
+    function maybeAsk() {
+      if (questionCooldown > 0) { questionCooldown--; return; }
+      const cov = familyCoverage("springs");
+      const chance = cov < 0.25 ? 0.10 : cov < 0.5 ? 0.20 : cov < 0.75 ? 0.30 : 0.45;
+      if (Math.random() > chance) return;
+      questionCooldown = 3;
+      const inv = document.createElement("div");
+      inv.className = "card invite";
+      inv.innerHTML = `<span>אתה כבר חוקר ותיק. בא לך שאלה קטנה?</span><span><button class="btn primary" style="min-height:40px;padding:0 14px;font-size:15px" type="button" data-yes>כן</button> <button class="btn quiet" type="button" data-no>לא עכשיו</button></span>`;
+      box.appendChild(inv);
+      const t = setTimeout(() => inv.remove(), 9000);
+      inv.querySelector("[data-no]").addEventListener("click", () => { clearTimeout(t); inv.remove(); });
+      inv.querySelector("[data-yes]").addEventListener("click", () => { clearTimeout(t); inv.remove(); askQuestion(); });
+    }
+    function askQuestion() {
+      const hist = P.data.physics.question_history;
+      const solved = new Set(hist.filter((h) => h.correct).map((h) => h.id));
+      const pool = QUESTIONS.filter((q) => !solved.has(q.id) && (done().includes(q.unit) || q.unit === "springs.hooke"));
+      const q = (pool.length ? pool : QUESTIONS)[Math.floor(Math.random() * (pool.length || QUESTIONS.length))];
+      const el = sheet(`<h3>שאלה קטנה</h3><p class="insight">${esc(q.q)}</p>
+        <div class="options">${q.a.map((a, i) => `<button type="button" data-i="${i}">${esc(a)}</button>`).join("")}</div>
+        <p id="why" hidden></p><div class="actions"><button class="btn quiet" type="button" data-close>דלג</button></div>`);
+      for (const b of el.querySelectorAll("[data-i]")) b.addEventListener("click", () => {
+        if (el.dataset.answered) return; el.dataset.answered = "1";
+        const ok = +b.dataset.i === q.right;
+        b.classList.add(ok ? "right" : "wrong");
+        if (!ok) el.querySelector(`[data-i="${q.right}"]`).classList.add("right");
+        P.recordAnswer(q.id, q.unit, ok);
+        const why = el.querySelector("#why"); why.hidden = false; why.textContent = (ok ? "נכון! " : "כמעט. ") + q.why;
+        el.querySelector("[data-close]").textContent = "להמשיך";
+        if (ok) { const r = b.getBoundingClientRect(); reward("q:" + q.id, 5, { x: r.left + r.width / 2, y: r.top }); G.sfx.sparkle(3); }
+        else G.sfx.hmph(0.4);
+      });
+    }
+    function sheet(html) {
+      const back = document.createElement("div");
+      back.className = "sheet-back";
+      back.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
+      document.body.appendChild(back);
+      sheetOpen = true;
+      const close = () => { back.remove(); sheetOpen = false; };
+      back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) close(); });
+      new MutationObserver((_, o) => { if (!back.isConnected) { sheetOpen = false; o.disconnect(); } }).observe(document.body, { childList: true });
+      requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of back.querySelectorAll("[data-w]")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
+      return back.querySelector(".sheet");
+    }
+
+    // ---- drawing ----
+    function pencilLine(x0, y0, x1, y1, w = 2, color = "#3a3a40") {
+      ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.globalAlpha *= 0.35; ctx.lineWidth = w * 0.6; ctx.beginPath(); ctx.moveTo(x0 + 0.8, y0 + 0.6); ctx.lineTo(x1 + 0.8, y1 + 0.6); ctx.stroke(); ctx.globalAlpha /= 0.35;
+    }
+    function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.direction = "ltr";                                 // numbers and units read left to right
+      const p = sim.p, s = sim.st.s, eq = SP.equilibrium(p);
+      const r = creatureRect(s), x = r.cx;
+      // ceiling, hatched
+      ctx.fillStyle = "#F4F4F2"; ctx.fillRect(x - 70, 0, 140, TOP);
+      pencilLine(x - 74, TOP, x + 74, TOP, 2.4);
+      ctx.save(); ctx.beginPath(); ctx.rect(x - 70, 0, 140, TOP); ctx.clip();
+      ctx.strokeStyle = "rgba(58,58,64,0.35)"; ctx.lineWidth = 1.2;
+      for (let i = -10; i < 160; i += 10) { ctx.beginPath(); ctx.moveTo(x - 70 + i, TOP); ctx.lineTo(x - 70 + i + 14, 0); ctx.stroke(); }
+      ctx.restore();
+      // ruler: s from the natural length, in metres
+      const rx = 40, y0 = hookY(0), yEnd = hookY(eq + U_MAX + 0.02);
+      pencilLine(rx, TOP, rx, yEnd, 1.6, "#6B6B70");
+      ctx.font = "600 11px " + FONT; ctx.fillStyle = "#606671"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      const stepM = scale > 400 ? 0.05 : scale > 180 ? 0.1 : 0.2;
+      for (let m = 0; L0 + m <= (yEnd - TOP) / scale + 1e-6; m = +(m + stepM / 2).toFixed(4)) {
+        const y = hookY(m), major = Math.abs((m / stepM) - Math.round(m / stepM)) < 1e-6;
+        ctx.strokeStyle = "#6B6B70"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(rx, y); ctx.lineTo(rx + (major ? 12 : 6), y); ctx.stroke();
+        if (major) ctx.fillText(fmt(m, stepM < 0.1 ? 2 : 1), rx - 6, y);
+      }
+      ctx.save(); ctx.translate(rx - 26, (TOP + y0) / 2 + 10); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("s (m)", 0, 0); ctx.restore();
+      // equilibrium line
+      const yEq = hookY(eq);
+      ctx.save(); ctx.setLineDash([6, 6]); ctx.strokeStyle = "rgba(138,96,232,0.75)"; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(rx, yEq); ctx.lineTo(W - 12, yEq); ctx.stroke(); ctx.restore();
+      ctx.fillStyle = "#6E48C9"; ctx.font = "600 12px " + FONT;
+      ctx.direction = "rtl"; ctx.textAlign = "right"; ctx.fillText("שיווי משקל", W - 12, yEq - 10); ctx.direction = "ltr";
+      // the spring: always attached, coils stretch with s
+      const coils = 12, top = TOP, bot = hookY(s) - 4, lead = 10, amp = 15;
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + lead);
+      const span = Math.max(8, bot - top - 2 * lead);
+      for (let i = 0; i <= coils * 2; i++) { const yy = top + lead + span * i / (coils * 2); ctx.lineTo(x + (i === 0 || i === coils * 2 ? 0 : (i % 2 ? amp : -amp)), yy); }
+      ctx.lineTo(x, bot); ctx.stroke();
+      ctx.globalAlpha = 0.3; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x + 1, top);
+      for (let i = 0; i <= coils * 2; i++) { const yy = top + lead + span * i / (coils * 2); ctx.lineTo(x + 1.2 + (i === 0 || i === coils * 2 ? 0 : (i % 2 ? amp : -amp)), yy + 1); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+      // hook
+      ctx.strokeStyle = "#F49A35"; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.arc(x, bot + 4, 5, 0, Math.PI * 2); ctx.stroke();
+      // current s on the ruler
+      const yS = hookY(s);
+      ctx.fillStyle = "#E2574C"; ctx.beginPath(); ctx.moveTo(rx + 2, yS); ctx.lineTo(rx + 12, yS - 6); ctx.lineTo(rx + 12, yS + 6); ctx.fill();
+      ctx.font = "700 12px " + FONT;
+      const tag = fmt(s, 2) + " m", tw = ctx.measureText(tag).width + 12;
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#E2574C"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(rx + 14, yS - 11, tw, 22, 6) : ctx.rect(rx + 14, yS - 11, tw, 22); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#C2392F"; ctx.textAlign = "left"; ctx.fillText(tag, rx + 20, yS);
+      // the creature, hanging from the hook (a little squash from the motion is visual only)
+      if (img.complete && img.naturalWidth) {
+        const a = SP.accel(s, sim.st.v, p);
+        const sq = reduceMotion ? 1 : 1 + clamp(-a / 120, -0.06, 0.06);
+        ctx.save(); ctx.translate(x, yS + 4); ctx.scale(2 - sq, sq);
+        ctx.drawImage(img, -r.w / 2, 0, r.w, r.h); ctx.restore();
+      }
+      // first time: show where to pull
+      if (!everDragged && !reduceMotion) {
+        const k = (performance.now() / 900) % 1;
+        ctx.globalAlpha = Math.sin(k * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
+        const ax = x - r.w / 2 - 18, ay = yS + r.h * 0.35 + k * 26;
+        ctx.beginPath(); ctx.moveTo(ax, ay - 22); ctx.lineTo(ax, ay); ctx.moveTo(ax - 7, ay - 8); ctx.lineTo(ax, ay); ctx.lineTo(ax + 7, ay - 8); ctx.stroke();
+        ctx.globalAlpha = 1; ctx.fillStyle = "#1A74D0"; ctx.font = "600 13px " + FONT;
+        ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.fillText("גררו למטה", ax, yS + r.h * 0.35 + 50); ctx.direction = "ltr";
+      }
+    }
+    function paintReadouts() {
+      const p = sim.p, s = sim.st.s;
+      $("#rS").textContent = fmt(s * 100, 1) + " cm";
+      const F = -p.k * s;
+      $("#rF").textContent = fmt(Math.abs(F), 1) + " N " + (F < 0 ? "↑" : F > 0 ? "↓" : "");
+      $("#rE").textContent = fmt(SP.elasticEnergy(s, p.k), 2) + " J";
+      const Tm = sim.measuredPeriod();
+      const rT = $("#rT");
+      if (p.b > 0 && !SP.underdamped(p)) { rT.textContent = "אין תנודה"; rT.className = "dim"; }
+      else if (Tm && !sim.held && p.b === 0) { rT.textContent = fmt(Tm) + " s"; rT.className = ""; rT.title = "נמדד מהתנועה; לפי הנוסחה " + fmt(SP.period(p)) + " s"; }
+      else { rT.textContent = (p.b > 0 ? "≈" : "") + fmt(SP.period(p)) + " s"; rT.className = "dim"; }
+    }
+    let fpaint = 0;
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!sheetOpen) sim.advance(dt);
+      const target = targetScale();
+      scale += (target - scale) * Math.min(1, dt * 5);
+      draw();
+      if ((fpaint++ & 3) === 0) { paintReadouts(); if (formulaOpen) paintFormula(); }
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      observe();
+      raf = requestAnimationFrame(frame);
+    }
+    scale = targetScale() || 300;
+    raf = requestAnimationFrame(frame);
+    say(nameOf(sp) + " תלוי על הקפיץ. גררו אותו למטה ושחררו.", 3.2);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); document.querySelector(".sheet-back")?.remove(); };
+  };
+
+  // start
+  paintSound();
+  paintCoins();
+  syncHud();
+  window.eggPhysics = { open: openUI, reward, units: UNITS };
+})();
+
 </script>
 </body>
 </html>

@@ -729,6 +729,254 @@
  },
  "creatures": [
   {
+   "id": "p_sparkit",
+   "pid": "sparkit",
+   "n": 1,
+   "w": 472,
+   "h": 560,
+   "name": "Sparkit",
+   "name_he": "ספרקיט",
+   "theme_he": "חשמלי",
+   "rarity": "common",
+   "phys": {
+    "mass_kg": 1.1,
+    "height_m": 0.42,
+    "e": 0.62,
+    "mu_s": 0.5,
+    "mu_k": 0.35,
+    "Cd": 1.0,
+    "A": 0.0212
+   }
+  },
+  {
+   "id": "p_mossy",
+   "pid": "mossy",
+   "n": 2,
+   "w": 426,
+   "h": 560,
+   "name": "Mossy",
+   "name_he": "מוסי",
+   "theme_he": "יער",
+   "rarity": "common",
+   "phys": {
+    "mass_kg": 2.6,
+    "height_m": 0.6,
+    "e": 0.34,
+    "mu_s": 0.8,
+    "mu_k": 0.6,
+    "Cd": 1.0,
+    "A": 0.0432
+   }
+  },
+  {
+   "id": "p_bloop",
+   "pid": "bloop",
+   "n": 3,
+   "w": 560,
+   "h": 553,
+   "name": "Bloop",
+   "name_he": "בלופ",
+   "theme_he": "מים",
+   "rarity": "common",
+   "phys": {
+    "mass_kg": 1.4,
+    "height_m": 0.48,
+    "e": 0.56,
+    "mu_s": 0.3,
+    "mu_k": 0.19,
+    "Cd": 1.0,
+    "A": 0.0276
+   }
+  },
+  {
+   "id": "p_cinder",
+   "pid": "cinder",
+   "n": 4,
+   "w": 422,
+   "h": 560,
+   "name": "Cinder",
+   "name_he": "סינדר",
+   "theme_he": "אש",
+   "rarity": "common",
+   "phys": {
+    "mass_kg": 1.8,
+    "height_m": 0.55,
+    "e": 0.52,
+    "mu_s": 0.57,
+    "mu_k": 0.41,
+    "Cd": 1.0,
+    "A": 0.0363
+   }
+  },
+  {
+   "id": "p_mooni",
+   "pid": "mooni",
+   "n": 5,
+   "w": 482,
+   "h": 560,
+   "name": "Mooni",
+   "name_he": "מוני",
+   "theme_he": "ירח",
+   "rarity": "rare",
+   "phys": {
+    "mass_kg": 1.0,
+    "height_m": 0.4,
+    "e": 0.48,
+    "mu_s": 0.28,
+    "mu_k": 0.2,
+    "Cd": 1.0,
+    "A": 0.0192
+   }
+  },
+  {
+   "id": "p_crystowl",
+   "pid": "crystowl",
+   "n": 6,
+   "w": 360,
+   "h": 560,
+   "name": "Crystowl",
+   "name_he": "קריסטול",
+   "theme_he": "קריסטל",
+   "rarity": "rare",
+   "phys": {
+    "mass_kg": 3.2,
+    "height_m": 0.67,
+    "e": 0.25,
+    "mu_s": 0.72,
+    "mu_k": 0.48,
+    "Cd": 1.0,
+    "A": 0.0539
+   }
+  },
+  {
+   "id": "p_pufflet",
+   "pid": "pufflet",
+   "n": 7,
+   "w": 465,
+   "h": 560,
+   "name": "Pufflet",
+   "name_he": "פאפלט",
+   "theme_he": "ענן",
+   "rarity": "uncommon",
+   "phys": {
+    "mass_kg": 0.9,
+    "height_m": 0.38,
+    "e": 0.73,
+    "mu_s": 0.23,
+    "mu_k": 0.15,
+    "Cd": 1.0,
+    "A": 0.0173
+   }
+  },
+  {
+   "id": "p_glimm",
+   "pid": "glimm",
+   "n": 8,
+   "w": 560,
+   "h": 551,
+   "name": "Glimm",
+   "name_he": "גלים",
+   "theme_he": "אור",
+   "rarity": "uncommon",
+   "phys": {
+    "mass_kg": 1.3,
+    "height_m": 0.46,
+    "e": 0.64,
+    "mu_s": 0.42,
+    "mu_k": 0.3,
+    "Cd": 1.0,
+    "A": 0.0254
+   }
+  },
+  {
+   "id": "p_tumble",
+   "pid": "tumble",
+   "n": 9,
+   "w": 473,
+   "h": 560,
+   "name": "Tumble",
+   "name_he": "טאמבל",
+   "theme_he": "אדמה",
+   "rarity": "common",
+   "phys": {
+    "mass_kg": 3.9,
+    "height_m": 0.75,
+    "e": 0.29,
+    "mu_s": 0.9,
+    "mu_k": 0.67,
+    "Cd": 1.0,
+    "A": 0.0675
+   }
+  },
+  {
+   "id": "p_aster",
+   "pid": "aster",
+   "n": 10,
+   "w": 560,
+   "h": 525,
+   "name": "Aster",
+   "name_he": "אסטר",
+   "theme_he": "קוסמי",
+   "rarity": "legendary",
+   "phys": {
+    "mass_kg": 1.7,
+    "height_m": 0.52,
+    "e": 0.58,
+    "mu_s": 0.36,
+    "mu_k": 0.24,
+    "Cd": 1.0,
+    "A": 0.0324
+   }
+  }
+ ],
+ "balloons": [
+  {
+   "id": "balloon_01",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_02",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_03",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_04",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_05",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_06",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_07",
+   "w": 180,
+   "h": 290
+  },
+  {
+   "id": "balloon_08",
+   "w": 180,
+   "h": 290
+  }
+ ],
+ "confetti": {
+  "w": 512,
+  "h": 512
+ },
+ "legacyCreatures": [
+  {
    "id": "winglet",
    "n": 1,
    "w": 309,
@@ -849,50 +1097,279 @@
    "h": 412
   }
  ],
- "balloons": [
+ "topics": [
   {
-   "id": "balloon_01",
-   "w": 180,
-   "h": 290
+   "id": "motion",
+   "title_he": "היצור ממהר לשירותים",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "מיקום, דרך והעתק",
+    "מהירות",
+    "תאוצה",
+    "גרפי מקום-זמן ומהירות-זמן"
+   ],
+   "order": 1,
+   "ready": false
   },
   {
-   "id": "balloon_02",
-   "w": 180,
-   "h": 290
+   "id": "projectiles",
+   "title_he": "תותח היצורים",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "וקטורים",
+    "תנועה בשני ממדים",
+    "נפילה חופשית",
+    "זריקה אנכית אופקית ומשופעת"
+   ],
+   "order": 2,
+   "ready": false
   },
   {
-   "id": "balloon_03",
-   "w": 180,
-   "h": 290
+   "id": "newton",
+   "title_he": "מי דוחף את מי?",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "חוקי ניוטון",
+    "שיווי משקל",
+    "כוח נורמלי",
+    "חיכוך",
+    "מתיחות",
+    "מישור משופע"
+   ],
+   "order": 3,
+   "ready": false
   },
   {
-   "id": "balloon_04",
-   "w": 180,
-   "h": 290
+   "id": "circular",
+   "title_he": "הקרוסלה המטורפת",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "תנועה מעגלית",
+    "כוח ותאוצה מרכזיים",
+    "מהירות זוויתית",
+    "תדירות וזמן מחזור"
+   ],
+   "order": 4,
+   "ready": false
   },
   {
-   "id": "balloon_05",
-   "w": 180,
-   "h": 290
+   "id": "gravitation",
+   "title_he": "היצור מקיף את הכוכב",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "חוק הכבידה האוניברסלית",
+    "שדה כבידה",
+    "לוויינים",
+    "חוקי קפלר"
+   ],
+   "order": 5,
+   "ready": false
   },
   {
-   "id": "balloon_06",
-   "w": 180,
-   "h": 290
+   "id": "momentum",
+   "title_he": "התנגשות יצורים",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "תנע",
+    "מתקף",
+    "שימור תנע",
+    "התנגשויות"
+   ],
+   "order": 6,
+   "ready": false
   },
   {
-   "id": "balloon_07",
-   "w": 180,
-   "h": 290
+   "id": "energy",
+   "title_he": "רכבת ההרים של היצור",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "עבודה",
+    "אנרגיה קינטית ופוטנציאלית",
+    "שימור אנרגיה",
+    "הספק ונצילות"
+   ],
+   "order": 7,
+   "ready": false
   },
   {
-   "id": "balloon_08",
-   "w": 180,
-   "h": 290
+   "id": "springs",
+   "title_he": "קפיץ-קפוץ",
+   "world_he": "מכניקה",
+   "subtopics_he": [
+    "חוק הוק",
+    "אנרגיה אלסטית",
+    "תנודות",
+    "תנועה הרמונית פשוטה"
+   ],
+   "order": 8,
+   "ready": true
+  },
+  {
+   "id": "charges",
+   "title_he": "השיער המחושמל",
+   "world_he": "חשמל ומגנטיות",
+   "subtopics_he": [
+    "מטען חשמלי",
+    "חוק קולון",
+    "שדה חשמלי",
+    "מוליכים ומבודדים"
+   ],
+   "order": 9,
+   "ready": false
+  },
+  {
+   "id": "potential",
+   "title_he": "מעלית המטענים",
+   "world_he": "חשמל ומגנטיות",
+   "subtopics_he": [
+    "פוטנציאל חשמלי",
+    "מתח",
+    "אנרגיה חשמלית",
+    "קבלים וקיבול"
+   ],
+   "order": 10,
+   "ready": false
+  },
+  {
+   "id": "circuits",
+   "title_he": "תדליק לי את האור!",
+   "world_he": "חשמל ומגנטיות",
+   "subtopics_he": [
+    "זרם",
+    "התנגדות",
+    "חוק אוהם",
+    "חיבורי נגדים",
+    "חוקי קירכהוף",
+    "מדידה"
+   ],
+   "order": 11,
+   "ready": false
+  },
+  {
+   "id": "batteries",
+   "title_he": "הסוללה העייפה",
+   "world_he": "חשמל ומגנטיות",
+   "subtopics_he": [
+    "כא״מ",
+    "התנגדות פנימית",
+    "מתח הדקים",
+    "הספק"
+   ],
+   "order": 12,
+   "ready": false
+  },
+  {
+   "id": "magnetism",
+   "title_he": "רכבת המגנטים",
+   "world_he": "חשמל ומגנטיות",
+   "subtopics_he": [
+    "שדה מגנטי",
+    "כוח לורנץ",
+    "שדה סביב תיל וסליל",
+    "כוח על מוליך"
+   ],
+   "order": 13,
+   "ready": false
+  },
+  {
+   "id": "induction",
+   "title_he": "מפעל הברקים",
+   "world_he": "חשמל ומגנטיות",
+   "subtopics_he": [
+    "שטף מגנטי",
+    "חוק פאראדיי",
+    "חוק לנץ",
+    "כא״מ מושרה"
+   ],
+   "order": 14,
+   "ready": false
+  },
+  {
+   "id": "optics",
+   "title_he": "איפה הזנב שלי?",
+   "world_he": "קרינה וחומר",
+   "subtopics_he": [
+    "החזרה ושבירה",
+    "חוק סנל",
+    "החזרה פנימית מלאה",
+    "מראות ועדשות",
+    "דמויות"
+   ],
+   "order": 15,
+   "ready": false
+  },
+  {
+   "id": "waves",
+   "title_he": "מסיבת הגלים",
+   "world_he": "קרינה וחומר",
+   "subtopics_he": [
+    "גלים",
+    "תדירות ואורך גל",
+    "סופרפוזיציה",
+    "התאבכות",
+    "עקיפה",
+    "ניסוי יאנג",
+    "גלים אלקטרומגנטיים"
+   ],
+   "order": 16,
+   "ready": false
+  },
+  {
+   "id": "photons",
+   "title_he": "מפעל הפוטונים",
+   "world_he": "קרינה וחומר",
+   "subtopics_he": [
+    "פוטונים",
+    "אפקט פוטואלקטרי",
+    "דואליות גל-חלקיק",
+    "גלי דה ברויי"
+   ],
+   "order": 17,
+   "ready": false
+  },
+  {
+   "id": "atoms",
+   "title_he": "היצור בתוך האטום",
+   "world_he": "קרינה וחומר",
+   "subtopics_he": [
+    "מודלים אטומיים",
+    "רמות אנרגיה",
+    "מודל בוהר",
+    "בליעה ופליטה",
+    "ספקטרום קווי"
+   ],
+   "order": 18,
+   "ready": false
+  },
+  {
+   "id": "nuclear",
+   "title_he": "הגרעין המשתגע",
+   "world_he": "קרינה וחומר",
+   "subtopics_he": [
+    "מבנה גרעין",
+    "רדיואקטיביות",
+    "זמן מחצית חיים",
+    "פגם מסה",
+    "אנרגיית קשר",
+    "ביקוע והיתוך"
+   ],
+   "order": 19,
+   "ready": false
+  },
+  {
+   "id": "lab",
+   "title_he": "המדען הלא-יוצלח",
+   "world_he": "מעבדה וחקר",
+   "subtopics_he": [
+    "תכנון ניסוי",
+    "בידוד משתנים",
+    "מדידות",
+    "אי-ודאות",
+    "גרפים",
+    "ניתוח תוצאות"
+   ],
+   "order": 20,
+   "ready": false
   }
- ],
- "confetti": {
-  "w": 512,
-  "h": 512
- }
+ ]
 }

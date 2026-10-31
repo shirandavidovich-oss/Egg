@@ -1,0 +1,366 @@
+{
+  "schema_version": "1.0",
+  "curriculum_status": "טיוטת מפת כיסוי. יש לאמת את כל סעיפיה מול תוכנית הלימודים ומיקוד הבחינה העדכניים של משרד החינוך לפני הצגת טענה לכיסוי בגרות מלא.",
+  "initial_playable_topic_id": "springs",
+  "topics": [
+    {
+      "id": "motion",
+      "title_he": "היצור ממהר לשירותים",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "מיקום, דרך והעתק",
+        "מהירות",
+        "תאוצה",
+        "גרפי מקום-זמן ומהירות-זמן"
+      ],
+      "order": 1,
+      "implementation_status": "planned",
+      "family_id": "motion",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "projectiles",
+      "title_he": "תותח היצורים",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "וקטורים",
+        "תנועה בשני ממדים",
+        "נפילה חופשית",
+        "זריקה אנכית אופקית ומשופעת"
+      ],
+      "order": 2,
+      "implementation_status": "planned",
+      "family_id": "projectiles",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "newton",
+      "title_he": "מי דוחף את מי?",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "חוקי ניוטון",
+        "שיווי משקל",
+        "כוח נורמלי",
+        "חיכוך",
+        "מתיחות",
+        "מישור משופע"
+      ],
+      "order": 3,
+      "implementation_status": "planned",
+      "family_id": "newton",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "circular",
+      "title_he": "הקרוסלה המטורפת",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "תנועה מעגלית",
+        "כוח ותאוצה מרכזיים",
+        "מהירות זוויתית",
+        "תדירות וזמן מחזור"
+      ],
+      "order": 4,
+      "implementation_status": "planned",
+      "family_id": "circular",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "gravitation",
+      "title_he": "היצור מקיף את הכוכב",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "חוק הכבידה האוניברסלית",
+        "שדה כבידה",
+        "לוויינים",
+        "חוקי קפלר"
+      ],
+      "order": 5,
+      "implementation_status": "planned",
+      "family_id": "gravitation",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "momentum",
+      "title_he": "התנגשות יצורים",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "תנע",
+        "מתקף",
+        "שימור תנע",
+        "התנגשויות"
+      ],
+      "order": 6,
+      "implementation_status": "planned",
+      "family_id": "momentum",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "energy",
+      "title_he": "רכבת ההרים של היצור",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "עבודה",
+        "אנרגיה קינטית ופוטנציאלית",
+        "שימור אנרגיה",
+        "הספק ונצילות"
+      ],
+      "order": 7,
+      "implementation_status": "planned",
+      "family_id": "energy",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "springs",
+      "title_he": "קפיץ-קפוץ",
+      "world_he": "מכניקה",
+      "subtopics_he": [
+        "חוק הוק",
+        "אנרגיה אלסטית",
+        "תנודות",
+        "תנועה הרמונית פשוטה"
+      ],
+      "order": 8,
+      "implementation_status": "planned",
+      "family_id": "springs",
+      "stage": "prototype",
+      "ready_for_random": true,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "charges",
+      "title_he": "השיער המחושמל",
+      "world_he": "חשמל ומגנטיות",
+      "subtopics_he": [
+        "מטען חשמלי",
+        "חוק קולון",
+        "שדה חשמלי",
+        "מוליכים ומבודדים"
+      ],
+      "order": 9,
+      "implementation_status": "planned",
+      "family_id": "charges",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "potential",
+      "title_he": "מעלית המטענים",
+      "world_he": "חשמל ומגנטיות",
+      "subtopics_he": [
+        "פוטנציאל חשמלי",
+        "מתח",
+        "אנרגיה חשמלית",
+        "קבלים וקיבול"
+      ],
+      "order": 10,
+      "implementation_status": "planned",
+      "family_id": "potential",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "circuits",
+      "title_he": "תדליק לי את האור!",
+      "world_he": "חשמל ומגנטיות",
+      "subtopics_he": [
+        "זרם",
+        "התנגדות",
+        "חוק אוהם",
+        "חיבורי נגדים",
+        "חוקי קירכהוף",
+        "מדידה"
+      ],
+      "order": 11,
+      "implementation_status": "planned",
+      "family_id": "circuits",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "batteries",
+      "title_he": "הסוללה העייפה",
+      "world_he": "חשמל ומגנטיות",
+      "subtopics_he": [
+        "כא״מ",
+        "התנגדות פנימית",
+        "מתח הדקים",
+        "הספק"
+      ],
+      "order": 12,
+      "implementation_status": "planned",
+      "family_id": "batteries",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "magnetism",
+      "title_he": "רכבת המגנטים",
+      "world_he": "חשמל ומגנטיות",
+      "subtopics_he": [
+        "שדה מגנטי",
+        "כוח לורנץ",
+        "שדה סביב תיל וסליל",
+        "כוח על מוליך"
+      ],
+      "order": 13,
+      "implementation_status": "planned",
+      "family_id": "magnetism",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "induction",
+      "title_he": "מפעל הברקים",
+      "world_he": "חשמל ומגנטיות",
+      "subtopics_he": [
+        "שטף מגנטי",
+        "חוק פאראדיי",
+        "חוק לנץ",
+        "כא״מ מושרה"
+      ],
+      "order": 14,
+      "implementation_status": "planned",
+      "family_id": "induction",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "optics",
+      "title_he": "איפה הזנב שלי?",
+      "world_he": "קרינה וחומר",
+      "subtopics_he": [
+        "החזרה ושבירה",
+        "חוק סנל",
+        "החזרה פנימית מלאה",
+        "מראות ועדשות",
+        "דמויות"
+      ],
+      "order": 15,
+      "implementation_status": "planned",
+      "family_id": "optics",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "waves",
+      "title_he": "מסיבת הגלים",
+      "world_he": "קרינה וחומר",
+      "subtopics_he": [
+        "גלים",
+        "תדירות ואורך גל",
+        "סופרפוזיציה",
+        "התאבכות",
+        "עקיפה",
+        "ניסוי יאנג",
+        "גלים אלקטרומגנטיים"
+      ],
+      "order": 16,
+      "implementation_status": "planned",
+      "family_id": "waves",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "photons",
+      "title_he": "מפעל הפוטונים",
+      "world_he": "קרינה וחומר",
+      "subtopics_he": [
+        "פוטונים",
+        "אפקט פוטואלקטרי",
+        "דואליות גל-חלקיק",
+        "גלי דה ברויי"
+      ],
+      "order": 17,
+      "implementation_status": "planned",
+      "family_id": "photons",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "atoms",
+      "title_he": "היצור בתוך האטום",
+      "world_he": "קרינה וחומר",
+      "subtopics_he": [
+        "מודלים אטומיים",
+        "רמות אנרגיה",
+        "מודל בוהר",
+        "בליעה ופליטה",
+        "ספקטרום קווי"
+      ],
+      "order": 18,
+      "implementation_status": "planned",
+      "family_id": "atoms",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "nuclear",
+      "title_he": "הגרעין המשתגע",
+      "world_he": "קרינה וחומר",
+      "subtopics_he": [
+        "מבנה גרעין",
+        "רדיואקטיביות",
+        "זמן מחצית חיים",
+        "פגם מסה",
+        "אנרגיית קשר",
+        "ביקוע והיתוך"
+      ],
+      "order": 19,
+      "implementation_status": "planned",
+      "family_id": "nuclear",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    },
+    {
+      "id": "lab",
+      "title_he": "המדען הלא-יוצלח",
+      "world_he": "מעבדה וחקר",
+      "subtopics_he": [
+        "תכנון ניסוי",
+        "בידוד משתנים",
+        "מדידות",
+        "אי-ודאות",
+        "גרפים",
+        "ניתוח תוצאות"
+      ],
+      "order": 20,
+      "implementation_status": "planned",
+      "family_id": "lab",
+      "stage": "planned",
+      "ready_for_random": false,
+      "curriculum_verified_item_by_item": false
+    }
+  ],
+  "last_review": "2026-10-31",
+  "reference_urls": [
+    "https://pop.education.gov.il/tchumey_daat/physics/high-school/pedagogy/curriculum/",
+    "https://pop.education.gov.il/tchumey_daat/physics/high-school/pedagogy/matriculation-exams/",
+    "https://pop.education.gov.il/tchumey_daat/physics/high-school/pedagogy/laboratory/"
+  ]
+}

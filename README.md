@@ -38,6 +38,24 @@ new file name** (changing an existing file only reaches phones with a fresh inst
 
 Opening `index.html` in a desktop browser shows the scene too: press and hold to tilt.
 
+## Physics (learning with your creature)
+
+After hatching, a **פיזיקה** button sits at the bottom of the nest screen and the coins at the top.
+Inside: choose **תפתיע אותי** (topic machine with a lever) or **לפי הסדר**, then the first mini game,
+**קפיץ־קפוץ**: the creature hangs on a vertical spring; drag it down, let go, change k, m and damping.
+Its mass comes from the creature, so switching or trading creatures changes the physics, never the
+player's coins or progress.
+
+| What | File |
+|---|---|
+| Spring physics (pure functions + fixed-step sim) | `art/physics/spring.js` |
+| Player profile: coins ledger, progress, owned creatures | `art/physics/profile.js` |
+| Screens, lever, lab, coins, map | `art/physics/ui.js`, `ui.css`, `ui.html` |
+| Tests (run in the APK build) | `tests/spring.test.js`, `tests/profile.test.js` |
+| The full spec and art it is built from | `art/source/physics/` |
+
+These files are pulled into `index.html` by `art/build.py`, so they update phones without a reinstall.
+
 ## Live wallpaper
 
 Long-press the egg or creature (about a second): it asks to go on the home screen. ✓ opens Android's

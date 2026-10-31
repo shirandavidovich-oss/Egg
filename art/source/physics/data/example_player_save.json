@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "player_id": "demo_player_001",
+  "wallet": {
+    "gold": 1240,
+    "transaction_ids": [
+      "evt_001"
+    ]
+  },
+  "active_character_id": "sparkit",
+  "owned_character_ids": [
+    "sparkit",
+    "mossy"
+  ],
+  "physics": {
+    "completed_subtopic_ids": [
+      "spring_hooke_explore"
+    ],
+    "family_exposure_percent": {
+      "springs": 25.0
+    },
+    "subject_exposure_percent": 1.2,
+    "mastery_estimates": {
+      "spring_hooke_explore": {
+        "score": 0.58,
+        "sample_count": 3,
+        "last_assessed_at": "2026-10-31T12:00:00Z"
+      }
+    },
+    "question_history": [],
+    "exploration_achievements": [
+      "first_drag"
+    ]
+  },
+  "settings": {
+    "reduced_motion": false,
+    "sound_on": true,
+    "haptics_on": true
+  }
+}

@@ -354,7 +354,9 @@
   @media (prefers-reduced-motion: reduce) { .m3-machine.spinning, .m3-hint, .m3-machine.spinning .m3-glints { animation: none; } }
   /* the coin is the drawn gold coin from the V3 pack */
   .coin, .fly-coin { background: url("art/machine/v3_coin.webp") center / 112% no-repeat; border: 0; box-shadow: none; }
-  .seg4 button { font-size: 13.5px; padding: 0 1px; }
+  .seg4 { gap: 2px; padding: 3px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+  .seg4::-webkit-scrollbar { display: none; }
+  .seg4 button { flex: 0 0 auto; font-size: 13.5px; padding: 0 12px; scroll-snap-align: center; }
   .lab.tall { height: 56vh; min-height: 340px; }
   .weights-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 8px; }
   .weights-row .btn { min-height: 48px; padding: 0 6px; font-size: 15px; }
@@ -568,9 +570,50 @@ const SpringPhys = (() => {
     }
   }
 
+  // ---------------- energy track: spring (contact only) → flat → ramp → upper platform with an end wall ----------------
+  // s = distance along the track from the spring's natural end (s < 0: spring compressed). Friction from the surface.
+  const track = (o = {}) => ({ flat: 0.6, rampLen: 0.8, deg: 25, top: 1.0, ...o });
+  function trackAt(T, s) {
+    const th = T.deg * Math.PI / 180, r0 = T.flat, r1 = T.flat + T.rampLen;
+    if (s <= r0) return { y: 0, th: 0, x: s };
+    if (s <= r1) return { y: (s - r0) * Math.sin(th), th, x: r0 + (s - r0) * Math.cos(th) };
+    return { y: T.rampLen * Math.sin(th), th: 0, x: r0 + T.rampLen * Math.cos(th) + (s - r1) };
+  }
+  const trackEnd = (T) => T.flat + T.rampLen + T.top;
+  // one fixed step; returns the new state and the heat made by friction in this step
+  // stiff spring + kinks in the track: integrate in 8 sub-steps so the energy books balance to ~1%
+  function rstep(st, p, T, dt) {
+    let heat = 0;
+    for (let i = 0; i < 8; i++) { const r = rsub(st, p, T, dt / 8); st = r.st; heat += r.heat; }
+    return { st, heat };
+  }
+  function rsub(st, p, T, dt) {
+    const at = trackAt(T, st.s), N = p.m * p.g * Math.cos(at.th), drive = (st.s < 0 ? -p.k * st.s : 0) - p.m * p.g * Math.sin(at.th);
+    if (!st.moving) {
+      if (Math.abs(drive) <= p.mus * N + 1e-12) return { st: { ...st, v: 0 }, heat: 0 };
+      st = { ...st, moving: true };
+    }
+    const dir = Math.abs(st.v) > 1e-9 ? Math.sign(st.v) : Math.sign(drive);
+    const a = (drive - dir * p.muk * N) / p.m;
+    let v = st.v + a * dt;
+    // friction can stop it but never push it backwards
+    if (Math.abs(st.v) > 1e-9 && Math.sign(v) !== Math.sign(st.v)) {
+      const stopped = Math.abs(drive) <= p.mus * N;
+      if (stopped) return { st: { s: st.s, v: 0, moving: false }, heat: 0 };
+    }
+    let s = st.s + v * dt;
+    const end = trackEnd(T);
+    if (s > end) { s = end - (s - end); v = -v; }                 // elastic bounce off the end wall
+    const ds = Math.abs(s - st.s);
+    return { st: { s, v, moving: true }, heat: p.muk * N * ds };
+  }
+  const rparams = (m, k, mus, muk, g = G_EARTH) => ({ m, k, mus, muk, g });
+  const rEnergy = (st, p, T) => ({ el: st.s < 0 ? 0.5 * p.k * st.s * st.s : 0, k: 0.5 * p.m * st.v * st.v, g: p.m * p.g * trackAt(T, st.s).y });
+
   return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
     hparams, stickZone, halfSwingLoss, hstep, HSim,
-    lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim };
+    lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim,
+    track, trackAt, trackEnd, rstep, rparams, rEnergy };
 })();
 
 // ======================================================================
@@ -3169,6 +3212,8 @@ const EggProfile = (() => {
     { id: "springs.launch", he: "קפיץ משגר: אנרגיה לגובה", insight: "האנרגיה שנאגרה בדחיסה, ½kx², הופכת לגובה. הגוף עף רק אם דוחסים יותר מ-2mg/k, והקפיץ מפסיק לדחוף ברגע שהוא חוזר לאורך הטבעי.", eq: "½·k·x² = m·g·h" },
     { id: "springs.series", he: "קפיצים בטור", insight: "בטור שני הקפיצים מושכים באותו כוח, וההתארכויות מתחברות. הקפיץ השקול רך יותר מכל אחד מהם.", eq: "1/k_eq = 1/k1 + 1/k2" },
     { id: "springs.parallel", he: "קפיצים במקביל", insight: "במקביל שני הקפיצים נמתחים אותו מרחק, והכוחות מתחברים. הקפיץ השקול קשיח יותר מכל אחד מהם.", eq: "k_eq = k1 + k2" },
+    { id: "springs.graphs", he: "גרפים של תנודה", insight: "x, v ו-a הם גלים באותו קצב אבל מוזזים: כש-x בקצה, v = 0 ו-a הכי גדולה ובכיוון ההפוך. האנרגיה עוברת בין תנועה לקפיץ, והסכום קבוע.", eq: "a = −ω²·x" },
+    { id: "springs.ramp", he: "מסילת אנרגיה", insight: "האנרגיה לא נעלמת: היא עוברת מהקפיץ לתנועה ולגובה, והחיכוך הופך חלק ממנה לחום. הסכום תמיד שווה למה שהיה בקפיץ.", eq: "½·k·x² = ½·m·v² + m·g·h + Q" },
     { id: "springs.graph", he: "גרף כוח מול התארכות", insight: "הנקודות יושבות על קו ישר שעובר בראשית, והשיפוע שלו הוא k. השטח מתחת לקו הוא האנרגיה האלסטית.", eq: "k = ΔF / Δx" }
   ];
   const UNITS = SPRING_UNITS;
@@ -3192,6 +3237,13 @@ const EggProfile = (() => {
     { id: "q.series.equal", unit: "springs.series", q: "שני קפיצים זהים, כל אחד k = 100 N/m, בטור. מה k השקול?", a: ["200 N/m", "100 N/m", "50 N/m"], right: 2, why: "1/k = 1/100 + 1/100 = 2/100, ולכן k = 50 N/m. בטור מקבלים קפיץ רך יותר." },
     { id: "q.parallel.equal", unit: "springs.parallel", q: "אותם שני קפיצים (k = 100 N/m כל אחד), עכשיו במקביל. k השקול…", a: ["50 N/m", "200 N/m", "100 N/m"], right: 1, why: "במקביל k_eq = k1 + k2 = 200 N/m: אותה התארכות, והכוחות מתחברים." },
     { id: "q.parallel.share", unit: "springs.parallel", q: "במקביל, k1 = 100 ו-k2 = 300 N/m. איזה קפיץ מחזיק יותר מהמשקל?", a: ["קפיץ 1", "קפיץ 2, פי 3", "חצי-חצי"], right: 1, why: "אותה התארכות x, ולכן F = k·x: הקשיח מחזיק פי 3 יותר." },
+    { id: "q.osc.edge", unit: "springs.graphs", q: "בתנודה, ברגע שהגוף בקצה (x = A), המהירות שלו…", a: ["מקסימלית", "אפס", "שווה ל-ω·A"], right: 1, why: "בקצה הגוף עוצר ומסתובב: v = 0, ושם התאוצה הכי גדולה, a = −ω²·A." },
+    { id: "q.osc.center", unit: "springs.graphs", q: "איפה המהירות הכי גדולה?", a: ["בקצוות", "בנקודת שיווי המשקל", "בכל מקום אותה מהירות"], right: 1, why: "ב-x = 0 כל האנרגיה היא קינטית: v_max = ω·A." },
+    { id: "q.osc.acc", unit: "springs.graphs", q: "גרף a(t) לעומת גרף x(t):", a: ["זהים", "הפוכים בסימן", "אין קשר"], right: 1, why: "a = −ω²·x: כש-x חיובי התאוצה שלילית. הגרפים הם תמונת ראי." },
+    { id: "q.osc.energy", unit: "springs.graphs", q: "בלי בלימה, האנרגיה הכוללת בזמן התנודה…", a: ["קבועה", "גדלה", "יורדת לאפס בכל קצה"], right: 0, why: "E_k ו-E_p מתחלפות, אבל E = ½kA² נשאר קבוע. עם בלימה הוא יורד." },
+    { id: "q.ramp.top", unit: "springs.ramp", q: "קפיץ k = 400 N/m דחוס 10 cm. דמות של 1 kg, בלי חיכוך (g = 10). לאיזה גובה מקסימלי תגיע?", a: ["20 cm", "2 cm", "40 cm"], right: 0, why: "½·400·0.1² = 2 J. mgh = 2 → h = 2 / (1·10) = 0.2 m = 20 cm." },
+    { id: "q.ramp.heat", unit: "springs.ramp", q: "על מסילה עם חיכוך הדמות מגיעה נמוך יותר. לאן הלכה האנרגיה החסרה?", a: ["נעלמה", "הפכה לחום", "חזרה לקפיץ"], right: 1, why: "החיכוך עושה עבודה שלילית: האנרגיה הופכת לחום, Q = μk·N·d. הסכום הכולל נשמר." },
+    { id: "q.ramp.speed", unit: "springs.ramp", q: "בלי חיכוך, באיזה רגע המהירות הכי גדולה?", a: ["בשיא הגובה", "כשהדמות עוזבת את הקפיץ ועדיין על הרצפה", "בתחילת הדחיסה"], right: 1, why: "כשהקפיץ מסיים לדחוף, כל האנרגיה שלו הפכה לתנועה, ועוד לא התחילה לעלות." },
     { id: "q.graph.slope", unit: "springs.graph", q: "בגרף של כוח (N) מול התארכות (m) של קפיץ, השיפוע הוא…", a: ["k", "המסה", "האנרגיה"], right: 0, why: "F = k·x: קו ישר דרך הראשית, ושיפועו k ביחידות N/m." },
     { id: "q.graph.area", unit: "springs.graph", q: "מה מייצג השטח שמתחת לקו בגרף F מול x?", a: ["את k", "את האנרגיה האלסטית ½kx²", "את זמן המחזור"], right: 1, why: "השטח הוא משולש: ½·x·(kx) = ½kx², העבודה שהושקעה במתיחה." },
     { id: "q.graph.units", unit: "springs.graph", q: "תלו 200 g והקפיץ התארך ב-4 cm (g = 10). מה k?", a: ["5 N/m", "50 N/m", "500 N/m"], right: 1, why: "F = 0.2·10 = 2 N, x = 0.04 m, ולכן k = 2 / 0.04 = 50 N/m. קודם להמיר לגרם→ק״ג וס״מ→מטר!" },
@@ -3680,9 +3732,10 @@ const EggProfile = (() => {
     });
     return el;
   }
-  const SCENES = [["hang", "תלוי", "lab"], ["wall", "מהקיר", "wall"], ["launch", "משגר", "launch"], ["pair", "שניים", "pair"], ["graph", "מדידה", "graph"]];
+  const SCENES = [["hang", "תלוי", "lab"], ["wall", "מהקיר", "wall"], ["launch", "משגר", "launch"], ["pair", "שניים", "pair"], ["ramp", "מסילה", "ramp"], ["graph", "מדידה", "graph"], ["osc", "גרפים", "osc"]];
   const modeSeg = (m) => `<div class="seg seg4" role="group" aria-label="סצנת הקפיץ">${SCENES.map(([id, he]) => `<button type="button" data-m="${id}" aria-pressed="${m === id}">${he}</button>`).join("")}</div>`;
   function bindModeSeg(args) {
+    const on = screenEl.querySelector('.seg4 [aria-pressed="true"]'); if (on) on.scrollIntoView({ inline: "center", block: "nearest" });
     for (const b of screenEl.querySelectorAll(".seg [data-m]")) b.addEventListener("click", () => {
       if (b.getAttribute("aria-pressed") === "true") return;
       lab.mode = b.dataset.m; G.sfx.pop();
@@ -3740,6 +3793,22 @@ const EggProfile = (() => {
       eq: ["בטור: F1 = F2", "במקביל: F1 + F2 = F"], live: (c) => c.F1 !== undefined && `עכשיו F1 = ${f2(c.F1, 1)} N, F2 = ${f2(c.F2, 1)} N.` },
     pairX: { t: "ההתארכות של כל קפיץ", p: "בטור: כל קפיץ נמתח לפי הקשיחות שלו, x_i = F/k_i, ומחברים. במקביל: המוט הקשיח מכריח את שניהם להימתח אותו דבר.",
       eq: ["בטור: x = x1 + x2", "במקביל: x1 = x2"], live: (c) => c.x1 !== undefined && `עכשיו x1 = ${f2(c.x1 * 100, 1)} ס״מ, x2 = ${f2(c.x2 * 100, 1)} ס״מ.` },
+    xt: { t: "גרף מיקום x(t)", p: "איפה הדמות בכל רגע, ביחס לנקודת שיווי המשקל. זה גל קוסינוס: מתחיל בקצה (A), עובר באפס, מגיע ל-−A וחוזר. הזמן בין שני שיאים הוא T.",
+      eq: ["x = A·cos(ω·t)", "T = 2π/ω"], live: (c) => c.A !== undefined && `עכשיו x = ${f2(c.x * 100, 1)} ס״מ, A = ${f2(c.A * 100, 1)} ס״מ.` },
+    vt: { t: "גרף מהירות v(t)", p: "השיפוע של גרף x. כש-x בשיא (קצה), השיפוע אפס: v = 0. כש-x עובר באפס, הוא הכי תלול: v מקסימלית. לכן הגרף מוזז ברבע מחזור מ-x.",
+      eq: ["v = −A·ω·sin(ω·t)", "v_max = ω·A"], live: (c) => c.A !== undefined && `v_max = ${f2(c.w * c.A, 2)} m/s. עכשיו v = ${f2(c.v, 2)} m/s.` },
+    at: { t: "גרף תאוצה a(t)", p: "תמונת ראי של x: הקפיץ תמיד מושך חזרה לאמצע, ולכן התאוצה הפוכה למיקום. בקצוות היא הכי גדולה, באמצע היא אפס.",
+      eq: ["a = −ω²·x", "a_max = ω²·A", "ΣF = m·a = −k·x"], live: (c) => c.A !== undefined && `a_max = ${f2(c.w * c.w * c.A, 2)} m/s².` },
+    Et: { t: "גרף אנרגיה E(t)", p: "כתום: אנרגיה קינטית (תנועה). ירוק: אנרגיה בקפיץ. סגול: הסכום. הן מתחלפות פעמיים בכל מחזור. בלי בלימה הסגול ישר ושטוח. עם בלימה הוא יורד: האנרגיה הופכת לחום.",
+      eq: ["E_k = ½·m·v²", "E_p = ½·k·x²", "E = ½·k·A²"], live: (c) => c.E !== undefined && `עכשיו E = ${f2(c.E, 2)} J.` },
+    omega: { t: "תדירות זוויתית ω", p: "כמה מהר התנודה 'מסתובבת', ברדיאנים לשנייה. סיבוב שלם הוא 2π, ולכן ω = 2π/T. היא תלויה רק ב-k וב-m.",
+      eq: ["ω = √(k/m)", "ω = 2π/T", "f = ω / 2π"], live: (c) => c.w && `עכשיו ω = ${f2(c.w, 2)} rad/s, T = ${f2(2 * Math.PI / c.w)} שנ׳.` },
+    amp: { t: "משרעת A", p: "המרחק הכי גדול מנקודת שיווי המשקל, איפה ששחררתם. היא לא משנה את זמן המחזור! היא קובעת את המהירות המרבית, התאוצה המרבית והאנרגיה.",
+      eq: ["E = ½·k·A²", "v_max = ω·A", "a_max = ω²·A"], live: (c) => c.A !== undefined && `עכשיו A = ${f2(c.A * 100, 1)} ס״מ.` },
+    heat: { t: "חום מחיכוך Q", p: "החיכוך הקינטי פועל נגד התנועה לאורך כל הדרך. העבודה שלו הופכת אנרגיה לחום. כל מטר על רצפה מוסיף μk·m·g ג׳אול, ועל המדרון פחות, כי שם N = mg·cosθ.",
+      eq: ["Q = f_k·d", "f_k = μk·N"], live: (c) => c.Q !== undefined && `עד עכשיו: Q = ${f2(c.Q, 2)} J. μk = ${f2(c.muk)}.` },
+    energyBars: { t: "לאן הלכה האנרגיה?", p: "כל עמודה היא סוג אנרגיה. הסגולה מימין היא הסכום שלהן, והקו הסגול הוא מה שהיה בקפיץ בהתחלה. מה שיורד מעמודה אחת עולה באחרת: האנרגיה נשמרת.",
+      eq: ["E_el = ½·k·x²", "E_k = ½·m·v²", "E_g = m·g·h", "Q = μk·N·d"], live: () => "" },
     weights: { t: "משקולות כיול", p: "ציוד מעבדה עם מסה ידועה. כל משקולת של 100 g מוסיפה משקל של 0.981 N. הן לא משנות את הדמות: הדמות רק מחזיקה את הסרגל ורושמת.",
       eq: ["W = m·g", "100 g = 0.1 kg"], live: (c) => c.n !== undefined && `עכשיו תלויות ${c.n} משקולות: ${f2(c.n * 0.1, 1)} kg, ${f2(c.n * 0.981, 2)} N.` },
     theta: { t: "זווית המדרון θ", p: "הזווית בין המדרון לאופק. כשהיא גדלה, הרכיב של הכובד במורד (mg·sinθ) גדל והנורמל (mg·cosθ) קטן. הכובד עצמו לא משתנה. הגוף מתחיל להחליק כש-tanθ עובר את μs.",
@@ -3795,6 +3864,12 @@ const EggProfile = (() => {
     "ΣF⊥": { n: "סכום הכוחות בניצב למשטח", d: "רק החלקים של הכוחות שניצבים למדרון. כשהגוף לא קופץ ולא שוקע, הסכום הזה הוא אפס.", u: "N", un: "ניוטון", si: "kg·m/s²" },
     L:   { n: "אורך הקפיץ", d: "האורך הנוכחי של הקפיץ.", u: "m", un: "מטר", si: "m" },
     "L₀": { n: "אורך טבעי", d: "האורך של הקפיץ כשאף כוח לא פועל עליו.", u: "m", un: "מטר", si: "m" },
+    Q:   { n: "חום (אנרגיה תרמית)", d: "האנרגיה שהחיכוך הפך לחום. היא לא נעלמה, רק כבר לא מכנית.", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
+    E_el: { n: "אנרגיה אלסטית", d: "האנרגיה שבקפיץ הדחוס או המתוח: ½·k·x².", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
+    A:   { n: "משרעת (Amplitude)", d: "המרחק המרבי מנקודת שיווי המשקל.", u: "m", un: "מטר", si: "m" },
+    v_max: { n: "מהירות מרבית", d: "המהירות במעבר דרך x = 0: ω·A.", u: "m/s", un: "מטר לשנייה", si: "m/s" },
+    a_max: { n: "תאוצה מרבית", d: "התאוצה בקצוות: ω²·A.", u: "m/s²", un: "מטר לשנייה בריבוע", si: "m/s²" },
+    E_p: { n: "אנרגיה פוטנציאלית אלסטית", d: "האנרגיה שבקפיץ: ½·k·x².", u: "J", un: "ג׳אול", si: "kg·m²/s²" },
     k1:  { n: "קבוע הקפיץ הראשון", d: "הקשיחות של קפיץ 1 לבד.", u: "N/m", un: "ניוטון למטר", si: "kg/s²" },
     k2:  { n: "קבוע הקפיץ השני", d: "הקשיחות של קפיץ 2 לבד.", u: "N/m", un: "ניוטון למטר", si: "kg/s²" },
     k_eq: { n: "קבוע הקפיץ השקול", d: "הקשיחות של קפיץ אחד שמחליף את הזוג ומתנהג בדיוק כמוהו.", u: "N/m", un: "ניוטון למטר", si: "kg/s²" },
@@ -3806,7 +3881,7 @@ const EggProfile = (() => {
     u:   { n: "הסטה משיווי המשקל", d: "המרחק מנקודת שיווי המשקל (לא מהאורך הטבעי).", u: "m", un: "מטר", si: "m" },
     mg:  { n: "המשקל, m כפול g", d: "כוח הכובד על הגוף. תמיד אנכי כלפי מטה, גם על מדרון.", u: "N", un: "ניוטון", si: "kg·m/s²" }
   };
-  const SYM_RE = /(k_eq|k1|k2|x1|x2|F1|F2|x_rest|s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
+  const SYM_RE = /(E_el|v_max|a_max|E_p|k_eq|k1|k2|x1|x2|F1|F2|x_rest|s_eq|θ_c|f_s|f_k|E_k|E_g|b_c|F_b|ΣF⊥|ΣF|μs|μk|Δx|L₀|sin|cos|tan|[A-Za-zθπω])/g;
   // turn the text of a formula into tappable symbols (numbers and units in <em> stay as they are)
   function symbolize(root) {
     if (!root) return;
@@ -3989,6 +4064,8 @@ const EggProfile = (() => {
     if (lab.mode === "launch") return SCREENS.launch(args);
     if (lab.mode === "graph") return SCREENS.graph(args);
     if (lab.mode === "pair") return SCREENS.pair(args);
+    if (lab.mode === "osc") return SCREENS.osc(args);
+    if (lab.mode === "ramp") return SCREENS.ramp(args);
     lab.mode = "hang";
     setTitle("קפיץ־קפוץ", "קפיץ תלוי מהתקרה");
     let sp = activeSpecies();
@@ -5209,6 +5286,432 @@ const EggProfile = (() => {
     scale = targetScale() || 300;
     raf = requestAnimationFrame(frame);
     say(explain(), 4);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); };
+    bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  OSCILLATION LAB: the creature on a frictionless track, and live graphs of x, v, a and energy
+  //  x is measured from equilibrium; m·a = −k·x − b·v
+  // ======================================================================
+  SCREENS.osc = (args = {}) => {
+    lab.mode = "osc";
+    setTitle("קפיץ־קפוץ", "מעבדת תנודות וגרפים");
+    let sp = activeSpecies();
+    const m0 = () => phys(sp).mass_kg, mass = () => lab.massOverride ?? m0();
+    lab.ob = lab.ob ?? 0;
+    const params = () => SP.params(mass(), lab.k, lab.ob);
+    screenEl.innerHTML = `
+      <div class="lab-screen">
+        ${modeSeg("osc")}
+        <div class="lab tall osc" id="lab">
+          <canvas id="labCanvas"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+        </div>
+        <div class="readouts">
+          <button type="button" class="readout" data-info="T"><small>זמן מחזור <i class="qi">?</i></small><b id="rT">–</b></button>
+          <button type="button" class="readout" data-info="omega"><small>ω <i class="qi">?</i></small><b id="rW">–</b></button>
+          <button type="button" class="readout" data-info="amp"><small>משרעת A <i class="qi">?</i></small><b id="rA">–</b></button>
+          <button type="button" class="readout" data-info="Et"><small>אנרגיה <i class="qi">?</i></small><b id="rE">–</b></button>
+        </div>
+        <div class="card controls">
+          <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k ${infoBtn("k")}</span><span class="val" id="kVal"></span></label>
+            <input id="kIn" type="range" min="30" max="400" step="5"></div>
+          <div class="slider-row"><label for="mIn"><span>מסה m ${infoBtn("m")} <span class="note" id="mNote"></span></span><span class="val" id="mVal"></span></label>
+            <input id="mIn" class="mass" type="range" min="0.5" max="4" step="0.1">
+            <button class="linkish" id="mReset" type="button" hidden>חזרה למסת הדמות</button></div>
+          <div class="slider-row"><label for="bIn"><span>בלימה מהסביבה b ${infoBtn("b")}</span><span class="val" id="bVal"></span></label>
+            <input id="bIn" class="damp" type="range" min="0" max="3" step="0.1"></div>
+        </div>
+        <div class="card formula" id="formula"></div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab");
+    let W = 0, H = 0, DPR = 1;
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box);
+    const img = new Image(); let imgSp = null;
+    const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } };
+    loadImg();
+    const UMAX = 0.2, WIN = 6;                          // furthest pull (m), seconds of history on the graphs
+    const sim = new SP.Sim(params(), 0);
+    // the graphs use the exact solution, so the energy line is truly flat without damping
+    // x(t) = u0·e^(−γt)·(cos ω_d t + (γ/ω_d)·sin ω_d t), released from rest at u0
+    let rel = null;
+    const exact = (t) => {
+      const p = sim.p, g = p.b / (2 * p.m), wd = Math.sqrt(Math.max(1e-9, p.k / p.m - g * g)), e = Math.exp(-g * t), c = Math.cos(wd * t), sn = Math.sin(wd * t);
+      return { x: rel.u0 * e * (c + g / wd * sn), v: -rel.u0 * e * (p.k / p.m) / wd * sn };
+    };
+    const Td = () => { const p = sim.p, g = p.b / (2 * p.m); return 2 * Math.PI / Math.sqrt(Math.max(1e-9, p.k / p.m - g * g)); };
+    let hist = [], tNow = 0, A0 = 0.12, dragging = null, everDragged = false, sayT = 0, raf = 0, lastT = performance.now(), fpaint = 0, trial = null, questionCooldown = 1, hint = 0;
+    const kIn = $("#kIn"), mIn = $("#mIn"), bIn = $("#bIn");
+    kIn.value = lab.k; mIn.value = mass(); bIn.value = lab.ob;
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    const om = () => Math.sqrt(sim.p.k / sim.p.m);
+    function paintControls() {
+      $("#kVal").textContent = lab.k + " N/m"; $("#bVal").textContent = fmt(lab.ob, 1) + " N·s/m";
+      $("#mVal").textContent = fmt(mass(), 1) + " kg";
+      const own = lab.massOverride === null;
+      $("#mNote").textContent = own ? "(מסת " + nameOf(sp) + ")" : "(מסה בניסוי)";
+      $("#mReset").hidden = own;
+    }
+    function paintFormula() {
+      const p = sim.p, w = om();
+      setFormula($("#formula"), `
+        <div class="eq"><span>מיקום</span><span class="m">x = A·cos(ω·t)<em>A = ${fmt(A0 * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>מהירות</span><span class="m">v = −A·ω·sin(ω·t)<em>v_max = ${fmt(A0 * w, 2)} m/s</em></span></div>
+        <div class="eq"><span>תאוצה</span><span class="m">a = −ω²·x<em>a_max = ${fmt(A0 * w * w, 2)} m/s²</em></span></div>
+        <div class="eq"><span>תדירות זוויתית</span><span class="m">ω = √(k/m) = 2π/T<em>${fmt(w, 2)} rad/s</em></span></div>
+        <div class="eq"><span>אנרגיה (בלי בלימה)</span><span class="m">E = ½·k·A² = ½·m·v_max²<em>${fmt(0.5 * p.k * A0 * A0, 2)} J</em></span></div>
+        <p class="fine">x נמדד מנקודת שיווי המשקל. הנוסחאות עם cos מתאימות לשחרור ממנוחה בקצה, בלי בלימה.</p>`);
+    }
+    function reconfigure(why) { sim.reset(params(), 0); rel = null; hist = []; trial = null; if (why) say(why, 3); paintControls(); paintFormula(); }
+    kIn.addEventListener("input", () => { lab.k = +kIn.value; reconfigure(); });
+    bIn.addEventListener("input", () => { lab.ob = +bIn.value; reconfigure(); });
+    bIn.addEventListener("change", () => say(lab.ob > 0 ? "עם בלימה המשרעת קטנה, והאנרגיה הכוללת יורדת. רואים את זה בגרף הסגול." : "בלי בלימה: האנרגיה הכוללת קבועה.", 3.4));
+    mIn.addEventListener("input", () => { keeper.touched(); lab.massOverride = Math.abs(+mIn.value - m0()) < 0.05 ? null : +mIn.value; reconfigure(); });
+    mIn.addEventListener("change", () => { if (lab.massOverride !== null) say(FEEL(mass() / m0()), 2.6); });
+    $("#mReset").addEventListener("click", () => { lab.massOverride = null; mIn.value = m0(); reconfigure(); });
+    paintControls(); paintFormula();
+    const keeper = massKeeper({ say: (t, d) => say(t, d), m0, apply: (m) => { mIn.value = m; sim.reset(params(), 0); rel = null; hist = []; trial = null; paintControls(); } });
+    infoLive = () => ({ k: lab.k, m: mass(), m0: m0(), name: nameOf(sp), A: A0, w: om(), x: sim.u, v: sim.st.v, E: 0.5 * sim.p.k * sim.u ** 2 + 0.5 * sim.p.m * sim.st.v ** 2 });
+
+    // ---- layout: the track on top, four graph strips under it ----
+    const L = () => {
+      const trackH = Math.max(96, H * 0.24), pad = 8, gh = (H - trackH - pad * 5) / 4;
+      const strips = ["x", "v", "a", "E"].map((id, i) => ({ id, y: trackH + pad + i * (gh + pad), h: gh }));
+      return { trackH, strips, gx: 44, gw: W - 52, cx: W * 0.56, upx: Math.min(W * 0.32, 150) / UMAX };
+    };
+    function pos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen()) return;
+      const p = pos(e), l = L(), at = { x: e.clientX, y: e.clientY };
+      if (p.y > l.trackH) { const s = l.strips.find((q) => p.y >= q.y && p.y <= q.y + q.h); if (s) openInfo({ x: "xt", v: "vt", a: "at", E: "Et" }[s.id], at); return; }
+      const bx = l.cx + sim.u * l.upx;
+      if (Math.abs(p.x - bx) > 60) { if (p.x < bx) openInfo("k", at); return; }
+      G.audio.unlock();
+      dragging = { off: p.x - bx }; cv.setPointerCapture(e.pointerId);
+      sim.hold(sim.u); trial = null; rel = null;
+      if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
+    });
+    cv.addEventListener("pointermove", (e) => { if (!dragging) return; const p = pos(e), l = L(); sim.hold(clamp((p.x - dragging.off - l.cx) / l.upx, -UMAX, UMAX)); });
+    const letGo = () => {
+      if (!dragging) return;
+      dragging = null;
+      const u0 = sim.u;
+      if (Math.abs(u0) < 0.02) { sim.reset(sim.p, 0); return; }
+      A0 = Math.abs(u0); hist = []; tNow = 0;
+      sim.release(); rel = { u0, t: 0 }; trial = { seen: false }; hint = 0;
+      G.sfx.boing(0.6); G.buzz(15);
+      say("עכשיו תסתכלו על הגרפים, לא עליי!", 2.2);
+    };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+
+    function observe() {
+      if (!trial || sim.held) return;
+      // point out the phase relations once each, at the moments they happen
+      const x = sim.u, v = sim.st.v, w = om();
+      if (hint === 0 && tNow > 0.3 && Math.abs(x) < A0 * 0.06) { hint = 1; say("עכשיו x = 0: המהירות הכי גדולה, והתאוצה אפס.", 2.8); }
+      else if (hint === 1 && Math.abs(v) < A0 * w * 0.06 && Math.abs(x) > A0 * 0.5) { hint = 2; say("בקצה: v = 0, והתאוצה הכי גדולה, הפוכה ל-x.", 2.8); }
+      if (trial.seen || !rel || rel.t < Td() * 2) return;
+      trial.seen = true; keeper.seen();
+      if (P.completeSubtopic("springs.graphs")) {
+        const r = cv.getBoundingClientRect();
+        setTimeout(() => celebrateUnits("springs", ["springs.graphs"], { x: r.left + W / 2, y: r.top + L().trackH }), 600);
+        questionCooldown = 2; return;
+      }
+      if (questionCooldown > 0) questionCooldown--;
+      else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.graphs" || q.unit === "springs.shm"))) questionCooldown = 3;
+    }
+
+    const COL = { x: "#2785C7", v: "#E39B28", a: "#CC5794", Ek: "#E39B28", Ep: "#25A06F", E: "#8A60E8" };
+    function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
+      const l = L(), p = sim.p, x = sim.u, w = om();
+      // ---- the track ----
+      const fy = l.trackH - 14, wallX = 14, bx = l.cx + x * l.upx;
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
+      ctx.fillStyle = "#F4F4F2"; ctx.fillRect(0, 6, wallX, fy - 6);
+      ctx.beginPath(); ctx.moveTo(wallX, 6); ctx.lineTo(wallX, fy); ctx.stroke();
+      ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(138,96,232,0.7)"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(l.cx, 8); ctx.lineTo(l.cx, fy); ctx.stroke(); ctx.restore();
+      ctx.fillStyle = "#6E48C9"; ctx.font = "600 10px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText("x = 0", l.cx, fy + 2);
+      // ±A marks
+      ctx.fillStyle = "#606671"; for (const sgn of [-1, 1]) { const ax = l.cx + sgn * A0 * l.upx; ctx.fillRect(ax - 0.5, fy - 5, 1, 10); ctx.fillText(sgn < 0 ? "−A" : "+A", ax, fy + 2); }
+      const h = Math.min(fy - 12, phys(sp).height_m * 140), iw = img.naturalWidth ? h * img.naturalWidth / img.naturalHeight * fatness(mass(), m0()) : h;
+      const pr = probe(img), edge = pr ? pr.right(0.55) : 1;   // the spring meets the body's left edge
+      const left = bx - iw / 2, sy = fy - h * 0.45;
+      drawSpring(ctx, wallX, sy, left + iw * (1 - edge) + 3, sy, lab.k, false);     // the drawing is mirrored: its right edge faces the wall
+      if (img.complete && img.naturalWidth) { ctx.save(); ctx.translate(bx, fy); ctx.scale(-1, 1); ctx.drawImage(img, -iw / 2, -h, iw, h); ctx.restore(); }
+      // forces on the track: the spring only (weight and normal cancel)
+      const F = -p.k * x - p.b * sim.st.v;
+      if (Math.abs(F) > 0.1) forceArrow(ctx, bx, fy - h * 0.55, clamp(F * 2.2, -110, 110), 0, "#25A06F", "ΣF", { value: Math.abs(F), dy: -16 });
+      // ---- graphs ----
+      const t1 = Math.max(WIN, tNow), t0 = t1 - WIN, X = (t) => l.gx + (t - t0) / WIN * l.gw;
+      const scaleOf = { x: A0 * 1.15, v: A0 * w * 1.15, a: A0 * w * w * 1.15, E: 0.5 * p.k * A0 * A0 * 1.1 };
+      const unit = { x: "x (m)", v: "v (m/s)", a: "a (m/s²)", E: "E (J)" };
+      for (const s of l.strips) {
+        ctx.fillStyle = "#FBFBFC"; ctx.fillRect(l.gx, s.y, l.gw, s.h);
+        const zeroY = s.id === "E" ? s.y + s.h - 4 : s.y + s.h / 2, k = (s.id === "E" ? s.h - 8 : s.h / 2 - 4) / scaleOf[s.id];
+        ctx.strokeStyle = "#D5D8DD"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(l.gx, zeroY); ctx.lineTo(l.gx + l.gw, zeroY); ctx.stroke();
+        ctx.fillStyle = s.id === "E" ? COL.E : COL[s.id]; ctx.font = "700 11px " + FONT; ctx.textAlign = "left"; ctx.textBaseline = "top";
+        ctx.save(); ctx.translate(l.gx - 30, s.y + s.h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText(unit[s.id], 0, 0); ctx.restore();
+        const line = (fn, color, wdt = 2.2) => {
+          ctx.strokeStyle = color; ctx.lineWidth = wdt; ctx.beginPath(); let first = true;
+          for (const q of hist) { if (q.t < t0) continue; const yy = zeroY - fn(q) * k; if (first) { ctx.moveTo(X(q.t), yy); first = false; } else ctx.lineTo(X(q.t), yy); }
+          ctx.stroke();
+          const q = hist[hist.length - 1]; if (q) { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(X(q.t), zeroY - fn(q) * k, 4, 0, Math.PI * 2); ctx.fill(); }
+        };
+        ctx.save(); ctx.beginPath(); ctx.rect(l.gx, s.y, l.gw, s.h); ctx.clip();
+        if (s.id === "x") line((q) => q.x, COL.x);
+        if (s.id === "v") line((q) => q.v, COL.v);
+        if (s.id === "a") line((q) => q.a, COL.a);
+        if (s.id === "E") { line((q) => q.Ek, COL.Ek, 1.8); line((q) => q.Ep, COL.Ep, 1.8); line((q) => q.Ek + q.Ep, COL.E, 2.4); }
+        ctx.restore();
+        // the creature's face rides the x graph
+        if (s.id === "x" && hist.length && img.complete && img.naturalWidth) { const q = hist[hist.length - 1], fs = Math.min(26, s.h * 0.6); ctx.drawImage(img, X(q.t) - fs / 2, zeroY - q.x * k - fs / 2, fs, fs * img.naturalHeight / img.naturalWidth); }
+        if (s.id === "E") {
+          ctx.font = "700 10px " + FONT; ctx.textAlign = "right"; ctx.textBaseline = "top";
+          [["E_k", COL.Ek], ["E_p", COL.Ep], ["E", COL.E]].forEach(([n, c], i) => { ctx.fillStyle = c; ctx.fillText(n, l.gx + l.gw - 4 - i * 30, s.y + 3); });
+        }
+      }
+      // shared time cursor
+      if (hist.length) { const xx = X(hist[hist.length - 1].t); ctx.strokeStyle = "rgba(32,35,42,0.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(xx, l.trackH + 4); ctx.lineTo(xx, H - 4); ctx.stroke(); }
+      if (!everDragged && !reduceMotion) {
+        const kk = (performance.now() / 900) % 1;
+        ctx.globalAlpha = Math.sin(kk * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
+        const ax = bx + 40 + kk * 24, ay = fy - h * 0.5;
+        ctx.beginPath(); ctx.moveTo(ax - 22, ay); ctx.lineTo(ax, ay); ctx.moveTo(ax - 8, ay - 7); ctx.lineTo(ax, ay); ctx.lineTo(ax - 8, ay + 7); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    }
+    function paintReadouts() {
+      const p = sim.p, w = om();
+      $("#rT").textContent = fmt(Td()) + " s"; $("#rT").className = rel ? "" : "dim";
+      $("#rW").textContent = fmt(w, 2) + " rad/s";
+      $("#rA").textContent = fmt(A0 * 100, 1) + " cm";
+      $("#rE").textContent = fmt(0.5 * p.k * sim.u ** 2 + 0.5 * p.m * sim.st.v ** 2, 2) + " J";
+    }
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen() && !sim.held && rel) {
+        rel.t += dt; tNow += dt;
+        const q = exact(rel.t); sim.st = { s: SP.equilibrium(sim.p) + q.x, v: q.v };
+        const x = sim.u, v = sim.st.v, p = sim.p;
+        hist.push({ t: tNow, x, v, a: (-p.k * x - p.b * v) / p.m, Ek: 0.5 * p.m * v * v, Ep: 0.5 * p.k * x * x });
+        if (hist.length > 900) hist.splice(0, hist.length - 900);
+      }
+      draw();
+      if ((fpaint++ & 3) === 0) paintReadouts();
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      observe();
+      keeper.tick(!dragging && (!trial || trial.seen));
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    say(`משכו את ${nameOf(sp)} הצידה ושחררו, ותראו איך x, v ו-a זזים יחד.`, 3.6);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); };
+    bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  ENERGY TRACK: "אני לא מטפס, אני מומר!" — a spring pushes the creature along a track and up a ramp.
+  //  Every joule is accounted for: spring → motion → height, and friction turns some into heat.
+  // ======================================================================
+  SCREENS.ramp = (args = {}) => {
+    lab.mode = "ramp";
+    setTitle("קפיץ־קפוץ", "מסילת אנרגיה");
+    let sp = activeSpecies();
+    const m0 = () => phys(sp).mass_kg, mass = () => lab.massOverride ?? m0();
+    lab.rk = lab.rk || 300; lab.rsurf = lab.rsurf || "smooth_ice";
+    const mu = () => (phys(sp).surfaces || {})[lab.rsurf] || { mu_s: phys(sp).mu_s, mu_k: phys(sp).mu_k };
+    const rp = () => SP.rparams(mass(), lab.rk, mu().mu_s, mu().mu_k);
+    const T = SP.track(), CMAX = 0.25, TOPH = T.rampLen * Math.sin(T.deg * Math.PI / 180);
+    screenEl.innerHTML = `
+      <div class="lab-screen">
+        ${modeSeg("ramp")}
+        <div class="lab" id="lab">
+          <canvas id="labCanvas"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="lab-tools"><button class="chip" id="charChip" type="button"></button><button class="chip" id="formulaBtn" type="button">הצג נוסחה</button></div>
+        </div>
+        <div class="readouts">
+          <button type="button" class="readout" data-info="compress"><small>דחיסה x <i class="qi">?</i></small><b id="rC">–</b></button>
+          <button type="button" class="readout" data-info="E"><small>אנרגיה כוללת <i class="qi">?</i></small><b id="rE">–</b></button>
+          <button type="button" class="readout" data-info="height"><small>גובה <i class="qi">?</i></small><b id="rH">–</b></button>
+          <button type="button" class="readout" data-info="heat"><small>חום <i class="qi">?</i></small><b id="rQ">–</b></button>
+        </div>
+        <div class="card controls">
+          <div><div class="meter-label"><span>המסילה ${infoBtn("surface")}</span><span class="ltr" id="muVal"></span></div>
+            <div class="surfaces">${Object.entries(SPR.surfaces).map(([k, v]) => `<button type="button" data-s="${k}">${esc(v)}</button>`).join("")}</div></div>
+          <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k ${infoBtn("k")}</span><span class="val" id="kVal"></span></label>
+            <input id="kIn" type="range" min="60" max="500" step="10"></div>
+          <div class="slider-row"><label for="mIn"><span>מסה m ${infoBtn("m")} <span class="note" id="mNote"></span></span><span class="val" id="mVal"></span></label>
+            <input id="mIn" class="mass" type="range" min="0.5" max="4" step="0.1">
+            <button class="linkish" id="mReset" type="button" hidden>חזרה למסת הדמות</button></div>
+        </div>
+        <div class="card formula" id="formula" hidden></div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab");
+    let W = 0, H = 0, DPR = 1;
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box);
+    const img = new Image(); let imgSp = null;
+    const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } };
+    loadImg();
+    let p = rp(), st = { s: 0, v: 0, moving: false }, heat = 0, E0 = 0, held = false, acc = 0, maxY = 0, run = null;
+    let dragging = null, everDragged = false, sayT = 0, raf = 0, lastT = performance.now(), formulaOpen = false, fpaint = 0, questionCooldown = 1;
+    const kIn = $("#kIn"), mIn = $("#mIn");
+    kIn.value = lab.rk; mIn.value = mass();
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    function paintControls() {
+      $("#kVal").textContent = lab.rk + " N/m"; $("#mVal").textContent = fmt(mass(), 1) + " kg";
+      const own = lab.massOverride === null; $("#mNote").textContent = own ? "(מסת " + nameOf(sp) + ")" : "(מסה בניסוי)"; $("#mReset").hidden = own;
+      $("#muVal").textContent = `μs ${fmt(mu().mu_s, 2)} · μk ${fmt(mu().mu_k, 2)}`;
+      for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.setAttribute("aria-pressed", b.dataset.s === lab.rsurf);
+      $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><span>${esc(nameOf(sp))} · <span class="ltr">${fmt(m0(), 1)} kg</span></span><span aria-hidden="true">⇄</span>`;
+    }
+    const cNow = () => Math.max(0, -st.s);
+    function paintFormula() {
+      if ($("#formula").hidden) return;
+      const c = run ? run.c : cNow(), Ein = 0.5 * p.k * c * c, e = SP.rEnergy(st, p, T);
+      setFormula($("#formula"), `
+        <div class="eq"><span>האנרגיה בהתחלה</span><span class="m">E = ½·k·x²<em>${fmt(Ein, 2)} J</em></span></div>
+        <div class="eq"><span>החשבון בכל רגע</span><span class="m">½·k·x² = ½·m·v² + m·g·h + Q<em>${fmt(e.k, 2)} + ${fmt(e.g, 2)} + ${fmt(heat, 2)}</em></span></div>
+        <div class="eq"><span>הגובה בלי חיכוך</span><span class="m">h = k·x² / (2·m·g)<em>${fmt(Ein / (p.m * p.g) * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>גובה הבמה</span><span class="m">h<em>${fmt(TOPH * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>חום מחיכוך (על הרצפה)</span><span class="m">Q = μk·m·g·d<em>${fmt(p.muk * p.m * p.g, 2)} J/m</em></span></div>
+        <p class="fine">Q היא האנרגיה שהחיכוך הופך לחום. על המדרון N = mg·cosθ, ולכן שם החום לכל מטר קטן יותר.</p>`);
+    }
+    function reconfigure(why) { p = rp(); st = { s: 0, v: 0, moving: false }; heat = 0; run = null; held = false; maxY = 0; if (why) say(why, 3.4); paintControls(); paintFormula(); }
+    kIn.addEventListener("input", () => { lab.rk = +kIn.value; reconfigure(); });
+    mIn.addEventListener("input", () => { keeper.touched(); lab.massOverride = Math.abs(+mIn.value - m0()) < 0.05 ? null : +mIn.value; reconfigure(); });
+    mIn.addEventListener("change", () => { if (lab.massOverride !== null) say(FEEL(mass() / m0()), 2.6); });
+    $("#mReset").addEventListener("click", () => { lab.massOverride = null; mIn.value = m0(); reconfigure(); });
+    for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.addEventListener("click", () => { lab.rsurf = b.dataset.s; G.sfx.pop(); reconfigure(`על ${SPR.surfaces[lab.rsurf]}: μk = ${fmt(mu().mu_k, 2)}. ${mu().mu_k < 0.08 ? "כמעט בלי חיכוך!" : "חלק מהאנרגיה ילך לחום."}`); });
+    $("#formulaBtn").addEventListener("click", () => {
+      formulaOpen = $("#formula").hidden; $("#formula").hidden = !formulaOpen;
+      $("#formulaBtn").textContent = formulaOpen ? "הסתר נוסחה" : "הצג נוסחה";
+      if (formulaOpen) { P.data.physics.formulaSeen = true; P.save(); paintFormula(); $("#formula").scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    });
+    paintControls();
+    const keeper = massKeeper({ say: (t, d) => say(t, d), m0, apply: (m) => { mIn.value = m; p = rp(); st = { s: 0, v: 0, moving: false }; heat = 0; run = null; paintControls(); } });
+    infoLive = () => ({ k: lab.rk, m: mass(), m0: m0(), name: nameOf(sp), c: run ? run.c : cNow(), h: run && run.done ? maxY : undefined, mus: mu().mu_s, muk: mu().mu_k, surface: SPR.surfaces[lab.rsurf], Q: heat });
+    $("#charChip").addEventListener("click", () => pickOwned(sp, "להחליף דמות בניסוי", (newSp) => { sp = newSp; lab.massOverride = null; mIn.value = m0(); loadImg(); reconfigure(`${nameOf(sp)} על אותה מסילה: μk = ${fmt(mu().mu_k, 2)}.`); }));
+
+    // ---- view: the whole track fits the width; the creature is drawn 1.6× its size so it can be seen ----
+    const VIS = 1.6, X0 = -0.36;
+    const view = () => { const span = SP.trackEnd(T) - T.rampLen + T.rampLen * Math.cos(T.deg * Math.PI / 180) - X0 + 0.04, S = (W - 16) / span; return { S, ox: 8 - X0 * S, fy: H * 0.66 }; };
+    const P2 = (v, s) => { const a = SP.trackAt(T, s); return { x: v.ox + a.x * v.S, y: v.fy - a.y * v.S, th: a.th }; };
+    const bodyM = () => phys(sp).height_m * VIS * fatness(mass(), m0());          // body width on screen, metres along the track
+    function pos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen() || (run && !run.done && st.moving)) return;
+      const q = pos(e), v = view(), c = P2(v, st.s + bodyM() * 0.45), at = { x: e.clientX, y: e.clientY };
+      if (q.y < H * 0.3) { openInfo("energyBars", at); return; }
+      if (Math.hypot(q.x - c.x, q.y - (c.y - 30)) > 70) { if (q.x < v.ox) openInfo("k", at); return; }
+      G.audio.unlock();
+      if (st.s > 0.02) { reconfigure(); }                                       // put it back at the start
+      dragging = { x0: q.x, s0: Math.min(0, st.s) }; cv.setPointerCapture(e.pointerId); held = true; run = null; heat = 0; maxY = 0;
+      if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
+    });
+    cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), v = view(); st = { s: clamp(dragging.s0 + (q.x - dragging.x0) / v.S, -CMAX, 0), v: 0, moving: false }; });
+    const letGo = () => {
+      if (!dragging) return;
+      dragging = null; held = false;
+      const c = cNow();
+      if (c < 0.02) { reconfigure(); return; }
+      E0 = 0.5 * p.k * c * c; run = { c, t: 0, done: false, top: false }; acc = 0;
+      if (p.k * c <= p.mus * p.m * p.g) { say("החיכוך הסטטי חזק מהקפיץ. לא זזתי!", 2.6); run.done = true; return; }
+      G.sfx.boing(0.7); G.buzz(15); say("אני לא מטפס, אני מומר!", 1.8);
+    };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+
+    function finish() {
+      run.done = true; keeper.seen();
+      const e = SP.rEnergy(st, p, T);
+      say(run.top ? `הגעתי לבמה! מתוך ${fmt(E0, 2)} J: ${fmt(e.g, 2)} J גובה ו-${fmt(heat, 2)} J חום.` : `לא הגעתי למעלה. מתוך ${fmt(E0, 2)} J: ${fmt(heat, 2)} J הפכו לחום. ${E0 < p.m * p.g * TOPH ? `גם בלי חיכוך היה חסר: צריך לפחות ${fmt(p.m * p.g * TOPH, 2)} J.` : ""}`, 4.6);
+      if (P.completeSubtopic("springs.ramp")) {
+        const r = cv.getBoundingClientRect();
+        setTimeout(() => celebrateUnits("springs", ["springs.ramp"], { x: r.left + W / 2, y: r.top + H * 0.5 }), 1400); questionCooldown = 2; return;
+      }
+      if (questionCooldown > 0) questionCooldown--;
+      else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.ramp"))) questionCooldown = 3;
+    }
+
+    function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
+      const v = view(), S = v.S;
+      // the track, tinted by its surface
+      const tint = { dry_wood: "#B58A55", smooth_ice: "#7FC1DE", rubber_mat: "#4F5157" }[lab.rsurf] || "#999";
+      const pts = [[X0 - 0.02, 0], [T.flat, 0]], top = SP.trackAt(T, T.flat + T.rampLen), end = SP.trackAt(T, SP.trackEnd(T));
+      pts.push([top.x, top.y], [end.x, end.y]);
+      ctx.fillStyle = "rgba(107,107,112,0.07)"; ctx.beginPath(); ctx.moveTo(v.ox + pts[0][0] * S, v.fy); for (const [x, y] of pts) ctx.lineTo(v.ox + x * S, v.fy - y * S); ctx.lineTo(v.ox + end.x * S, v.fy); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = tint; ctx.lineWidth = 6; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, v.ox + x * S, v.fy - y * S)); ctx.stroke();
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, v.ox + x * S, v.fy - y * S)); ctx.stroke();
+      // end wall and spring wall
+      ctx.fillStyle = "#3a3a40"; ctx.fillRect(v.ox + end.x * S - 3, v.fy - end.y * S - 40, 5, 40);
+      const wx = v.ox + X0 * S; ctx.fillStyle = "#F4F4F2"; ctx.fillRect(wx - 8, v.fy - 56, 8, 56); ctx.fillStyle = "#3a3a40"; ctx.fillRect(wx - 1, v.fy - 56, 3, 56);
+      // the height of the platform, and (while aiming) how high it would go without friction
+      ctx.save(); ctx.setLineDash([4, 5]); ctx.lineWidth = 1.3; ctx.strokeStyle = "rgba(39,133,199,0.6)";
+      const yTop = v.fy - TOPH * S; ctx.beginPath(); ctx.moveTo(v.ox + T.flat * S, yTop); ctx.lineTo(v.ox + top.x * S, yTop); ctx.stroke();
+      if (held && cNow() > 0.02) { const hh = 0.5 * p.k * cNow() ** 2 / (p.m * p.g); ctx.strokeStyle = "rgba(230,155,40,0.85)"; const yy = v.fy - Math.min(hh, 3) * S; ctx.beginPath(); ctx.moveTo(v.ox + T.flat * S, yy); ctx.lineTo(W - 8, yy); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = "#B8741A"; ctx.font = "700 11px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "right"; ctx.fillText(`בלי חיכוך: עד ${fmt(hh * 100, 0)} ס״מ`, W - 10, Math.max(12, yy - 8)); ctx.direction = "ltr"; }
+      ctx.restore();
+      ctx.fillStyle = "#1A74D0"; ctx.font = "600 11px " + FONT; ctx.textAlign = "left"; ctx.fillText(`h = ${fmt(TOPH * 100, 0)} cm`, v.ox + top.x * S + 6, yTop - 8);
+      // spring: from the wall to the creature while touching, otherwise to its natural end
+      const sEnd = Math.min(0, st.s), sy = v.fy - 0.08 * S;
+      drawSpring(ctx, wx + 2, sy, v.ox + sEnd * S, sy, lab.rk, false);
+      ctx.fillStyle = "#3a3a40"; ctx.fillRect(v.ox + sEnd * S - 2, sy - 12, 4, 24);
+      // creature: its left side at s, standing on the track
+      const bw = bodyM(), c = P2(v, st.s + bw * 0.5);
+      if (img.complete && img.naturalWidth) {
+        const hpx = phys(sp).height_m * VIS * S * (1 + (fatness(mass(), m0()) - 1) * 0.12), wpx = bw * S;
+        ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(-c.th); ctx.drawImage(img, -wpx / 2, -hpx, wpx, hpx); ctx.restore();
+      }
+      // energy bars: where every joule is right now
+      const e = SP.rEnergy(st, p, T), Etot = run ? E0 : 0.5 * p.k * cNow() ** 2, bars = [["קפיץ", e.el, "#25A06F"], ["תנועה", e.k, "#E39B28"], ["גובה", e.g, "#2785C7"], ["חום", heat, "#CC5794"]];
+      const bx0 = 12, bw0 = Math.min(44, (W - 40) / 6), bh = H * 0.24, by = 14 + bh, sc = bh / Math.max(0.5, Etot, E0);
+      ctx.font = "600 10px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      bars.forEach(([n, val, col], i) => {
+        const x = bx0 + i * (bw0 + 8); ctx.fillStyle = "#F1F2F4"; ctx.fillRect(x, by - bh, bw0, bh);
+        ctx.fillStyle = col; ctx.fillRect(x, by - val * sc, bw0, val * sc);
+        ctx.direction = "rtl"; ctx.fillStyle = "#3a3a40"; ctx.fillText(n, x + bw0 / 2, by + 3); ctx.direction = "ltr";
+        ctx.fillStyle = col; ctx.fillText(fmt(val, 2), x + bw0 / 2, by + 15);
+      });
+      const tx = bx0 + 4 * (bw0 + 8); ctx.fillStyle = "#EFE8FC"; ctx.fillRect(tx, by - bh, bw0, bh);
+      let yy = by; for (const [, val, col] of bars) { ctx.fillStyle = col; ctx.fillRect(tx, yy - val * sc, bw0, val * sc); yy -= val * sc; }
+      ctx.strokeStyle = "#8A60E8"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx - 4, by - Etot * sc); ctx.lineTo(tx + bw0 + 4, by - Etot * sc); ctx.stroke();
+      ctx.direction = "rtl"; ctx.fillStyle = "#6E48C9"; ctx.fillText("סה״כ", tx + bw0 / 2, by + 3); ctx.direction = "ltr"; ctx.fillText(fmt(Etot, 2) + " J", tx + bw0 / 2, by + 15);
+      if (!everDragged && !reduceMotion) {
+        const kk = (performance.now() / 900) % 1;
+        ctx.globalAlpha = Math.sin(kk * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
+        const ax = c.x + 10 - kk * 26, ay = c.y - 70;
+        ctx.beginPath(); ctx.moveTo(ax + 22, ay); ctx.lineTo(ax, ay); ctx.moveTo(ax + 8, ay - 7); ctx.lineTo(ax, ay); ctx.lineTo(ax + 8, ay + 7); ctx.stroke();
+        ctx.globalAlpha = 1; ctx.fillStyle = "#1A74D0"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.fillText("דחפו אל הקפיץ ושחררו", c.x + 20, ay - 14); ctx.direction = "ltr";
+      }
+    }
+    function paintReadouts() {
+      const e = SP.rEnergy(st, p, T);
+      $("#rC").textContent = fmt(cNow() * 100, 1) + " cm";
+      $("#rE").textContent = fmt(run ? E0 : 0.5 * p.k * cNow() ** 2, 2) + " J";
+      $("#rH").textContent = fmt(SP.trackAt(T, st.s).y * 100, 1) + " cm";
+      $("#rQ").textContent = fmt(heat, 2) + " J"; $("#rQ").className = heat > 0.005 ? "" : "dim";
+    }
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen() && run && !run.done && !held) {
+        acc += Math.min(dt, 0.25);
+        while (acc >= SP.DT) { const r = SP.rstep(st, p, T, SP.DT); st = r.st; heat += r.heat; acc -= SP.DT; run.t += SP.DT; maxY = Math.max(maxY, SP.trackAt(T, st.s).y); if (st.s >= T.flat + T.rampLen) run.top = true; }
+        if ((!st.moving && run.t > 0.3) || run.t > 14) finish();
+      }
+      draw();
+      if ((fpaint++ & 3) === 0) { paintReadouts(); if (formulaOpen) paintFormula(); }
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      keeper.tick(!dragging && (!run || run.done));
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    say(`דחפו את ${nameOf(sp)} אל הקפיץ ושחררו. יגיע לבמה?`, 3.4);
     cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); };
     bindModeSeg(args);
   };

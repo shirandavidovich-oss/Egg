@@ -168,8 +168,49 @@ const SpringPhys = (() => {
     }
   }
 
+  // ---------------- energy track: spring (contact only) → flat → ramp → upper platform with an end wall ----------------
+  // s = distance along the track from the spring's natural end (s < 0: spring compressed). Friction from the surface.
+  const track = (o = {}) => ({ flat: 0.6, rampLen: 0.8, deg: 25, top: 1.0, ...o });
+  function trackAt(T, s) {
+    const th = T.deg * Math.PI / 180, r0 = T.flat, r1 = T.flat + T.rampLen;
+    if (s <= r0) return { y: 0, th: 0, x: s };
+    if (s <= r1) return { y: (s - r0) * Math.sin(th), th, x: r0 + (s - r0) * Math.cos(th) };
+    return { y: T.rampLen * Math.sin(th), th: 0, x: r0 + T.rampLen * Math.cos(th) + (s - r1) };
+  }
+  const trackEnd = (T) => T.flat + T.rampLen + T.top;
+  // one fixed step; returns the new state and the heat made by friction in this step
+  // stiff spring + kinks in the track: integrate in 8 sub-steps so the energy books balance to ~1%
+  function rstep(st, p, T, dt) {
+    let heat = 0;
+    for (let i = 0; i < 8; i++) { const r = rsub(st, p, T, dt / 8); st = r.st; heat += r.heat; }
+    return { st, heat };
+  }
+  function rsub(st, p, T, dt) {
+    const at = trackAt(T, st.s), N = p.m * p.g * Math.cos(at.th), drive = (st.s < 0 ? -p.k * st.s : 0) - p.m * p.g * Math.sin(at.th);
+    if (!st.moving) {
+      if (Math.abs(drive) <= p.mus * N + 1e-12) return { st: { ...st, v: 0 }, heat: 0 };
+      st = { ...st, moving: true };
+    }
+    const dir = Math.abs(st.v) > 1e-9 ? Math.sign(st.v) : Math.sign(drive);
+    const a = (drive - dir * p.muk * N) / p.m;
+    let v = st.v + a * dt;
+    // friction can stop it but never push it backwards
+    if (Math.abs(st.v) > 1e-9 && Math.sign(v) !== Math.sign(st.v)) {
+      const stopped = Math.abs(drive) <= p.mus * N;
+      if (stopped) return { st: { s: st.s, v: 0, moving: false }, heat: 0 };
+    }
+    let s = st.s + v * dt;
+    const end = trackEnd(T);
+    if (s > end) { s = end - (s - end); v = -v; }                 // elastic bounce off the end wall
+    const ds = Math.abs(s - st.s);
+    return { st: { s, v, moving: true }, heat: p.muk * N * ds };
+  }
+  const rparams = (m, k, mus, muk, g = G_EARTH) => ({ m, k, mus, muk, g });
+  const rEnergy = (st, p, T) => ({ el: st.s < 0 ? 0.5 * p.k * st.s * st.s : 0, k: 0.5 * p.m * st.v * st.v, g: p.m * p.g * trackAt(T, st.s).y });
+
   return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
     hparams, stickZone, halfSwingLoss, hstep, HSim,
-    lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim };
+    lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim,
+    track, trackAt, trackEnd, rstep, rparams, rEnergy };
 })();
 if (typeof module !== "undefined") module.exports = SpringPhys;

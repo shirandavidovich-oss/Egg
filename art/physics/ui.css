@@ -337,7 +337,9 @@
   @media (prefers-reduced-motion: reduce) { .m3-machine.spinning, .m3-hint, .m3-machine.spinning .m3-glints { animation: none; } }
   /* the coin is the drawn gold coin from the V3 pack */
   .coin, .fly-coin { background: url("art/machine/v3_coin.webp") center / 112% no-repeat; border: 0; box-shadow: none; }
-  .seg4 button { font-size: 13.5px; padding: 0 1px; }
+  .seg4 { gap: 2px; padding: 3px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+  .seg4::-webkit-scrollbar { display: none; }
+  .seg4 button { flex: 0 0 auto; font-size: 13.5px; padding: 0 12px; scroll-snap-align: center; }
   .lab.tall { height: 56vh; min-height: 340px; }
   .weights-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 8px; }
   .weights-row .btn { min-height: 48px; padding: 0 6px; font-size: 15px; }

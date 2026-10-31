@@ -32,6 +32,7 @@ jobs:
         run: |
           node tests/spring.test.js
           node tests/profile.test.js
+          node tests/incline.test.js
 
       - name: Build
         run: |

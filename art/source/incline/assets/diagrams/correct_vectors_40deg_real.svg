@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 540 380">
+    <defs><marker id="2785c7" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#2785c7"/></marker><marker id="8969c6" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#8969c6"/></marker><marker id="cb5794" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#cb5794"/></marker><marker id="e39b28" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#e39b28"/></marker><marker id="42a47a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#42a47a"/></marker></defs><rect width="540" height="380" fill="#fff"/>
+    <text x="22" y="34" font-family="Arial,sans-serif" font-size="19" font-weight="bold" fill="#2d3438">Inclined plane θ=40°, m=2kg, g=10m/s²</text>
+    <text x="22" y="55" font-family="Arial,sans-serif" font-size="12" fill="#6b7176">REAL EXTERNAL FORCES ONLY</text>
+    <path d="M95.00 315.00 L370.78 83.60 L370.78 315.00 Z" fill="#f5f5f2" stroke="#8c8e93" stroke-width="1.5"/><path d="M95.00 315.00 L370.78 83.60" stroke="#333" stroke-width="3"/>
+    <path d="M126 315 A31 31 0 0 0 118.75 295.07" fill="none" stroke="#777" stroke-width="1.6"/>
+    <text x="140" y="303" font-family="Arial" fill="#444">θ</text>
+    <circle cx="235.02" cy="157.04" r="19" stroke="#30343a" stroke-width="2" fill="#fff"/>
+    <circle cx="228.02" cy="154.04" r="2.8" fill="#2e3338"/>
+    <circle cx="242.02" cy="154.04" r="2.8" fill="#2e3338"/>
+    <path d="M230.02 163.04 Q235.02 168.04 240.02 163.04" fill="none" stroke="#2e3338" stroke-width="2"/>
+    <g font-family="Arial,sans-serif"><line x1="235.02" y1="157.04" x2="235.02" y2="221.04" stroke="#2785c7" stroke-width="3.5" marker-end="url(#2785c7)" /><text x="243.02" y="217.04" fill="#2785c7" font-weight="bold" font-size="15">mg</text><line x1="235.02" y1="157.04" x2="203.51" y2="119.48" stroke="#8969c6" stroke-width="3.5" marker-end="url(#8969c6)" /><text x="191.51" y="109.48" fill="#8969c6" font-weight="bold" font-size="15">N</text><line x1="235.02" y1="157.04" x2="250.05" y2="144.43" stroke="#cb5794" stroke-width="3.5" marker-end="url(#cb5794)" /><text x="258.05" y="130.43" fill="#cb5794" font-weight="bold" font-size="15">fₖ</text></g>
+    <text x="22" y="348" font-family="Arial" font-size="12" fill="#555">Weight W=20.0N | Normal N=15.32N | Along slope=12.86N | Friction=6.13N</text>
+    <text x="22" y="367" font-family="Arial" font-size="12" fill="#555">Sliding with a = 3.36 m/s² downhill</text>
+    </svg>

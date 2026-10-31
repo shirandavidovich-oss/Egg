@@ -745,7 +745,21 @@
     "mu_s": 0.5,
     "mu_k": 0.35,
     "Cd": 1.0,
-    "A": 0.0212
+    "A": 0.0212,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.5,
+      "mu_k": 0.35
+     },
+     "smooth_ice": {
+      "mu_s": 0.028,
+      "mu_k": 0.015
+     },
+     "rubber_mat": {
+      "mu_s": 0.9,
+      "mu_k": 0.647
+     }
+    }
    }
   },
   {
@@ -765,7 +779,21 @@
     "mu_s": 0.8,
     "mu_k": 0.6,
     "Cd": 1.0,
-    "A": 0.0432
+    "A": 0.0432,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.8,
+      "mu_k": 0.6
+     },
+     "smooth_ice": {
+      "mu_s": 0.032,
+      "mu_k": 0.018
+     },
+     "rubber_mat": {
+      "mu_s": 1.17,
+      "mu_k": 0.86
+     }
+    }
    }
   },
   {
@@ -785,7 +813,21 @@
     "mu_s": 0.3,
     "mu_k": 0.19,
     "Cd": 1.0,
-    "A": 0.0276
+    "A": 0.0276,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.3,
+      "mu_k": 0.19
+     },
+     "smooth_ice": {
+      "mu_s": 0.025,
+      "mu_k": 0.014
+     },
+     "rubber_mat": {
+      "mu_s": 0.72,
+      "mu_k": 0.511
+     }
+    }
    }
   },
   {
@@ -805,7 +847,21 @@
     "mu_s": 0.57,
     "mu_k": 0.41,
     "Cd": 1.0,
-    "A": 0.0363
+    "A": 0.0363,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.57,
+      "mu_k": 0.41
+     },
+     "smooth_ice": {
+      "mu_s": 0.029,
+      "mu_k": 0.016
+     },
+     "rubber_mat": {
+      "mu_s": 0.963,
+      "mu_k": 0.698
+     }
+    }
    }
   },
   {
@@ -825,7 +881,21 @@
     "mu_s": 0.28,
     "mu_k": 0.2,
     "Cd": 1.0,
-    "A": 0.0192
+    "A": 0.0192,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.28,
+      "mu_k": 0.2
+     },
+     "smooth_ice": {
+      "mu_s": 0.024,
+      "mu_k": 0.014
+     },
+     "rubber_mat": {
+      "mu_s": 0.702,
+      "mu_k": 0.52
+     }
+    }
    }
   },
   {
@@ -845,7 +915,21 @@
     "mu_s": 0.72,
     "mu_k": 0.48,
     "Cd": 1.0,
-    "A": 0.0539
+    "A": 0.0539,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.72,
+      "mu_k": 0.48
+     },
+     "smooth_ice": {
+      "mu_s": 0.031,
+      "mu_k": 0.017
+     },
+     "rubber_mat": {
+      "mu_s": 1.098,
+      "mu_k": 0.758
+     }
+    }
    }
   },
   {
@@ -865,7 +949,21 @@
     "mu_s": 0.23,
     "mu_k": 0.15,
     "Cd": 1.0,
-    "A": 0.0173
+    "A": 0.0173,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.23,
+      "mu_k": 0.15
+     },
+     "smooth_ice": {
+      "mu_s": 0.023,
+      "mu_k": 0.013
+     },
+     "rubber_mat": {
+      "mu_s": 0.657,
+      "mu_k": 0.477
+     }
+    }
    }
   },
   {
@@ -885,7 +983,21 @@
     "mu_s": 0.42,
     "mu_k": 0.3,
     "Cd": 1.0,
-    "A": 0.0254
+    "A": 0.0254,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.42,
+      "mu_k": 0.3
+     },
+     "smooth_ice": {
+      "mu_s": 0.026,
+      "mu_k": 0.015
+     },
+     "rubber_mat": {
+      "mu_s": 0.828,
+      "mu_k": 0.605
+     }
+    }
    }
   },
   {
@@ -905,7 +1017,21 @@
     "mu_s": 0.9,
     "mu_k": 0.67,
     "Cd": 1.0,
-    "A": 0.0675
+    "A": 0.0675,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.9,
+      "mu_k": 0.67
+     },
+     "smooth_ice": {
+      "mu_s": 0.034,
+      "mu_k": 0.019
+     },
+     "rubber_mat": {
+      "mu_s": 1.26,
+      "mu_k": 0.919
+     }
+    }
    }
   },
   {
@@ -925,7 +1051,21 @@
     "mu_s": 0.36,
     "mu_k": 0.24,
     "Cd": 1.0,
-    "A": 0.0324
+    "A": 0.0324,
+    "surfaces": {
+     "dry_wood": {
+      "mu_s": 0.36,
+      "mu_k": 0.24
+     },
+     "smooth_ice": {
+      "mu_s": 0.025,
+      "mu_k": 0.014
+     },
+     "rubber_mat": {
+      "mu_s": 0.774,
+      "mu_k": 0.554
+     }
+    }
    }
   }
  ],
@@ -1137,7 +1277,8 @@
     "מישור משופע"
    ],
    "order": 3,
-   "ready": false
+   "ready": true,
+   "game_he": "מי מושך אותי?!"
   },
   {
    "id": "circular",
@@ -1202,7 +1343,8 @@
     "תנועה הרמונית פשוטה"
    ],
    "order": 8,
-   "ready": true
+   "ready": true,
+   "game_he": "קפיץ־קפוץ"
   },
   {
    "id": "charges",
@@ -1370,6 +1512,184 @@
    ],
    "order": 20,
    "ready": false
+  }
+ ],
+ "surfaces": {
+  "dry_wood": "עץ יבש",
+  "smooth_ice": "קרח חלק",
+  "rubber_mat": "שטיח גומי"
+ },
+ "inclineStages": [
+  {
+   "stage": 1,
+   "title_he": "אני רק יושב פה!",
+   "interaction_he": "משטח אופקי; חצים mg/N; שקול 0",
+   "concept_id": "forces_flat",
+   "takeaway_he": "חצים שונים יכולים לאזן זה את זה",
+   "unique_reward_coins": 10
+  },
+  {
+   "stage": 2,
+   "title_he": "מי הרים את הרצפה?!",
+   "interaction_he": "המצלמה מתרחקת, המישור המשולש נחשף, משנים זווית",
+   "concept_id": "camera_reveal",
+   "takeaway_he": "הכבידה תמיד למטה, הנורמל בניצב למשטח",
+   "unique_reward_coins": 10
+  },
+  {
+   "stage": 3,
+   "title_he": "הכוח שהתפצל לשניים",
+   "interaction_he": "מעבר בין FBD לרכיבי כוח הכובד",
+   "concept_id": "decomposition",
+   "takeaway_he": "mg sinθ לאורך השיפוע ו-mg cosθ פנימה",
+   "unique_reward_coins": 10
+  },
+  {
+   "stage": 4,
+   "title_he": "הרגליים העקשניות",
+   "interaction_he": "מבחן החלקה/חיכוך סטטי",
+   "concept_id": "static_friction",
+   "takeaway_he": "חיכוך סטטי מדויק: קטן או שווה ל-µsN",
+   "unique_reward_coins": 10
+  },
+  {
+   "stage": 5,
+   "title_he": "אמאאא, אני מחליק!",
+   "interaction_he": "דינמיקה של החלקה עם µk, a, v",
+   "concept_id": "kinetic_motion",
+   "takeaway_he": "תאוצה לפי הכוח השקול לאורך המדרון",
+   "unique_reward_coins": 10
+  },
+  {
+   "stage": 6,
+   "title_he": "היצור של החבר שלי",
+   "interaction_he": "הזמנת חבר וטרייד אמיתי אם קיימת תשתית",
+   "concept_id": "friend_compare",
+   "takeaway_he": "מאפייני דמות קבועים; השוואת ניסויים זהים",
+   "unique_reward_coins": 10
+  },
+  {
+   "stage": 7,
+   "title_he": "עכשיו אתה הפיזיקאי",
+   "interaction_he": "שאלות חיזוי וחישוב לפי הבגרות",
+   "concept_id": "exam_checks",
+   "takeaway_he": "משוואות ופתרון מדורג",
+   "unique_reward_coins": 25
+  }
+ ],
+ "inclineQuestions": [
+  {
+   "id": "flat_forces",
+   "stage": 1,
+   "kind": "choice",
+   "question_he": "היצור עומד על רצפה ישרה ולא נע. האם פועלים עליו כוחות?",
+   "choices_he": [
+    "לא, כי הוא לא זז",
+    "כן: כוח הכובד ונורמל מאזנים",
+    "רק כוח הכובד"
+   ],
+   "correct_index": 1,
+   "explanation_he": "במצב זה mg כלפי מטה ו-N כלפי מעלה, ולכן הכוח השקול אפס."
+  },
+  {
+   "id": "gravity_angle",
+   "stage": 2,
+   "kind": "choice",
+   "question_he": "הגדלנו את הזווית. האם הכובד mg גדל?",
+   "choices_he": [
+    "כן",
+    "לא, כל עוד m ו-g קבועים"
+   ],
+   "correct_index": 1,
+   "explanation_he": "כוח הכובד נשאר mg. רק הרכיבים ביחס למדרון משתנים."
+  },
+  {
+   "id": "parallel",
+   "stage": 3,
+   "kind": "choice",
+   "question_he": "מהו רכיב הכובד במורד מישור משופע בזווית θ מהאופק?",
+   "choices_he": [
+    "mg cosθ",
+    "mg sinθ",
+    "N"
+   ],
+   "correct_index": 1,
+   "explanation_he": "רכיב הכובד המקביל למישור: mg sinθ."
+  },
+  {
+   "id": "normal",
+   "stage": 3,
+   "kind": "choice",
+   "question_he": "איזה ביטוי מתאר נורמל כאשר אין כוחות נוספים בניצב?",
+   "choices_he": [
+    "N=mg",
+    "N=mg cosθ",
+    "N=mg sinθ"
+   ],
+   "correct_index": 1,
+   "explanation_he": "הכוח הנורמלי שווה לרכיב הכובד הניצב למישור."
+  },
+  {
+   "id": "static_not_max",
+   "stage": 4,
+   "kind": "choice",
+   "question_he": "הגוף לא מחליק. האם החיכוך הסטטי תמיד שווה ל-µsN?",
+   "choices_he": [
+    "כן",
+    "לא; זה רק גודל מרבי"
+   ],
+   "correct_index": 1,
+   "explanation_he": "חיכוך סטטי מתאזן לפי הצורך, עד המקסימום."
+  },
+  {
+   "id": "threshold",
+   "stage": 4,
+   "kind": "choice",
+   "question_he": "µs=0.6. האם הגוף יחליק ממנוחה בזווית 30°?",
+   "choices_he": [
+    "כן",
+    "לא"
+   ],
+   "correct_index": 1,
+   "explanation_he": "tan30°≈0.577, נמוך מ-0.6 ולכן ניתן להישאר במנוחה."
+  },
+  {
+   "id": "acc_numeric",
+   "stage": 5,
+   "kind": "choice",
+   "question_he": "m=2 kg, θ=40°, g=10, µs=0.6, µk=0.4. מה התאוצה כשהגוף מתחיל להחליק?",
+   "choices_he": [
+    "0 m/s²",
+    "≈3.36 m/s²",
+    "≈6.43 m/s²"
+   ],
+   "correct_index": 1,
+   "explanation_he": "tan40°>0.6 ולכן הוא מחליק. a=g(sin40°−0.4cos40°)≈3.36 m/s²."
+  },
+  {
+   "id": "mass_cancels",
+   "stage": 6,
+   "kind": "choice",
+   "question_he": "שתי דמויות עם חיכוך זהה אבל מסות שונות על אותו מדרון. מי תאיץ יותר בהחלקה?",
+   "choices_he": [
+    "הכבדה",
+    "הקלה",
+    "שתיהן באותה תאוצה"
+   ],
+   "correct_index": 2,
+   "explanation_he": "במודל עם אותו µ, המסה מצטמצמת במשוואת התאוצה. רק כוח מוחלט משתנה."
+  },
+  {
+   "id": "third_law",
+   "stage": 7,
+   "kind": "choice",
+   "question_he": "האם הנורמל הוא כוח התגובה לכוח הכובד לפי החוק השלישי?",
+   "choices_he": [
+    "כן",
+    "לא"
+   ],
+   "correct_index": 1,
+   "explanation_he": "לא. הנורמל והכובד פועלים על אותו גוף; פעולת-תגובה מופיעות על גופים שונים."
   }
  ]
 }

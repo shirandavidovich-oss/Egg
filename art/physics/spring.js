@@ -76,6 +76,59 @@ const SpringPhys = (() => {
     periods() { return this.crossings.length > 0 ? this.crossings.length : 0; }
   }
 
-  return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim };
+  // ---------------------------------------------------------------------
+  //  Horizontal spring fixed to a wall, the creature on a floor with friction.
+  //  x = stretch from the natural length (m), + away from the wall.
+  //  Moving:   m x'' = -k x - μk m g · sign(v)
+  //  At rest:  stays wherever k|x| ≤ μs m g (static friction holds it), so it
+  //            often stops before reaching x = 0. Each half swing loses 2μk m g / k.
+  // ---------------------------------------------------------------------
+  function hparams(m, k, mus, muk, g = G_EARTH) {
+    positive("m", m); positive("k", k); positive("g", g);
+    if (!(Number.isFinite(mus) && mus >= 0 && Number.isFinite(muk) && muk >= 0)) throw new Error("friction must be ≥ 0");
+    return { m, k, mus, muk, g };
+  }
+  const stickZone = (p) => p.mus * p.m * p.g / p.k;            // |x| within this: static friction can hold it
+  const halfSwingLoss = (p) => 2 * p.muk * p.m * p.g / p.k;
+  function hstep(st, p, dt = DT) {
+    let { x, v, moving } = st;
+    if (!moving) {
+      if (p.k * Math.abs(x) <= p.mus * p.m * p.g + 1e-12) return { x, v: 0, moving: false, stopped: false };
+      moving = true; v = 0;
+    }
+    const dir = v !== 0 ? Math.sign(v) : -Math.sign(x);       // friction opposes the (coming) motion
+    const a = (-p.k * x - dir * p.muk * p.m * p.g) / p.m;
+    const vn = v + a * dt;
+    // it turned around: friction gets a chance to hold (no friction: nothing can hold it, keep going)
+    if ((p.mus > 0 || p.muk > 0) && ((v !== 0 && vn * v < 0) || (v === 0 && vn * dir < 0))) {
+      return { x, v: 0, moving: false, stopped: true };
+    }
+    return { x: x + vn * dt, v: vn, moving: true, stopped: false };
+  }
+  class HSim {
+    constructor(p, x0 = 0) { this.reset(p, x0); }
+    reset(p, x0 = 0) { this.p = p; this.st = { x: x0, v: 0, moving: false }; this.acc = 0; this.t = 0; this.held = false; this.turns = []; this.rested = !(p.k * Math.abs(x0) > p.mus * p.m * p.g); }
+    hold(x) { this.held = true; this.st = { x, v: 0, moving: false }; }
+    release() { this.held = false; this.acc = 0; this.t = 0; this.turns = []; this.rested = false; }
+    advance(elapsed) {
+      if (this.held) return 0;
+      this.acc += Math.min(elapsed, 0.25);
+      let n = 0;
+      while (this.acc >= DT) {
+        const was = this.st.moving;
+        const st = hstep(this.st, this.p, DT);
+        this.acc -= DT; this.t += DT; n++;
+        if (st.stopped) this.turns.push({ t: this.t, x: st.x });
+        this.st = { x: st.x, v: st.v, moving: st.moving };
+        if (!st.moving && !was) { this.rested = this.turns.length > 0 || this.rested; }
+      }
+      return n;
+    }
+    // at rest for good: not moving, and the spring cannot beat static friction
+    get stuck() { return !this.held && !this.st.moving && this.p.k * Math.abs(this.st.x) <= this.p.mus * this.p.m * this.p.g + 1e-12; }
+  }
+
+  return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
+    hparams, stickZone, halfSwingLoss, hstep, HSim };
 })();
 if (typeof module !== "undefined") module.exports = SpringPhys;

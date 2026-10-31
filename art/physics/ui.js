@@ -16,16 +16,24 @@
 
   // ---------------- content ----------------
   const TOPICS = SPR.topics.slice().sort((a, b) => a.order - b.order);
-  const UNITS = [
+  const SPRING_UNITS = [
     { id: "springs.hooke", he: "חוק הוק", insight: "ככל שמותחים יותר, הקפיץ מושך חזרה חזק יותר, באותו יחס.", eq: "F = −k·s" },
     { id: "springs.energy", he: "אנרגיה אלסטית", insight: "מתיחה גדולה פי 2 אוגרת פי 4 אנרגיה, כי האנרגיה תלויה בריבוע המתיחה.", eq: "E = ½·k·s²" },
     { id: "springs.oscillation", he: "תנודות", insight: "קפיץ קשיח יותר מחזיר מהר יותר, ולכן התנודה מהירה יותר.", eq: "T = 2π·√(m/k)" },
-    { id: "springs.shm", he: "תנועה הרמונית פשוטה", insight: "דמות כבדה יותר מתנודדת לאט יותר, וגודל המשיכה לא משנה את זמן המחזור.", eq: "T = 2π·√(m/k)" }
+    { id: "springs.shm", he: "תנועה הרמונית פשוטה", insight: "דמות כבדה יותר מתנודדת לאט יותר, וגודל המשיכה לא משנה את זמן המחזור.", eq: "T = 2π·√(m/k)" },
+    { id: "springs.wall", he: "קפיץ על רצפה עם חיכוך", insight: "על רצפה עם חיכוך כל תנודה קטנה יותר, והדמות נעצרת איפה שהקפיץ כבר לא מנצח את החיכוך הסטטי.", eq: "נעצר כש-k·|x| ≤ μs·m·g" }
   ];
-  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + t.subtopics_he.length, 0);
+  const UNITS = SPRING_UNITS;
+  const INCLINE_EQ = { 1: "ΣF = N − mg = 0", 2: "mg תמיד למטה · N ⟂ למשטח", 3: "mg·sinθ  ,  mg·cosθ", 4: "f_s ≤ μs·N", 5: "a = g·(sinθ − μk·cosθ)", 6: "a לא תלויה ב-m כש-μ זהה", 7: "ΣF = m·a" };
+  const INCLINE_UNITS = SPR.inclineStages.map((st) => ({ id: "newton.s" + st.stage, stage: st.stage, he: st.title_he, insight: st.takeaway_he, eq: INCLINE_EQ[st.stage], coins: st.unique_reward_coins, task: st.interaction_he }));
+  const FAMILY_UNITS = { springs: SPRING_UNITS, newton: INCLINE_UNITS };
+  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מי מושך אותי?!" };
+  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + (FAMILY_UNITS[t.id] ? FAMILY_UNITS[t.id].length : t.subtopics_he.length), 0);
   const done = () => P.data.physics.completed_subtopic_ids;
-  const familyCoverage = (id) => id === "springs" ? UNITS.filter((u) => done().includes(u.id)).length / UNITS.length : 0;
-  const overallCoverage = () => UNITS.filter((u) => done().includes(u.id)).length / TOTAL_UNITS;
+  const ALL_UNITS = Object.values(FAMILY_UNITS).flat();
+  const doneUnits = () => ALL_UNITS.filter((u) => done().includes(u.id)).length;
+  const familyCoverage = (id) => FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
+  const overallCoverage = () => doneUnits() / TOTAL_UNITS;
   const pct = (x) => Math.round(x * 100) + "%";
 
   const QUESTIONS = [
@@ -34,8 +42,14 @@
     { id: "q.mass.four", unit: "springs.shm", q: "מחליפים לדמות כבדה פי 4, אותו קפיץ. זמן המחזור…", a: ["גדל פי 2", "גדל פי 4", "לא משתנה"], right: 0, why: "T = 2π·√(m/k): מסה פי 4 נותנת שורש של 4, כלומר פי 2." },
     { id: "q.amplitude", unit: "springs.shm", q: "מושכים את הדמות רחוק יותר לפני השחרור. זמן המחזור…", a: ["גדל", "קטן", "לא משתנה"], right: 2, why: "בקפיץ אידאלי זמן המחזור לא תלוי במשרעת, רק ב-m וב-k." },
     { id: "q.k.equilibrium", unit: "springs.hooke", q: "מגדילים את k פי 2. נקודת שיווי המשקל…", a: ["עולה: הקפיץ נמתח חצי", "יורדת: הקפיץ נמתח פי 2", "לא זזה"], right: 0, why: "בשיווי משקל k·s = m·g, ולכן s = mg/k קטן פי 2." },
+    { id: "q.wall.stop", unit: "springs.wall", q: "קפיץ אופקי מהקיר, רצפה עם חיכוך. האם הדמות תחזור בדיוק לנקודה שבה הקפיץ רפוי?", a: ["תמיד", "לא בהכרח: היא נעצרת כש-k·|x| ≤ μs·m·g", "רק אם הקפיץ קשיח"], right: 1, why: "כשהקפיץ כבר חלש מהחיכוך הסטטי המרבי, הדמות נשארת תקועה." },
+    { id: "q.wall.loss", unit: "springs.wall", q: "בכל חצי תנודה על רצפה עם חיכוך, המשרעת קטנה ב…", a: ["2·μk·m·g / k", "אותו אחוז בכל פעם", "לא קטנה בכלל"], right: 0, why: "החיכוך הקינטי קבוע, ולכן הוא מוריד בכל חצי תנודה אותו מרחק: 2μk·mg/k." },
     { id: "q.moon", unit: "springs.oscillation", q: "על הירח g קטן פי 6. זמן המחזור של הדמות על הקפיץ…", a: ["לא משתנה", "גדל", "קטן"], right: 0, why: "g משנה רק את נקודת שיווי המשקל. T = 2π·√(m/k) לא תלוי ב-g." }
   ];
+
+  const INCLINE_QUESTIONS = SPR.inclineQuestions.map((q) => ({ id: "i." + q.id, unit: "newton.s" + q.stage, stage: q.stage, q: q.question_he, a: q.choices_he, right: q.correct_index, why: q.explanation_he }))
+    .concat([{ id: "i.steeper_g", unit: "newton.s2", stage: 2, q: "המדרון נעשה תלול יותר. מה קורה לנורמל N?", a: ["גדל", "קטן, כי N = mg·cosθ", "לא משתנה"], right: 1, why: "cosθ קטן כשהזווית גדלה, ולכן הנורמל קטן." },
+             { id: "i.mass_three", unit: "newton.s6", stage: 6, q: "מסה פי 3 ואותו µ על אותו מדרון. התאוצה בהחלקה…", a: ["פי 3", "שליש", "אותה תאוצה"], right: 2, why: "a = g(sinθ − μk·cosθ): המסה מצטמצמת." }]);
 
   // creatures: species id -> art and physical profile
   const DEFAULT_PHYS = { mass_kg: 1.5, height_m: 0.5, e: 0.5, mu_s: 0.5, mu_k: 0.35, Cd: 1.0, A: 0.03 };
@@ -136,7 +150,7 @@
     ui.hidden = false; G.covered = true;
     screenEl.className = ""; void screenEl.offsetWidth; screenEl.className = "screen-in";
     screenEl.scrollTop = 0;
-    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
+    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
@@ -204,7 +218,7 @@
           <span class="btn secondary">להמשיך במסלול</span>
         </button>
         <div class="card">
-          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${UNITS.filter((u) => done().includes(u.id)).length}/${TOTAL_UNITS}</span></div>
+          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${doneUnits()}/${TOTAL_UNITS}</span></div>
           <div class="meter-row"><span class="meter teal"><i style="width:0"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         </div>
       </div>`;
@@ -279,26 +293,32 @@
     $("#giveMe").addEventListener("click", () => { G.audio.unlock(); setKnob(90); setTimeout(() => { setKnob(0, true); spin(); }, 120); });
   };
 
+  const GAMES = {
+    springs: { title: "קפיצים ואלסטיות", name: "קפיץ־קפוץ", bubble: "תמשוך אותי בעדינות… או שלא!", screen: "lab",
+      art: `<svg viewBox="0 0 90 210"><path d="M10 6h70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M45 6v14l-22 7 44 9-44 9 44 9-44 9 44 9-44 9 44 9-22 7v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="45" cy="138" r="5" fill="none" stroke="#F49A35" stroke-width="2.6"/></svg>` },
+    newton: { title: "מישור משופע, כוחות וחיכוך", name: "מי מושך אותי?!", bubble: "אני רק יושב פה. מה כבר יכול לקרות?", screen: "incline",
+      art: `<svg viewBox="0 0 90 210"><path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 196L84 120v76z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M28 196a20 20 0 0 0-4-12" fill="none" stroke="#F49A35" stroke-width="2.4"/><circle cx="84" cy="120" r="6" fill="#F49A35" stroke="currentColor" stroke-width="2"/></svg>` }
+  };
   SCREENS.card = ({ topic = "springs", ordered = false }) => {
-    const t = TOPICS.find((x) => x.id === topic);
-    setTitle("קפיצים ואלסטיות", ordered ? "לפי הסדר" : "");
-    const sp = activeSpecies(), cov = familyCoverage(topic), n = UNITS.filter((u) => done().includes(u.id)).length;
+    const t = TOPICS.find((x) => x.id === topic), g = GAMES[topic] || GAMES.springs, units = FAMILY_UNITS[topic] || SPRING_UNITS;
+    setTitle(g.title, ordered ? "לפי הסדר" : t ? t.world_he : "");
+    const sp = activeSpecies(), cov = familyCoverage(topic), n = units.filter((u) => done().includes(u.id)).length;
     screenEl.innerHTML = `
       <div class="stack intro">
         <div class="scene">
-          <div class="bubble">תמשוך אותי בעדינות… או שלא!</div>
-          <svg viewBox="0 0 90 210"><path d="M10 6h70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M45 6v14l-22 7 44 9-44 9 44 9-44 9 44 9-44 9 44 9-22 7v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="45" cy="138" r="5" fill="none" stroke="#F49A35" stroke-width="2.6"/></svg>
+          <div class="bubble">${esc(g.bubble)}</div>
+          ${g.art}
           ${creatureImg(sp)}
         </div>
-        <h2>${esc(t ? t.title_he : "קפיץ־קפוץ")}!</h2>
-        ${ordered ? `<p class="path-line">המסלול: מכניקה ‹ ${esc(t.title_he)} ‹ שלב ${Math.min(n + 1, UNITS.length)} מתוך ${UNITS.length}</p>` : ""}
+        <h2>${esc(g.name)}${g.name.endsWith("!") ? "" : "!"}</h2>
+        ${ordered ? `<p class="path-line">המסלול: ${esc(t.world_he)} ‹ ${esc(t.title_he)} ‹ שלב ${Math.min(n + 1, units.length)} מתוך ${units.length}</p>` : ""}
         <div class="card" style="text-align:right">
-          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${UNITS.length}</span></div>
+          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${units.length}</span></div>
           <div class="meter-row"><span class="meter violet"><i style="width:${Math.max(2, cov * 100)}%"></i></span><span class="pct">${pct(cov)}</span></div>
         </div>
         <button class="btn primary block" id="go" type="button">בוא ננסה</button>
       </div>`;
-    $("#go").addEventListener("click", () => { G.sfx.pop(); show("lab", { topic }); });
+    $("#go").addEventListener("click", () => { G.sfx.pop(); show(g.screen, { topic }); });
   };
 
   SCREENS.creatures = () => {
@@ -340,7 +360,7 @@
         </div>
         <div class="stack">
           ${owned.length && !isAct ? `<button class="btn primary block" id="choose" type="button">בחר דמות</button>` : ""}
-          ${owned.length ? `<button class="btn secondary block" id="compare" type="button">השווה בניסוי הקפיץ</button>` : ""}
+          ${owned.length ? `<button class="btn secondary block" id="compare" type="button">לנסות על המדרון</button>` : ""}
           ${isAct ? `<button class="btn secondary block" id="trade" type="button">החלף עם חבר</button>
              <p class="fine">החלפה ישירה עם טלפון קרוב: הדמות עוברת, המטבעות וההתקדמות נשארים אצלך.</p>` : ""}
           ${!owned.length ? `<p class="fine">הדמות הזאת עוד לא שלך. היא יכולה לצאת מביצה או להגיע בהחלפה עם חבר.</p>` : ""}
@@ -348,7 +368,7 @@
       </div>`;
     const choose = () => { P.setActive(owned[0].instance_id); G.setCreature(sp); G.sfx.sparkle(3); };
     $("#choose")?.addEventListener("click", () => { choose(); show("creature", { sp }, false); });
-    $("#compare")?.addEventListener("click", () => { if (!isAct) choose(); show("lab", { topic: "springs" }); });
+    $("#compare")?.addEventListener("click", () => { if (!isAct) choose(); show("incline", { topic: "newton" }); });
     $("#trade")?.addEventListener("click", () => { closeUI(); setTimeout(() => G.openTrade(), 250); });
   };
 
@@ -359,7 +379,7 @@
     const mast = P.data.physics.mastery, attempts = Object.values(mast).reduce((n, m) => n + m.attempts, 0), correct = Object.values(mast).reduce((n, m) => n + m.correct, 0);
     screenEl.innerHTML = `
       <div class="card">
-        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${UNITS.filter((u) => done().includes(u.id)).length}/${TOTAL_UNITS}</span></div>
+        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${doneUnits()}/${TOTAL_UNITS}</span></div>
         <div class="meter-row"><span class="meter teal"><i style="width:${Math.max(2, overallCoverage() * 100)}%"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         <p class="fine" style="margin:10px 0 0">זה מד של חומר שפגשת, לא ציון בגרות. ${attempts >= 3 ? `שאלות קטנות: ${correct} נכונות מתוך ${attempts}.` : ""}</p>
       </div>
@@ -387,20 +407,113 @@
   };
 
   // ======================================================================
+  //  SHARED: sheets, discoveries, short questions, choosing a creature
+  // ======================================================================
+  const isSheetOpen = () => !!document.querySelector(".sheet-back");
+  function sheet(html, onClose) {
+    document.querySelector(".sheet-back")?.remove();
+    const back = document.createElement("div");
+    back.className = "sheet-back";
+    back.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
+    document.body.appendChild(back);
+    back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) { back.remove(); onClose && onClose(); } });
+    requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of back.querySelectorAll("[data-w]")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
+    return back.querySelector(".sheet");
+  }
+  // a discovery: coins once per unit (only after it is saved), one sentence, the formula on request, both meters
+  function celebrateUnits(family, ids, from) {
+    const units = FAMILY_UNITS[family], first = units.find((u) => u.id === ids[0]);
+    let total = 0;
+    ids.forEach((id, i) => { const c = units.find((u) => u.id === id).coins || 10; total += c; setTimeout(() => reward("sub:" + id, c, from), i * 500); });
+    G.sfx.harp(); G.buzz(40);
+    const fam = familyCoverage(family), all = overallCoverage();
+    sheet(`
+      <div class="gain"><span class="coin"></span> +${total}</div>
+      <h3>גילית: ${esc(ids.map((id) => units.find((u) => u.id === id).he).join(", "))}</h3>
+      <p class="insight">${esc(first.insight)}</p>
+      <details><summary class="linkish">הצג נוסחה</summary><p class="m" style="font:600 20px 'Cambria Math','Times New Roman',serif;margin:8px 0">${esc(first.eq)}</p></details>
+      <div style="display:grid;gap:12px;margin-top:10px">
+        <div><div class="meter-label"><span>${esc(FAMILY_TITLE[family])}</span><span class="ltr">${pct(fam)}</span></div><span class="meter violet"><i data-w="${fam}"></i></span></div>
+        <div><div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${pct(all)}</span></div><span class="meter teal"><i data-w="${all}"></i></span></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="button" data-close>להמשיך לשחק</button></div>`);
+  }
+  // one question: +5 the first time it is answered right; a wrong answer costs nothing
+  function askQuestion(pool, onAnswer) {
+    const solved = new Set(P.data.physics.question_history.filter((h) => h.correct).map((h) => h.id));
+    const fresh = pool.filter((q) => !solved.has(q.id));
+    const from = fresh.length ? fresh : pool;
+    const q = from[Math.floor(Math.random() * from.length)];
+    const el = sheet(`<h3>שאלה קטנה</h3><p class="insight">${esc(q.q)}</p>
+      <div class="options">${q.a.map((a, i) => `<button type="button" data-i="${i}">${esc(a)}</button>`).join("")}</div>
+      <p id="why" hidden></p><div class="actions"><button class="btn quiet" type="button" data-close>דלג</button></div>`);
+    for (const b of el.querySelectorAll("[data-i]")) b.addEventListener("click", () => {
+      if (el.dataset.answered) return; el.dataset.answered = "1";
+      const ok = +b.dataset.i === q.right;
+      b.classList.add(ok ? "right" : "wrong");
+      if (!ok) el.querySelector(`[data-i="${q.right}"]`).classList.add("right");
+      P.recordAnswer(q.id, q.unit, ok);
+      const why = el.querySelector("#why"); why.hidden = false; why.textContent = (ok ? "נכון! " : "כמעט. ") + q.why;
+      el.querySelector("[data-close]").textContent = "בדוק בניסוי";
+      if (ok) { const r = b.getBoundingClientRect(); reward("q:" + q.id, 5, { x: r.left + r.width / 2, y: r.top }); G.sfx.sparkle(3); }
+      else G.sfx.hmph(0.4);
+      onAnswer && onAnswer(q, ok);
+    });
+  }
+  // more questions as the player covers more of the topic (10% → 45% of sessions), always optional
+  function inviteQuestion(box, family, pool, onAnswer) {
+    const cov = familyCoverage(family);
+    const chance = cov < 0.25 ? 0.10 : cov < 0.5 ? 0.20 : cov < 0.75 ? 0.30 : 0.45;
+    if (Math.random() > chance || !pool.length) return false;
+    const inv = document.createElement("div");
+    inv.className = "card invite";
+    inv.innerHTML = `<span>אתה כבר חוקר ותיק. בא לך שאלה קטנה?</span><span><button class="btn primary" style="min-height:40px;padding:0 14px;font-size:15px" type="button" data-yes>כן</button> <button class="btn quiet" type="button" data-no>לא עכשיו</button></span>`;
+    box.appendChild(inv);
+    const t = setTimeout(() => inv.remove(), 9000);
+    inv.querySelector("[data-no]").addEventListener("click", () => { clearTimeout(t); inv.remove(); });
+    inv.querySelector("[data-yes]").addEventListener("click", () => { clearTimeout(t); inv.remove(); askQuestion(pool, onAnswer); });
+    return true;
+  }
+  // choose another creature you own (no editing a body: each creature brings its own)
+  function pickOwned(sp, title, onPick, extra = "") {
+    const owned = P.owned();
+    const el = sheet(`<h3>${esc(title)}</h3><p>אותם תנאים. רק הגוף משתנה.</p>
+      <div class="pick-list">${owned.map((c) => `<button type="button" data-id="${c.instance_id}" aria-pressed="${c.species === sp}">${creatureImg(c.species)}<span>${esc(nameOf(c.species))}</span><small>${fmt(phys(c.species).mass_kg, 1)} kg</small></button>`).join("")}</div>
+      ${owned.length < 2 ? `<p class="fine" style="margin-top:12px">יש לך דמות אחת. דמות נוספת מגיעה מהחלפה עם חבר, ואז ההבדל בפיזיקה מתגלה כאן.</p>` : ""}
+      ${extra}<div class="actions"><button class="btn quiet" type="button" data-close>סגור</button></div>`);
+    for (const b of el.querySelectorAll("[data-id]")) b.addEventListener("click", () => {
+      const c = owned.find((x) => x.instance_id === b.dataset.id);
+      el.closest(".sheet-back").remove();
+      if (c && c.species !== sp) { P.setActive(c.instance_id); G.setCreature(c.species); onPick(c.species); }
+    });
+    return el;
+  }
+  const modeSeg = (m) => `<div class="seg" role="group" aria-label="סוג הקפיץ"><button type="button" data-m="hang" aria-pressed="${m === "hang"}">קפיץ תלוי</button><button type="button" data-m="wall" aria-pressed="${m === "wall"}">קפיץ מהקיר</button></div>`;
+  function bindModeSeg(args) {
+    for (const b of screenEl.querySelectorAll(".seg [data-m]")) b.addEventListener("click", () => {
+      if (b.getAttribute("aria-pressed") === "true") return;
+      lab.mode = b.dataset.m; G.sfx.pop();
+      show(lab.mode === "wall" ? "wall" : "lab", args, false);
+    });
+  }
+
+  // ======================================================================
   //  THE SPRING LAB
   // ======================================================================
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const L0 = 0.30;                      // natural length of the spring (m)
   const U_MAX = 0.25;                   // how far below equilibrium it can be pulled (m)
-  const lab = { k: 120, massOverride: null, b: 0, lastU0: 0.12 };
+  const lab = { k: 120, massOverride: null, b: 0, lastU0: 0.12, mode: "hang", surface: "dry_wood" };
 
-  SCREENS.lab = () => {
-    setTitle("קפיץ־קפוץ", "ניסוי: חוק הוק");
+  SCREENS.lab = (args = {}) => {
+    if (lab.mode === "wall") return SCREENS.wall(args);
+    setTitle("קפיץ־קפוץ", "קפיץ תלוי מהתקרה");
     let sp = activeSpecies();
     const m0 = () => phys(sp).mass_kg;
     const mass = () => lab.massOverride ?? m0();
     screenEl.innerHTML = `
       <div class="lab-screen">
+        ${modeSeg("hang")}
         <div class="lab" id="lab">
           <canvas id="labCanvas"></canvas>
           <div class="bubble say" id="say" hidden></div>
@@ -444,7 +557,7 @@
     const sim = new SP.Sim(params(), 0);
     let scale = 300, formulaOpen = false, dragging = null, everDragged = false, sayT = 0, raf = 0, lastT = performance.now();
     const releases = [];                                     // what the player has tried this visit
-    let trial = null, questionCooldown = 1, sheetOpen = false;
+    let trial = null, questionCooldown = 1;
 
     // ---- controls ----
     const kIn = $("#kIn"), mIn = $("#mIn"), bIn = $("#bIn");
@@ -492,31 +605,16 @@
     paintControls();
 
     // ---- switching creature: same k, same pull below equilibrium, a fair comparison ----
-    $("#charChip").addEventListener("click", () => {
-      const owned = P.owned();
-      const back = document.createElement("div");
-      back.className = "sheet-back";
-      back.innerHTML = `<div class="sheet" role="dialog" aria-label="החלפת דמות"><h3>להחליף דמות בניסוי</h3>
-        <p>אותו קפיץ, אותה משיכה. רק המסה משתנה.</p>
-        <div class="pick-list">${owned.map((c) => `<button type="button" data-id="${c.instance_id}" aria-pressed="${c.species === sp}">${creatureImg(c.species)}<span>${esc(nameOf(c.species))}</span><small>${fmt(phys(c.species).mass_kg, 1)} kg</small></button>`).join("")}</div>
-        ${owned.length < 2 ? `<p class="fine" style="margin-top:12px">יש לך דמות אחת. דמות נוספת מגיעה מהחלפה עם חבר, ואז ההבדל בפיזיקה מתגלה כאן.</p>` : ""}
-        <div class="actions"><button class="btn quiet" type="button" data-close>סגור</button></div></div>`;
-      document.body.appendChild(back);
-      back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) back.remove(); });
-      for (const b of back.querySelectorAll("[data-id]")) b.addEventListener("click", () => {
-        const c = owned.find((x) => x.instance_id === b.dataset.id); back.remove();
-        if (!c || c.species === sp) return;
-        const oldName = nameOf(sp), oldT = SP.period(sim.p);
-        P.setActive(c.instance_id); G.setCreature(c.species);
-        sp = c.species; lab.massOverride = null; mIn.value = m0(); loadImg();
-        const u0 = Math.max(0.05, lab.lastU0);
-        sim.reset(params(), u0); sim.release();
-        trial = startRelease(u0);
-        paintControls(); paintFormula();
-        say(`עם ${nameOf(sp)} המסה אחרת, אז זמן המחזור משתנה: ${fmt(oldT)} ← ${fmt(SP.period(sim.p))} שנ׳ (${oldName} ← ${nameOf(sp)}).`, 5);
-        G.sfx.whoosh();
-      });
-    });
+    $("#charChip").addEventListener("click", () => pickOwned(sp, "להחליף דמות בניסוי", (newSp) => {
+      const oldName = nameOf(sp), oldT = SP.period(sim.p);
+      sp = newSp; lab.massOverride = null; mIn.value = m0(); loadImg();
+      const u0 = Math.max(0.05, lab.lastU0);
+      sim.reset(params(), u0); sim.release();
+      trial = startRelease(u0);
+      paintControls(); paintFormula();
+      say(`עם ${nameOf(sp)} המסה אחרת, אז זמן המחזור משתנה: ${fmt(oldT)} ← ${fmt(SP.period(sim.p))} שנ׳ (${oldName} ← ${nameOf(sp)}).`, 5);
+      G.sfx.whoosh();
+    }));
 
     // ---- speech ----
     function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
@@ -539,7 +637,7 @@
     // ---- dragging: hold the creature below equilibrium, let go to release ----
     function pointerPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     cv.addEventListener("pointerdown", (e) => {
-      if (sheetOpen) return;
+      if (isSheetOpen()) return;
       const p = pointerPos(e), r = creatureRect(sim.st.s);
       if (p.x < r.x - 30 || p.x > r.x + r.w + 30 || p.y < r.y - 40 || p.y > r.y + r.h + 30) return;
       G.audio.unlock();
@@ -592,68 +690,13 @@
     }
 
     function celebrate(ids) {
-      const unit = UNITS.find((u) => u.id === ids[0]);
       const r = creatureRect(sim.st.s), cr = cv.getBoundingClientRect();
-      ids.forEach((id, i) => setTimeout(() => reward("sub:" + id, 10, { x: cr.left + r.cx, y: cr.top + r.y + r.h / 2 }), i * 500));
-      G.sfx.harp(); G.buzz(40);
-      const fam = familyCoverage("springs"), all = overallCoverage();
-      sheet(`
-        <div class="gain"><span class="coin"></span> +${10 * ids.length}</div>
-        <h3>גילית: ${esc(ids.map((id) => UNITS.find((u) => u.id === id).he).join(", "))}</h3>
-        <p class="insight">${esc(unit.insight)}</p>
-        <details><summary class="linkish">הצג נוסחה</summary><p class="m" style="font:600 20px 'Cambria Math','Times New Roman',serif;margin:8px 0">${esc(unit.eq)}</p></details>
-        <div style="display:grid;gap:12px;margin-top:10px">
-          <div><div class="meter-label"><span>קפיצים ואלסטיות</span><span class="ltr">${pct(fam)}</span></div><span class="meter violet"><i data-w="${fam}"></i></span></div>
-          <div><div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${pct(all)}</span></div><span class="meter teal"><i data-w="${all}"></i></span></div>
-        </div>
-        <div class="actions"><button class="btn primary" type="button" data-close>להמשיך לשחק</button></div>`);
+      celebrateUnits("springs", ids, { x: cr.left + r.cx, y: cr.top + r.y + r.h / 2 });
     }
-
+    const pool = () => QUESTIONS.filter((q) => q.unit !== "springs.wall" && (done().includes(q.unit) || q.unit === "springs.hooke"));
     function maybeAsk() {
       if (questionCooldown > 0) { questionCooldown--; return; }
-      const cov = familyCoverage("springs");
-      const chance = cov < 0.25 ? 0.10 : cov < 0.5 ? 0.20 : cov < 0.75 ? 0.30 : 0.45;
-      if (Math.random() > chance) return;
-      questionCooldown = 3;
-      const inv = document.createElement("div");
-      inv.className = "card invite";
-      inv.innerHTML = `<span>אתה כבר חוקר ותיק. בא לך שאלה קטנה?</span><span><button class="btn primary" style="min-height:40px;padding:0 14px;font-size:15px" type="button" data-yes>כן</button> <button class="btn quiet" type="button" data-no>לא עכשיו</button></span>`;
-      box.appendChild(inv);
-      const t = setTimeout(() => inv.remove(), 9000);
-      inv.querySelector("[data-no]").addEventListener("click", () => { clearTimeout(t); inv.remove(); });
-      inv.querySelector("[data-yes]").addEventListener("click", () => { clearTimeout(t); inv.remove(); askQuestion(); });
-    }
-    function askQuestion() {
-      const hist = P.data.physics.question_history;
-      const solved = new Set(hist.filter((h) => h.correct).map((h) => h.id));
-      const pool = QUESTIONS.filter((q) => !solved.has(q.id) && (done().includes(q.unit) || q.unit === "springs.hooke"));
-      const q = (pool.length ? pool : QUESTIONS)[Math.floor(Math.random() * (pool.length || QUESTIONS.length))];
-      const el = sheet(`<h3>שאלה קטנה</h3><p class="insight">${esc(q.q)}</p>
-        <div class="options">${q.a.map((a, i) => `<button type="button" data-i="${i}">${esc(a)}</button>`).join("")}</div>
-        <p id="why" hidden></p><div class="actions"><button class="btn quiet" type="button" data-close>דלג</button></div>`);
-      for (const b of el.querySelectorAll("[data-i]")) b.addEventListener("click", () => {
-        if (el.dataset.answered) return; el.dataset.answered = "1";
-        const ok = +b.dataset.i === q.right;
-        b.classList.add(ok ? "right" : "wrong");
-        if (!ok) el.querySelector(`[data-i="${q.right}"]`).classList.add("right");
-        P.recordAnswer(q.id, q.unit, ok);
-        const why = el.querySelector("#why"); why.hidden = false; why.textContent = (ok ? "נכון! " : "כמעט. ") + q.why;
-        el.querySelector("[data-close]").textContent = "להמשיך";
-        if (ok) { const r = b.getBoundingClientRect(); reward("q:" + q.id, 5, { x: r.left + r.width / 2, y: r.top }); G.sfx.sparkle(3); }
-        else G.sfx.hmph(0.4);
-      });
-    }
-    function sheet(html) {
-      const back = document.createElement("div");
-      back.className = "sheet-back";
-      back.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
-      document.body.appendChild(back);
-      sheetOpen = true;
-      const close = () => { back.remove(); sheetOpen = false; };
-      back.addEventListener("click", (e) => { if (e.target === back || e.target.closest("[data-close]")) close(); });
-      new MutationObserver((_, o) => { if (!back.isConnected) { sheetOpen = false; o.disconnect(); } }).observe(document.body, { childList: true });
-      requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of back.querySelectorAll("[data-w]")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
-      return back.querySelector(".sheet");
+      if (inviteQuestion(box, "springs", pool())) questionCooldown = 3;
     }
 
     // ---- drawing ----
@@ -744,7 +787,7 @@
     let fpaint = 0;
     function frame(now) {
       const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
-      if (!sheetOpen) sim.advance(dt);
+      if (!isSheetOpen()) sim.advance(dt);
       const target = targetScale();
       scale += (target - scale) * Math.min(1, dt * 5);
       draw();
@@ -757,6 +800,684 @@
     raf = requestAnimationFrame(frame);
     say(nameOf(sp) + " תלוי על הקפיץ. גררו אותו למטה ושחררו.", 3.2);
     cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); document.querySelector(".sheet-back")?.remove(); };
+    bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  SPRING FROM THE WALL: the creature on a floor with friction
+  // ======================================================================
+  SCREENS.wall = (args = {}) => {
+    lab.mode = "wall";
+    setTitle("קפיץ־קפוץ", "קפיץ מהקיר, רצפה עם חיכוך");
+    let sp = activeSpecies();
+    const m0 = () => phys(sp).mass_kg, mass = () => lab.massOverride ?? m0();
+    const mu = () => (phys(sp).surfaces || {})[lab.surface] || { mu_s: phys(sp).mu_s, mu_k: phys(sp).mu_k };
+    const hp = () => SP.hparams(mass(), lab.k, mu().mu_s, mu().mu_k);
+    screenEl.innerHTML = `
+      <div class="lab-screen">
+        ${modeSeg("wall")}
+        <div class="lab" id="lab">
+          <canvas id="labCanvas"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="lab-tools">
+            <button class="chip" id="charChip" type="button"></button>
+            <button class="chip" id="formulaBtn" type="button">הצג נוסחה</button>
+          </div>
+        </div>
+        <div class="readouts">
+          <div class="readout"><small>מתיחה x</small><b id="rS">–</b></div>
+          <div class="readout"><small>כוח קפיץ</small><b id="rF">–</b></div>
+          <div class="readout"><small>חיכוך</small><b id="rE">–</b></div>
+          <div class="readout"><small>זמן מחזור</small><b id="rT">–</b></div>
+        </div>
+        <div class="card controls">
+          <div><div class="meter-label"><span>הרצפה</span><span class="ltr" id="muVal"></span></div>
+            <div class="surfaces">${Object.entries(SPR.surfaces).map(([k, v]) => `<button type="button" data-s="${k}" aria-pressed="${k === lab.surface}">${esc(v)}</button>`).join("")}</div></div>
+          <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k</span><span class="val" id="kVal"></span></label>
+            <input id="kIn" type="range" min="30" max="400" step="5"></div>
+          <div class="slider-row"><label for="mIn"><span>מסה m <span class="note" id="mNote"></span></span><span class="val" id="mVal"></span></label>
+            <input id="mIn" class="mass" type="range" min="0.5" max="4" step="0.1">
+            <button class="linkish" id="mReset" type="button" hidden>חזרה למסת הדמות</button></div>
+        </div>
+        <div class="card formula" id="formula" hidden></div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab");
+    let W = 0, H = 0, DPR = 1;
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box);
+    const img = new Image(); let imgSp = null;
+    const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } };
+    loadImg();
+    const sim = new SP.HSim(hp(), 0);
+    const L0W = 0.40, XMIN = -0.15, XMAX = 0.30;
+    let scale = 240, dragging = null, trial = null, everDragged = false, sayT = 0, raf = 0, lastT = performance.now(), formulaOpen = false, questionCooldown = 1, fpaint = 0;
+    const kIn = $("#kIn"), mIn = $("#mIn");
+    kIn.value = lab.k; mIn.value = mass();
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    function paintControls() {
+      $("#kVal").textContent = lab.k + " N/m";
+      $("#mVal").textContent = fmt(mass(), 1) + " kg";
+      const own = lab.massOverride === null;
+      $("#mNote").textContent = own ? "(מסת " + nameOf(sp) + ")" : "(מסה בניסוי)";
+      $("#mReset").hidden = own;
+      $("#muVal").textContent = `μs ${fmt(mu().mu_s, 2)} · μk ${fmt(mu().mu_k, 2)}`;
+      $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><span>${esc(nameOf(sp))} · <span class="ltr">${fmt(m0(), 1)} kg</span></span><span aria-hidden="true">⇄</span>`;
+      for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.setAttribute("aria-pressed", b.dataset.s === lab.surface);
+    }
+    function reconfigure(why) {
+      sim.reset(hp(), 0); trial = null;
+      if (why) say(why, 3);
+      paintControls(); paintFormula();
+    }
+    kIn.addEventListener("input", () => { lab.k = +kIn.value; reconfigure(); });
+    mIn.addEventListener("input", () => { lab.massOverride = Math.abs(+mIn.value - m0()) < 0.05 ? null : +mIn.value; reconfigure(); });
+    $("#mReset").addEventListener("click", () => { lab.massOverride = null; mIn.value = m0(); reconfigure(); });
+    for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.addEventListener("click", () => {
+      lab.surface = b.dataset.s; G.sfx.pop();
+      reconfigure(`על ${SPR.surfaces[lab.surface]} ל${nameOf(sp)} יש μs = ${fmt(mu().mu_s, 2)}. החיכוך שייך לזוג: הרגליים והרצפה.`);
+    });
+    $("#formulaBtn").addEventListener("click", () => {
+      formulaOpen = $("#formula").hidden; $("#formula").hidden = !formulaOpen;
+      $("#formulaBtn").textContent = formulaOpen ? "הסתר נוסחה" : "הצג נוסחה";
+      if (formulaOpen) { paintFormula(); $("#formula").scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    });
+    function paintFormula() {
+      if ($("#formula").hidden) return;
+      const p = sim.p, x = sim.st.x;
+      $("#formula").innerHTML = `
+        <div class="eq"><span>כוח הקפיץ</span><span class="m">F = −k·x<em>${fmt(-p.k * x, 1)} N</em></span></div>
+        <div class="eq"><span>חיכוך קינטי (בזמן תנועה)</span><span class="m">f<sub>k</sub> = μk·m·g<em>${fmt(p.muk * p.m * p.g, 2)} N</em></span></div>
+        <div class="eq"><span>נשאר תקוע אם</span><span class="m">|x| ≤ μs·m·g / k<em>${fmt(SP.stickZone(p) * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>כל חצי תנודה מאבדת</span><span class="m">Δx = 2·μk·m·g / k<em>${fmt(SP.halfSwingLoss(p) * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>זמן מחזור</span><span class="m">T = 2π·√(m/k)<em>${fmt(2 * Math.PI * Math.sqrt(p.m / p.k))} s</em></span></div>
+        <p class="fine">החיכוך לא משנה את קצב התנודה, רק מקטין אותה בכל חצי תנודה עד שהיא נעצרת.</p>`;
+    }
+    paintControls();
+    $("#charChip").addEventListener("click", () => pickOwned(sp, "להחליף דמות בניסוי", (newSp) => {
+      sp = newSp; lab.massOverride = null; mIn.value = m0(); loadImg();
+      reconfigure(`${nameOf(sp)} על אותה רצפה: μs = ${fmt(mu().mu_s, 2)}, ${fmt(m0(), 1)} kg.`);
+    }));
+
+    // geometry: wall on the right, the creature on the floor to its left
+    const geo = () => {
+      const h = phys(sp).height_m, asp = img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.9;
+      const floorY = H * 0.68, wallX = W - 24;
+      const target = Math.min((wallX - 36) / (L0W + XMAX + h * asp), (floorY - 34) / h);
+      return { floorY, wallX, h, asp, target, X0: wallX - L0W * scale };
+    };
+    const creatureX = (g, x) => g.X0 - x * scale;           // right edge of the creature
+    function pos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen()) return;
+      const g = geo(), p = pos(e), xr = creatureX(g, sim.st.x), w = g.h * scale * g.asp;
+      if (p.x < xr - w - 30 || p.x > xr + 30 || p.y < g.floorY - g.h * scale - 30 || p.y > g.floorY + 30) return;
+      G.audio.unlock();
+      dragging = { off: xr - p.x };
+      cv.setPointerCapture(e.pointerId);
+      sim.hold(sim.st.x); trial = null;
+      if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
+    });
+    cv.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const g = geo(), p = pos(e);
+      sim.hold(clamp((g.X0 - (p.x + dragging.off)) / scale, XMIN, XMAX));
+    });
+    const letGo = () => {
+      if (!dragging) return;
+      dragging = null;
+      const x0 = sim.st.x;
+      if (Math.abs(x0) < 0.02) { sim.reset(sim.p, 0); return; }
+      sim.release();
+      trial = { x0, seen: false };
+      if (sim.p.k * Math.abs(x0) <= sim.p.mus * sim.p.m * sim.p.g) { say("החיכוך הסטטי מחזיק אותי! צריך למתוח יותר.", 3); G.sfx.hmph(0.4); }
+      else { G.sfx.boing(0.6); G.buzz(15); say(x0 > 0 ? "וואו, אני נגרר לקיר!" : "פיו, הקפיץ דוחף!", 1.6); }
+    };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+
+    function observe() {
+      if (!trial || trial.seen || dragging) return;
+      if (!(sim.turns.length >= 1 && sim.stuck)) return;
+      trial.seen = true;
+      G.sfx.tick();
+      const zone = SP.stickZone(sim.p), stoppedShort = Math.abs(sim.st.x) > 0.002;
+      say(stoppedShort ? `נעצרתי ${fmt(Math.abs(sim.st.x) * 100, 1)} ס״מ לפני הנקודה הרפויה. החיכוך החזיק אותי!` : "נעצרתי. הקפיץ כבר לא חזק מספיק.", 3.5);
+      if (P.completeSubtopic("springs.wall")) {
+        const g = geo(), cr = cv.getBoundingClientRect();
+        setTimeout(() => celebrateUnits("springs", ["springs.wall"], { x: cr.left + creatureX(g, sim.st.x) - 40, y: cr.top + g.floorY - 60 }), 900);
+        questionCooldown = 2; return;
+      }
+      if (questionCooldown > 0) questionCooldown--;
+      else if (inviteQuestion(box, "springs", QUESTIONS.filter((q) => q.unit === "springs.wall" || done().includes(q.unit)))) questionCooldown = 3;
+    }
+
+    function arrow(x0, y0, dx, dy, color, label, below) {
+      const len = Math.hypot(dx, dy); if (len < 3) return;
+      const ux = dx / len, uy = dy / len, x1 = x0 + dx, y1 = y0 + dy;
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3.2;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * 8, y1 - uy * 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * 12 - uy * 6, y1 - uy * 12 + ux * 6); ctx.lineTo(x1 - ux * 12 + uy * 6, y1 - uy * 12 - ux * 6); ctx.closePath(); ctx.fill();
+      ctx.font = "700 13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(label, x1 + ux * 16, y1 + (below ? 14 : -12));
+    }
+    function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
+      const g = geo(), p = sim.p, x = sim.st.x;
+      // floor: tinted by surface
+      const tint = { dry_wood: "#C9A87A", smooth_ice: "#9CCFE6", rubber_mat: "#5B5D63" }[lab.surface] || "#999";
+      ctx.fillStyle = tint + "33"; ctx.fillRect(0, g.floorY, W, 14);
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(0, g.floorY); ctx.lineTo(W, g.floorY); ctx.stroke();
+      ctx.strokeStyle = "rgba(58,58,64,0.25)"; ctx.lineWidth = 1;
+      for (let i = 0; i < W; i += 12) { ctx.beginPath(); ctx.moveTo(i, g.floorY + 14); ctx.lineTo(i + 10, g.floorY + 2); ctx.stroke(); }
+      // wall
+      ctx.fillStyle = "#F4F4F2"; ctx.fillRect(g.wallX, 0, W - g.wallX, g.floorY);
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(g.wallX, 10); ctx.lineTo(g.wallX, g.floorY); ctx.stroke();
+      ctx.strokeStyle = "rgba(58,58,64,0.35)"; ctx.lineWidth = 1.2;
+      for (let y = 14; y < g.floorY; y += 12) { ctx.beginPath(); ctx.moveTo(g.wallX + 2, y + 10); ctx.lineTo(W, y); ctx.stroke(); }
+      // where static friction wins: |x| ≤ μs m g / k
+      const zone = SP.stickZone(p), zl = clamp(g.X0 - zone * scale, 0, W), zr = clamp(g.X0 + zone * scale, 0, g.wallX);
+      ctx.fillStyle = "rgba(204,87,148,0.16)"; ctx.fillRect(zl, g.floorY - 6, zr - zl, 12);
+      ctx.fillStyle = "#B03F7A"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center";
+      ctx.fillText("כאן החיכוך מנצח", clamp((zl + zr) / 2, 60, W - 70), g.floorY + 54); ctx.direction = "ltr";
+      // ruler: x from the relaxed spring, + away from the wall
+      const ry = g.floorY + 30;
+      ctx.strokeStyle = "#6B6B70"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(g.X0 - XMAX * scale - 6, ry); ctx.lineTo(g.X0 - XMIN * scale + 6, ry); ctx.stroke();
+      ctx.fillStyle = "#606671"; ctx.font = "600 11px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      for (let m = XMIN; m <= XMAX + 1e-9; m += 0.05) {
+        const px = g.X0 - m * scale, major = Math.abs(m * 10 - Math.round(m * 10)) < 1e-6;
+        ctx.beginPath(); ctx.moveTo(px, ry); ctx.lineTo(px, ry + (major ? 9 : 5)); ctx.stroke();
+        if (major) ctx.fillText(fmt(m, 1), px, ry + 11);
+      }
+      ctx.fillText("x (m)", g.X0 - XMAX * scale - 22, ry - 4);
+      // spring from the wall to the creature
+      const xr = creatureX(g, x), w = g.h * scale * g.asp, sy = g.floorY - g.h * scale * 0.42;
+      const coils = 12, amp = 13, lead = 10, span = Math.max(8, g.wallX - xr - 2 * lead);
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(g.wallX, sy); ctx.lineTo(g.wallX - lead, sy);
+      for (let i = 0; i <= coils * 2; i++) ctx.lineTo(g.wallX - lead - span * i / (coils * 2), sy + (i === 0 || i === coils * 2 ? 0 : (i % 2 ? amp : -amp)));
+      ctx.lineTo(xr, sy); ctx.stroke();
+      ctx.strokeStyle = "#F49A35"; ctx.beginPath(); ctx.arc(xr, sy, 4.5, 0, Math.PI * 2); ctx.stroke();
+      // the creature, standing on the floor
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, xr - w, g.floorY - g.h * scale, w, g.h * scale);
+      // forces: spring (blue) at the body, friction (magenta) at the feet
+      const F = -p.k * x, kpx = 2.4;
+      if (Math.abs(F) > 0.05) arrow(xr - w / 2, sy, clamp(-F * kpx, -150, 150), 0, "#2785C7", "F");   // + x is away from the wall = left on screen
+      let f = 0;
+      if (sim.st.moving) f = -Math.sign(sim.st.v) * p.muk * p.m * p.g;           // + means away from the wall
+      else if (!sim.held && Math.abs(F) > 0.01) f = -F;                          // static: exactly what is needed
+      if (Math.abs(f) > 0.05) arrow(xr - w / 2, g.floorY - 6, clamp(-f * kpx, -150, 150), 0, "#CC5794", sim.st.moving ? "f_k" : "f_s", true);
+      // first time: show where to pull
+      if (!everDragged && !reduceMotion) {
+        const k = (performance.now() / 900) % 1;
+        ctx.globalAlpha = Math.sin(k * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
+        const ax = xr - w - 14 - k * 24, ay = g.floorY - g.h * scale * 0.6;
+        ctx.beginPath(); ctx.moveTo(ax + 22, ay); ctx.lineTo(ax, ay); ctx.moveTo(ax + 8, ay - 7); ctx.lineTo(ax, ay); ctx.lineTo(ax + 8, ay + 7); ctx.stroke();
+        ctx.globalAlpha = 1; ctx.fillStyle = "#1A74D0"; ctx.font = "600 13px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("גררו הצידה", xr - w / 2, g.floorY - g.h * scale - 16); ctx.direction = "ltr";
+      }
+    }
+    function paintReadouts() {
+      const p = sim.p, x = sim.st.x, F = -p.k * x;
+      $("#rS").textContent = fmt(x * 100, 1) + " cm";
+      $("#rF").textContent = fmt(Math.abs(F), 1) + " N";
+      const rE = $("#rE");
+      if (sim.st.moving) { rE.textContent = "f_k " + fmt(p.muk * p.m * p.g, 1) + " N"; rE.className = ""; }
+      else if (Math.abs(F) > 0.01 && !sim.held) { rE.textContent = "f_s " + fmt(Math.abs(F), 1) + " N"; rE.className = ""; }
+      else { rE.textContent = "0 N"; rE.className = "dim"; }
+      $("#rT").textContent = fmt(2 * Math.PI * Math.sqrt(p.m / p.k)) + " s"; $("#rT").className = "dim";
+    }
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen()) sim.advance(dt);
+      const g = geo(); scale += (g.target - scale) * Math.min(1, dt * 5);
+      draw();
+      if ((fpaint++ & 3) === 0) { paintReadouts(); if (formulaOpen) paintFormula(); }
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      observe();
+      raf = requestAnimationFrame(frame);
+    }
+    scale = geo().target || 240;
+    raf = requestAnimationFrame(frame);
+    say(`${nameOf(sp)} על ${SPR.surfaces[lab.surface]}, קשור לקפיץ. משכו אותו מהקיר ושחררו.`, 3.4);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); document.querySelector(".sheet-back")?.remove(); };
+    bindModeSeg(args);
+  };
+
+  // ======================================================================
+  //  "מי מושך אותי?!": the inclined plane, seven stages
+  //  The creature is the body: mass and friction are its own and cannot be
+  //  edited. The player changes only the angle and the surface.
+  // ======================================================================
+  const INC = { L: 1.6, d0: 0.35, mat: 0.14, vis: 1.8, kpx: 5.5 };
+  const COLORS = { g: "#2785C7", N: "#8969C6", f: "#CC5794", par: "#E39B28", perp: "#42A47A" };
+  SCREENS.incline = () => {
+    setTitle("מי מושך אותי?!", "מישור משופע, כוחות וחיכוך");
+    const IP = InclinePhys;
+    const st = P.data.physics.incline || (P.data.physics.incline = { stage: 1, reached: 1, deg: 0, surface: "dry_wood", revealed: false, forces: false });
+    const saveSt = () => P.save();
+    let sp = activeSpecies();
+    const prof = () => phys(sp);
+    const mu = () => (prof().surfaces || {})[st.surface] || { mu_s: prof().mu_s, mu_k: prof().mu_k };
+    const prm = () => ({ m: prof().mass_kg, deg: st.deg, mus: mu().mu_s, muk: mu().mu_k });
+    screenEl.innerHTML = `
+      <div class="lab-screen">
+        <div class="stagebar" id="stagebar">${INCLINE_UNITS.map((u) => `<button type="button" data-st="${u.stage}" aria-label="שלב ${u.stage}: ${esc(u.he)}">${u.stage}</button>`).join("")}</div>
+        <div class="card task" id="task"></div>
+        <div class="lab" id="lab">
+          <canvas id="labCanvas"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="lab-tools">
+            <button class="chip" id="charChip" type="button"></button>
+            <button class="chip" id="viewBtn" type="button" hidden>רכיבי mg</button>
+          </div>
+        </div>
+        <div class="readouts">
+          <div class="readout"><small>זווית θ</small><b id="rTh">–</b></div>
+          <div class="readout"><small>נורמל N</small><b id="rN">–</b></div>
+          <div class="readout"><small>חיכוך</small><b id="rF">–</b></div>
+          <div class="readout"><small>תאוצה a</small><b id="rA">–</b></div>
+        </div>
+        <div class="card controls">
+          <div class="angle-row">
+            <button class="step" id="angMinus" type="button" aria-label="להקטין זווית">−</button>
+            <div class="ang slider-row"><label for="thIn"><span>זווית המדרון</span><span class="val" id="thVal"></span></label>
+              <input id="thIn" type="range" min="0" max="55" step="1"></div>
+            <button class="step" id="angPlus" type="button" aria-label="להגדיל זווית">+</button>
+          </div>
+          <div><div class="meter-label"><span>המשטח</span><span class="ltr" id="muVal"></span></div>
+            <div class="surfaces">${Object.entries(SPR.surfaces).map(([k, v]) => `<button type="button" data-s="${k}">${esc(v)}</button>`).join("")}</div></div>
+          <div style="display:flex;gap:10px"><button class="btn secondary" id="again" type="button" style="flex:1">שוב!</button><button class="btn quiet" id="formulaBtn" type="button">הצג נוסחה</button></div>
+        </div>
+        <div class="card formula" id="formula" hidden></div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab");
+    let W = 0, H = 0, DPR = 1;
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box);
+    const img = new Image(); let imgSp = null;
+    const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } };
+    loadImg();
+    const bg = new Image(); bg.src = "art/lab_bg.webp";
+
+    let body = { d: INC.d0, v: 0, bottom: false }, fr = IP.forces(prm());
+    let view = "real", freeze = 0, holdT = 0, sayT = 0, raf = 0, lastT = performance.now(), acc = 0, fpaint = 0, formulaOpen = false, slides = 0, questionCooldown = 1;
+    let camT = st.revealed ? 1 : 0, revealT = st.revealed ? 1 : 0, revealing = false, dragAng = null, wasSliding = false;
+    const showForces = () => st.forces || st.stage > 1;
+
+    // ---------- stages ----------
+    const TASKS = {
+      1: { text: "היצור עומד על רצפה ישרה ולא זז. פועלים עליו כוחות?", btn: "לגלות את הכוחות" },
+      2: { text: "תרימו את הקצה הימני של המשטח: גררו את העיגול הכתום, או לחצו +.", btn: () => (st.revealed ? null : "המשך") },
+      3: { text: "פרקו את כוח הכובד לשני רכיבים: לחצו על 'רכיבי mg'.", btn: null },
+      4: { text: "הגדילו את הזווית לאט. עד מתי הרגליים מחזיקות?", btn: null },
+      5: { text: "עברו את זווית הסף ותנו לו להחליק עד המזרן.", btn: null },
+      6: { text: "של מי הרגליים האלה? השוו לדמות אחרת באותו מדרון בדיוק.", btn: "להשוות" },
+      7: { text: "עכשיו אתה הפיזיקאי: שלוש תשובות נכונות על מה שגילית.", btn: "לשאלות" }
+    };
+    function paintStages() {
+      for (const b of screenEl.querySelectorAll("#stagebar [data-st]")) {
+        const n = +b.dataset.st;
+        b.disabled = n > st.reached;
+        if (n === st.stage) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+        b.classList.toggle("done", done().includes("newton.s" + n));
+      }
+      const t = TASKS[st.stage], u = INCLINE_UNITS[st.stage - 1];
+      const label = typeof t.btn === "function" ? t.btn() : t.btn;
+      $("#task").innerHTML = `<div><small>שלב ${st.stage}: ${esc(u.he)}</small><p>${esc(t.text)}</p></div>${label ? `<button class="btn primary" id="taskBtn" type="button">${esc(label)}</button>` : ""}`;
+      $("#taskBtn")?.addEventListener("click", taskAction);
+      $("#viewBtn").hidden = st.stage < 3 && !done().includes("newton.s3");
+      const locked = !st.revealed;
+      for (const id of ["#thIn", "#angMinus", "#angPlus"]) $(id).disabled = locked;
+    }
+    function taskAction() {
+      G.audio.unlock();
+      if (st.stage === 1) { st.forces = true; saveSt(); say("מה? למה יש לי חצים?", 2.6); G.sfx.pop(); setTimeout(() => completeStage(1), 1600); }
+      else if (st.stage === 2) startReveal();
+      else if (st.stage === 6) compare();
+      else if (st.stage === 7) quiz();
+    }
+    for (const b of screenEl.querySelectorAll("#stagebar [data-st]")) b.addEventListener("click", () => { st.stage = +b.dataset.st; saveSt(); paintStages(); G.sfx.pop(); });
+    function completeStage(n) {
+      const id = "newton.s" + n;
+      const fresh = P.completeSubtopic(id);
+      if (st.stage === n && n < 7) { st.stage = n + 1; st.reached = Math.max(st.reached, n + 1); }
+      saveSt(); paintStages();
+      if (fresh) {
+        const c = comPoint(), cr = cv.getBoundingClientRect();
+        celebrateUnits("newton", [id], { x: cr.left + c.x, y: cr.top + c.y });
+        questionCooldown = 1;
+      }
+    }
+
+    // ---------- reveal: the flat floor was a plank all along ----------
+    function startReveal() {
+      if (st.revealed || revealing) return;
+      revealing = true; G.sfx.whoosh();
+      say("רגע, זה לא שולחן ישר?!", 2.4);
+    }
+
+    // ---------- controls ----------
+    const thIn = $("#thIn");
+    function setAngle(deg, quiet) {
+      const nd = clamp(Math.round(deg), 0, 55);
+      if (nd === st.deg) return;
+      st.deg = nd; thIn.value = nd;
+      if (!quiet && nd % 5 === 0) G.sfx.tick();
+    }
+    thIn.value = st.deg;
+    thIn.addEventListener("input", () => setAngle(+thIn.value, true));
+    thIn.addEventListener("change", saveSt);
+    $("#angMinus").addEventListener("click", () => { setAngle(st.deg - 1); saveSt(); });
+    $("#angPlus").addEventListener("click", () => { if (!st.revealed) startReveal(); else { setAngle(st.deg + 1); saveSt(); } });
+    for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.addEventListener("click", () => {
+      st.surface = b.dataset.s; saveSt(); G.sfx.pop(); paintProfile();
+      say(`על ${SPR.surfaces[st.surface]}: μs = ${fmt(mu().mu_s, 2)}, μk = ${fmt(mu().mu_k, 2)}. אלה המספרים של הרגליים שלי עם המשטח הזה.`, 3.6);
+    });
+    $("#again").addEventListener("click", () => { body = { d: INC.d0, v: 0, bottom: false }; G.sfx.pop(); say("עוד פעם מההתחלה!", 1.4); });
+    $("#viewBtn").addEventListener("click", () => {
+      view = view === "real" ? "comp" : "real";
+      $("#viewBtn").textContent = view === "real" ? "רכיבי mg" : "כוחות אמיתיים";
+      G.sfx.pop();
+      if (view === "comp") { freeze = 1.4; say("רכיבי הכבידה. הם לא כוחות נוספים!", 2.6); if (st.stage === 3 && st.deg >= 10) setTimeout(() => completeStage(3), 1200); }
+    });
+    $("#formulaBtn").addEventListener("click", () => {
+      formulaOpen = $("#formula").hidden; $("#formula").hidden = !formulaOpen;
+      $("#formulaBtn").textContent = formulaOpen ? "הסתר נוסחה" : "הצג נוסחה";
+      if (formulaOpen) { paintFormula(); $("#formula").scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    });
+    function paintProfile() {
+      const p = prof();
+      $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><span>${esc(nameOf(sp))} · <span class="ltr">${fmt(p.mass_kg, 1)} kg · μs ${fmt(mu().mu_s, 2)}</span></span>`;
+      $("#muVal").textContent = `μs ${fmt(mu().mu_s, 2)} · μk ${fmt(mu().mu_k, 2)}`;
+      for (const b of screenEl.querySelectorAll(".surfaces [data-s]")) b.setAttribute("aria-pressed", b.dataset.s === st.surface);
+    }
+    $("#charChip").addEventListener("click", profileSheet);
+    function profileSheet() {
+      const p = prof();
+      const el = sheet(`<div style="text-align:center">${creatureImg(sp).replace("<img", '<img style="width:110px;height:110px;object-fit:contain"')}</div>
+        <h3>הגוף של ${esc(nameOf(sp))}</h3><p>התכונות קבועות. כדי לנסות גוף אחר מחליפים דמות עם חבר.</p>
+        <div class="props">
+          <div><span>מסה</span><b>m = ${p.mass_kg} kg</b></div>
+          <div><span>משקל כאן</span><b>W = mg = ${fmt(p.mass_kg * 9.81, 1)} N</b></div>
+          <div><span>גובה</span><b>${Math.round(p.height_m * 100)} cm</b></div>
+          ${Object.entries(SPR.surfaces).map(([k, v]) => { const m = (p.surfaces || {})[k]; return m ? `<div><span>חיכוך עם ${esc(v)}</span><b>μs ${fmt(m.mu_s, 2)} · μk ${fmt(m.mu_k, 2)}</b></div>` : ""; }).join("")}
+        </div>
+        <div class="actions"><button class="btn primary" type="button" id="cmpBtn">להשוות</button><button class="btn secondary" type="button" id="tradeBtn">החלף עם חבר</button></div>
+        <p class="fine">החלפה ישירה עם טלפון קרוב: הדמות עוברת, המטבעות וההתקדמות נשארים אצלך.</p>`);
+      el.querySelector("#cmpBtn").addEventListener("click", () => { el.closest(".sheet-back").remove(); compare(); });
+      el.querySelector("#tradeBtn").addEventListener("click", () => { closeUI(); setTimeout(() => G.openTrade(), 250); });
+    }
+
+    // ---------- stage 6: same ramp, another body ----------
+    function stats(species) {
+      const p = phys(species), m = (p.surfaces || {})[st.surface] || { mu_s: p.mu_s, mu_k: p.mu_k };
+      const f = IP.forces({ m: p.mass_kg, deg: st.deg, mus: m.mu_s, muk: m.mu_k });
+      const L = INC.L - INC.mat - INC.d0;
+      return { species, m: p.mass_kg, mus: m.mu_s, muk: m.mu_k, crit: f.criticalDeg, holds: f.holds, a: f.a, W: f.W, t: f.holds || f.a <= 0 ? null : Math.sqrt(2 * L / f.a) };
+    }
+    function compare() {
+      const owned = P.owned().filter((c) => c.species !== sp), others = SPR.creatures.map((c) => c.id).filter((id) => id !== sp && !owned.some((c) => c.species === id));
+      const el = sheet(`<h3>להשוות באותו מדרון</h3><p>זווית ${st.deg}°, ${esc(SPR.surfaces[st.surface])}. אותם תנאים, גוף אחר.</p>
+        ${owned.length ? `<p style="margin:0 0 6px;font-weight:700;color:var(--ink)">הדמויות שלך</p><div class="pick-list">${owned.map((c) => `<button type="button" data-own="${c.instance_id}">${creatureImg(c.species)}<span>${esc(nameOf(c.species))}</span><small>${fmt(phys(c.species).mass_kg, 1)} kg</small></button>`).join("")}</div>` : ""}
+        <p style="margin:14px 0 6px;font-weight:700;color:var(--ink)">דוגמאות להשוואה בלבד</p>
+        <p class="fine" style="margin:0 0 8px">רק תוצאות. הדמות שלך לא משתנה. כדי לשחק בגוף אחר צריך החלפה עם חבר.</p>
+        <div class="pick-list">${others.map((id) => `<button type="button" data-ex="${id}">${creatureImg(id)}<span>${esc(nameOf(id))}</span><small>${fmt(phys(id).mass_kg, 1)} kg</small></button>`).join("")}</div>
+        <div class="actions"><button class="btn quiet" type="button" data-close>סגור</button></div>`);
+      const pick = (other, own) => {
+        el.closest(".sheet-back").remove();
+        const a = stats(sp), b = stats(other);
+        if (own) { const c = P.owned().find((x) => x.instance_id === own); P.setActive(c.instance_id); G.setCreature(c.species); sp = c.species; loadImg(); paintProfile(); body = { d: INC.d0, v: 0, bottom: false }; }
+        showCompare(a, b, !!own);
+        if (st.stage === 6) setTimeout(() => completeStage(6), 300);
+        else P.completeSubtopic("newton.s6") && paintStages();
+      };
+      for (const bt of el.querySelectorAll("[data-own]")) bt.addEventListener("click", () => pick(P.owned().find((x) => x.instance_id === bt.dataset.own).species, bt.dataset.own));
+      for (const bt of el.querySelectorAll("[data-ex]")) bt.addEventListener("click", () => pick(bt.dataset.ex, null));
+    }
+    function showCompare(a, b, switched) {
+      const col = (s) => `<td>${creatureImg(s.species).replace("<img", '<img style="width:56px;height:56px;object-fit:contain"')}<b>${esc(nameOf(s.species))}</b></td>`;
+      const row = (label, fa) => `<tr><th>${label}</th><td class="ltr">${fa(a)}</td><td class="ltr">${fa(b)}</td></tr>`;
+      const sameMu = Math.abs(a.mus - b.mus) < 0.02 && Math.abs(a.muk - b.muk) < 0.02;
+      const insight = sameMu ? "אותו חיכוך, אותה תאוצה, גם כשהמסה שונה: המסה מצטמצמת." : (a.holds !== b.holds ? "אחת נשארת ואחת מחליקה. ההבדל בא מהחיכוך של הרגליים, לא מהמסה." : "ההבדל בתאוצה בא מ-μ של הרגליים, לא מהמסה: a = g(sinθ − μk·cosθ).");
+      const el = sheet(`<h3>אותו מדרון, שני גופים</h3>
+        <table class="cmp"><tr><th></th>${col(a)}${col(b)}</tr>
+          ${row("מסה", (s) => fmt(s.m, 1) + " kg")}
+          ${row("משקל mg", (s) => fmt(s.W, 1) + " N")}
+          ${row("μs · μk", (s) => fmt(s.mus, 2) + " · " + fmt(s.muk, 2))}
+          ${row("זווית סף", (s) => fmt(s.crit, 1) + "°")}
+          ${row("ב-" + st.deg + "°", (s) => s.holds ? "נשאר" : "מחליק")}
+          ${row("תאוצה", (s) => s.holds ? "0" : fmt(s.a, 2) + " m/s²")}
+          ${row("עד המזרן", (s) => s.t ? fmt(s.t, 2) + " s" : "–")}
+        </table>
+        <p class="insight" style="margin-top:12px">${esc(insight)}</p>
+        ${switched ? `<p class="fine">עכשיו ${esc(nameOf(sp))} על המדרון. לחצו "שוב!" כדי לראות.</p>` : ""}
+        <div class="actions"><button class="btn primary" type="button" data-close>לנסות</button></div>`);
+    }
+
+    // ---------- stage 7: questions ----------
+    function quiz() {
+      const pool = INCLINE_QUESTIONS.filter((q) => q.stage <= Math.max(st.reached, 6));
+      askQuestion(pool, () => {
+        const correct = new Set(P.data.physics.question_history.filter((h) => h.correct && h.id.startsWith("i.")).map((h) => h.id));
+        if (correct.size >= 3 && !done().includes("newton.s7")) setTimeout(() => { document.querySelector(".sheet-back")?.remove(); completeStage(7); }, 1600);
+      });
+    }
+
+    // ---------- geometry and camera ----------
+    // world in metres: pivot at (0,0), the plank rises to the right; y up
+    const geo = () => {
+      const th = st.deg * IP.DEG, c = Math.cos(th), s = Math.sin(th);
+      const top = { x: INC.L * c, y: INC.L * s };
+      const cp = { x: top.x - body.d * c, y: top.y - body.d * s };            // feet on the plank
+      return { th, c, s, top, cp };
+    };
+    function camera() {
+      const xs = [-0.5, INC.L + 0.3], ys = [-0.35, INC.L * Math.sin(55 * IP.DEG) + 0.95];
+      const S = Math.min(W / (xs[1] - xs[0]), (H - 8) / (ys[1] - ys[0]));
+      const side = { S, ox: W / 2 - S * (xs[0] + xs[1]) / 2, oy: H / 2 + S * (ys[0] + ys[1]) / 2 };
+      const g = geo(), hv = prof().height_m * INC.vis;
+      const Sc = S * 1.75, fx = g.cp.x, fy = g.cp.y + hv * 0.45;
+      const close = { S: Sc, ox: W / 2 - Sc * fx, oy: H * 0.57 + Sc * fy };
+      const e = 1 - Math.pow(1 - camT, 3);
+      return { S: close.S + (side.S - close.S) * e, ox: close.ox + (side.ox - close.ox) * e, oy: close.oy + (side.oy - close.oy) * e, side };
+    }
+    let cam = null;
+    const sx = (x) => cam.ox + x * cam.S, sy = (y) => cam.oy - y * cam.S;
+    function comPoint() {
+      if (!cam) return { x: W / 2, y: H / 2 };
+      const g = geo(), hv = prof().height_m * INC.vis * 0.5;
+      return { x: sx(g.cp.x - g.s * hv), y: sy(g.cp.y + g.c * hv) };
+    }
+
+    // drag the orange grip at the top end to set the angle
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen() || !cam) return;
+      const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, g = geo();
+      const gx = sx(g.top.x), gy = sy(g.top.y);
+      if (Math.hypot(px - gx, py - gy) > 40) return;
+      G.audio.unlock();
+      if (!st.revealed) { if (st.stage >= 2) startReveal(); return; }
+      dragAng = true; cv.setPointerCapture(e.pointerId);
+    });
+    cv.addEventListener("pointermove", (e) => {
+      if (!dragAng) return;
+      const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+      setAngle(Math.atan2(sy(0) - py, px - sx(0)) / IP.DEG);
+    });
+    const up = () => { if (dragAng) { dragAng = null; saveSt(); } };
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+
+    // ---------- drawing ----------
+    function arrow(x0, y0, vx, vy, color, label, opts = {}) {
+      const len = Math.hypot(vx, vy); if (len < 2) return;
+      const ux = vx / len, uy = vy / len, x1 = x0 + vx, y1 = y0 + vy;
+      ctx.save();
+      ctx.globalAlpha = opts.alpha ?? 1;
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = opts.thin ? 2 : 3.4;
+      if (opts.dash) ctx.setLineDash([7, 6]);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * 9, y1 - uy * 9); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * 13 - uy * 6.5, y1 - uy * 13 + ux * 6.5); ctx.lineTo(x1 - ux * 13 + uy * 6.5, y1 - uy * 13 - ux * 6.5); ctx.closePath(); ctx.fill();
+      if (label) {
+        ctx.font = "700 14px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.direction = "ltr";
+        const lx = x1 + ux * 18 + (opts.side || 0) * uy * 14, ly = y1 + uy * 18 - (opts.side || 0) * ux * 14;
+        ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly);
+      }
+      ctx.restore();
+    }
+    function draw() {
+      cam = camera();
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
+      if (bg.complete && bg.naturalWidth) { ctx.globalAlpha = showForces() ? 0.07 : 0.14; const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight); ctx.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s); ctx.globalAlpha = 1; }
+      const g = geo(), S = cam.S;
+      // ground
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(0, sy(0)); ctx.lineTo(W, sy(0)); ctx.stroke();
+      // the triangle appears like a pencil line once the floor turns out to be a ramp
+      if (revealT > 0 && g.s > 0.001) {
+        const pts = [[0, 0], [g.top.x, 0], [g.top.x, g.top.y]];
+        ctx.save(); ctx.globalAlpha = Math.min(1, revealT * 1.4);
+        ctx.fillStyle = "rgba(107,107,112,0.07)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); for (const [x, y] of pts) ctx.lineTo(sx(x), sy(y)); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 2; ctx.setLineDash([2000 * revealT, 2000]);
+        ctx.beginPath(); ctx.moveTo(sx(g.top.x), sy(0)); ctx.lineTo(sx(g.top.x), sy(g.top.y)); ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(58,58,64,0.18)"; ctx.lineWidth = 1;
+        ctx.save(); ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); for (const [x, y] of pts) ctx.lineTo(sx(x), sy(y)); ctx.closePath(); ctx.clip();
+        for (let i = -400; i < 800; i += 11) { ctx.beginPath(); ctx.moveTo(sx(0) + i, sy(0)); ctx.lineTo(sx(0) + i + 300, sy(0) - 300); ctx.stroke(); }
+        ctx.restore(); ctx.restore();
+        // θ at the pivot
+        ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(0), sy(0), 42, -g.th, 0); ctx.stroke();
+        ctx.fillStyle = "#B8741A"; ctx.font = "700 14px " + FONT; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+        ctx.fillText("θ = " + st.deg + "°", sx(0) + 50, sy(0) - 14);
+      }
+      // the plank (the surface the creature stands on), tinted by material
+      const tint = { dry_wood: "#B58A55", smooth_ice: "#7FC1DE", rubber_mat: "#4F5157" }[st.surface];
+      const p0 = { x: sx(0), y: sy(0) }, p1 = { x: sx(g.top.x), y: sy(g.top.y) };
+      if (revealT <= 0) { p0.x = sx(-0.6); p0.y = sy(0); p1.x = sx(INC.L + 0.6); p1.y = sy(0); }
+      ctx.strokeStyle = tint; ctx.lineWidth = Math.max(5, S * 0.035); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      // soft mat at the bottom
+      if (revealT > 0) {
+        const mx = sx(-0.34), mw = 0.34 * S, mh = Math.max(10, 0.08 * S);
+        ctx.fillStyle = "#EFE8FC"; ctx.strokeStyle = "#8969C6"; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(mx, sy(0) - mh, mw, mh, 6) : ctx.rect(mx, sy(0) - mh, mw, mh); ctx.fill(); ctx.stroke();
+      }
+      // grip at the top end
+      if (st.stage >= 2 || st.revealed) {
+        ctx.fillStyle = "#F49A35"; ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p1.x, p1.y, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (st.stage === 2 && st.deg === 0 && !reduceMotion) {
+          const k = (performance.now() / 1000) % 1;
+          ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3; ctx.globalAlpha = Math.sin(k * Math.PI);
+          ctx.beginPath(); ctx.moveTo(p1.x + 22, p1.y - 6 - k * 26); ctx.lineTo(p1.x + 22, p1.y - 34 - k * 26); ctx.moveTo(p1.x + 15, p1.y - 26 - k * 26); ctx.lineTo(p1.x + 22, p1.y - 34 - k * 26); ctx.lineTo(p1.x + 29, p1.y - 26 - k * 26); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+      // the creature: feet on the plank, body turned with the surface (vectors stay world-true)
+      const hv = prof().height_m * INC.vis * S;
+      if (img.complete && img.naturalWidth) {
+        const w = hv * img.naturalWidth / img.naturalHeight;
+        const squash = body.bottom && body.squash > 0 ? 1 - Math.sin(body.squash * Math.PI) * 0.12 : 1;
+        ctx.save(); ctx.translate(sx(g.cp.x), sy(g.cp.y)); ctx.rotate(-g.th * (revealT > 0 ? 1 : 0)); ctx.scale(2 - squash, squash);
+        ctx.drawImage(img, -w / 2, -hv, w, hv); ctx.restore();
+      }
+      // forces from the centre of mass
+      if (showForces()) {
+        const c = comPoint(), f = fr, k = Math.min(INC.kpx, 150 / f.W) * (S / cam.side.S);   // one scale per scene: arrows compare with each other
+        const real = view === "real";
+        arrow(c.x, c.y, 0, f.W * k, COLORS.g, "mg", { dash: !real, thin: !real });
+        arrow(c.x, c.y, -g.s * f.N * k, -g.c * f.N * k, COLORS.N, "N", { alpha: real ? 1 : 0.3, side: -1 });
+        if (f.f > 0.01) arrow(c.x, c.y, g.c * f.f * k, -g.s * f.f * k, COLORS.f, f.holds ? "f_s" : "f_k", { alpha: real ? 1 : 0.3, side: 1 });
+        if (!real) {
+          arrow(c.x, c.y, -g.c * f.par * k, g.s * f.par * k, COLORS.par, "mg sinθ", { side: 1 });
+          arrow(c.x, c.y, g.s * f.perp * k, g.c * f.perp * k, COLORS.perp, "mg cosθ", { side: -1 });
+          ctx.fillStyle = "#606671"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "right"; ctx.textBaseline = "top";
+          ctx.fillText("רכיבי הכבידה: לא כוחות נוספים", W - 10, 10); ctx.direction = "ltr";
+        }
+        // static friction gauge: how much of the maximum is used
+        if (st.stage >= 4 && f.holds && st.deg > 0) {
+          const ratio = f.fsMax > 0 ? Math.min(1, f.f / f.fsMax) : 1, gx = 12, gy = 12, gw = 120;
+          ctx.fillStyle = "#606671"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+          ctx.fillText("חיכוך סטטי מתוך המרבי", gx, gy); ctx.direction = "ltr";
+          ctx.fillStyle = "#ECEEF1"; ctx.fillRect(gx, gy + 18, gw, 8);
+          ctx.fillStyle = ratio > 0.85 ? "#E2574C" : COLORS.f; ctx.fillRect(gx, gy + 18, gw * ratio, 8);
+          ctx.fillStyle = "#20232A"; ctx.font = "700 12px " + FONT; ctx.fillText(fmt(f.f, 1) + " / " + fmt(f.fsMax, 1) + " N", gx, gy + 30);
+        }
+      }
+      if (!fr.holds && body.v > 0) {
+        const c = comPoint();
+        ctx.fillStyle = "#20232A"; ctx.font = "700 13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+        ctx.fillText("v = " + fmt(body.v, 2) + " m/s", c.x, c.y - hv * 0.65);
+      }
+    }
+    function paintReadouts() {
+      const f = fr;
+      $("#rTh").textContent = st.deg + "°";
+      $("#rN").textContent = showForces() ? fmt(f.N, 1) + " N" : "?";
+      $("#rF").textContent = showForces() ? (f.f > 0.01 ? (f.holds ? "f_s " : "f_k ") + fmt(f.f, 1) + " N" : "0 N") : "?";
+      $("#rA").textContent = fmt(f.holds ? 0 : f.a, 2) + " m/s²";
+      $("#thVal").textContent = st.deg + "°";
+    }
+    function paintFormula() {
+      if ($("#formula").hidden) return;
+      const f = fr, p = prm();
+      $("#formula").innerHTML = `
+        <div class="eq"><span>כוח הכובד (תמיד אנכי)</span><span class="m">W = m·g<em>${fmt(f.W, 1)} N</em></span></div>
+        <div class="eq"><span>נורמל</span><span class="m">N = mg·cosθ<em>${fmt(f.N, 1)} N</em></span></div>
+        <div class="eq"><span>רכיב במורד המדרון</span><span class="m">mg·sinθ<em>${fmt(f.par, 1)} N</em></span></div>
+        <div class="eq"><span>חיכוך סטטי (עד מקסימום)</span><span class="m">f<sub>s</sub> ≤ μs·N<em>${fmt(f.fsMax, 1)} N</em></span></div>
+        <div class="eq"><span>חיכוך קינטי</span><span class="m">f<sub>k</sub> = μk·N<em>${fmt(f.fk, 1)} N</em></span></div>
+        <div class="eq"><span>תאוצה בהחלקה</span><span class="m">a = g(sinθ − μk·cosθ)<em>${fmt(9.81 * (Math.sin(f.thetaRad) - p.muk * Math.cos(f.thetaRad)), 2)} m/s²</em></span></div>
+        <div class="eq"><span>זווית הסף</span><span class="m">tanθ = μs<em>${fmt(f.criticalDeg, 1)}°</em></span></div>
+        <p class="fine">הנורמל אינו "תגובה" לכוח הכובד: שניהם פועלים על אותו גוף. בתמונת הרכיבים אין כוחות חדשים, רק פירוק של mg.</p>`;
+    }
+
+    // ---------- loop ----------
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    let lineHold = 0, lineNear = 0;
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (revealing) {
+        camT = Math.min(1, camT + dt / 1.6); revealT = Math.min(1, revealT + dt / 1.1);
+        if (camT >= 1) { revealing = false; st.revealed = true; saveSt(); paintStages(); say("נו, תרימו כבר.", 2); }
+      }
+      freeze = Math.max(0, freeze - dt);
+      if (!isSheetOpen() && freeze <= 0) {
+        acc += Math.min(dt, 0.25);
+        while (acc >= IP.DT) {
+          const r = IP.step(body, prm(), IP.DT, INC.L - INC.mat);
+          if (r.bottom && !body.bottom) { body.squash = 0.0001; G.sfx.thudSoft(); G.buzz(40); say("בום. נחתתי על המזרן. שוב?", 2.4); onBottom(); }
+          body = { d: r.d, v: r.v, bottom: r.bottom || body.bottom, squash: body.squash };
+          acc -= IP.DT;
+        }
+      }
+      if (body.squash > 0) body.squash = body.squash >= 1 ? 0 : Math.min(1, body.squash + dt / 0.35);
+      fr = IP.forces({ ...prm(), v: body.v });
+      // lines and stage checks
+      if (!fr.holds && body.v > 0.05 && !wasSliding) { wasSliding = true; say("שמרו לי מקום למטההה!", 2); G.sfx.whoosh(); }
+      if (fr.holds) wasSliding = false;
+      const ratio = fr.fsMax > 0 ? fr.f / fr.fsMax : 0;
+      if (fr.holds && st.deg > 0 && !body.bottom) {
+        if (ratio > 0.85 && (lineNear -= dt) <= 0) { say("הרגליים שלי מנהלות משא ומתן עם הרצפה!", 2.4); lineNear = 8; }
+        else if (ratio > 0.55 && (lineHold -= dt) <= 0) { say("אני מחזיק! אני מחזיק!", 1.8); lineHold = 10; }
+      }
+      if (st.stage === 2 && st.revealed && st.deg >= 10) completeStage(2);
+      if (st.stage === 4) {
+        if (fr.holds && st.deg >= 5 && ratio >= 0.6 && !body.bottom) { holdT += dt; if (holdT > 0.8) { holdT = 0; completeStage(4); } } else holdT = 0;
+      }
+      draw();
+      if ((fpaint++ & 3) === 0) { paintReadouts(); if (formulaOpen) paintFormula(); }
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      raf = requestAnimationFrame(frame);
+    }
+    function onBottom() {
+      slides++;
+      if (st.stage === 5) setTimeout(() => completeStage(5), 900);
+      else if (questionCooldown > 0) questionCooldown--;
+      else if (inviteQuestion(box, "newton", INCLINE_QUESTIONS.filter((q) => q.stage <= st.reached))) questionCooldown = 3;
+    }
+    paintProfile(); paintStages();
+    raf = requestAnimationFrame(frame);
+    if (st.stage === 1 && !st.forces) setTimeout(() => say("אני לא זז. כנראה שסיימתי את הפיזיקה.", 2.6), 500);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); document.querySelector(".sheet-back")?.remove(); saveSt(); };
   };
 
   // start

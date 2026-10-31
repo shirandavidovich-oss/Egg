@@ -1,0 +1,66 @@
+{
+  "topicId": "inclined_plane_forces",
+  "recommendedDurationSecondsPerEncounter": [
+    30,
+    90
+  ],
+  "freePlayAlwaysAvailable": true,
+  "stages": [
+    {
+      "stage": 1,
+      "title_he": "אני רק יושב פה!",
+      "interaction_he": "משטח אופקי; חצים mg/N; שקול 0",
+      "concept_id": "forces_flat",
+      "takeaway_he": "חצים שונים יכולים לאזן זה את זה",
+      "unique_reward_coins": 10
+    },
+    {
+      "stage": 2,
+      "title_he": "מי הרים את הרצפה?!",
+      "interaction_he": "המצלמה מתרחקת, המישור המשולש נחשף, משנים זווית",
+      "concept_id": "camera_reveal",
+      "takeaway_he": "הכבידה תמיד למטה, הנורמל בניצב למשטח",
+      "unique_reward_coins": 10
+    },
+    {
+      "stage": 3,
+      "title_he": "הכוח שהתפצל לשניים",
+      "interaction_he": "מעבר בין FBD לרכיבי כוח הכובד",
+      "concept_id": "decomposition",
+      "takeaway_he": "mg sinθ לאורך השיפוע ו-mg cosθ פנימה",
+      "unique_reward_coins": 10
+    },
+    {
+      "stage": 4,
+      "title_he": "הרגליים העקשניות",
+      "interaction_he": "מבחן החלקה/חיכוך סטטי",
+      "concept_id": "static_friction",
+      "takeaway_he": "חיכוך סטטי מדויק: קטן או שווה ל-µsN",
+      "unique_reward_coins": 10
+    },
+    {
+      "stage": 5,
+      "title_he": "אמאאא, אני מחליק!",
+      "interaction_he": "דינמיקה של החלקה עם µk, a, v",
+      "concept_id": "kinetic_motion",
+      "takeaway_he": "תאוצה לפי הכוח השקול לאורך המדרון",
+      "unique_reward_coins": 10
+    },
+    {
+      "stage": 6,
+      "title_he": "היצור של החבר שלי",
+      "interaction_he": "הזמנת חבר וטרייד אמיתי אם קיימת תשתית",
+      "concept_id": "friend_compare",
+      "takeaway_he": "מאפייני דמות קבועים; השוואת ניסויים זהים",
+      "unique_reward_coins": 10
+    },
+    {
+      "stage": 7,
+      "title_he": "עכשיו אתה הפיזיקאי",
+      "interaction_he": "שאלות חיזוי וחישוב לפי הבגרות",
+      "concept_id": "exam_checks",
+      "takeaway_he": "משוואות ופתרון מדורג",
+      "unique_reward_coins": 25
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "schema_version": "1.0",
+  "characters": [
+    {
+      "character_id": "sparkit",
+      "name": "Sparkit",
+      "species_theme": "Electric",
+      "art_png": "assets/characters/creature_01_sparkit.png",
+      "art_svg": "assets/characters/creature_01_sparkit.svg",
+      "mass_kg": 1.1,
+      "height_m": 0.42,
+      "collision_restitution": 0.62,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.5,
+        "mu_kinetic": 0.35
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0212
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "mossy",
+      "name": "Mossy",
+      "species_theme": "Forest",
+      "art_png": "assets/characters/creature_02_mossy.png",
+      "art_svg": "assets/characters/creature_02_mossy.svg",
+      "mass_kg": 2.6,
+      "height_m": 0.6,
+      "collision_restitution": 0.34,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.8,
+        "mu_kinetic": 0.6
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0432
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "bloop",
+      "name": "Bloop",
+      "species_theme": "Water",
+      "art_png": "assets/characters/creature_03_bloop.png",
+      "art_svg": "assets/characters/creature_03_bloop.svg",
+      "mass_kg": 1.4,
+      "height_m": 0.48,
+      "collision_restitution": 0.56,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.3,
+        "mu_kinetic": 0.19
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0276
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "cinder",
+      "name": "Cinder",
+      "species_theme": "Fire",
+      "art_png": "assets/characters/creature_04_cinder.png",
+      "art_svg": "assets/characters/creature_04_cinder.svg",
+      "mass_kg": 1.8,
+      "height_m": 0.55,
+      "collision_restitution": 0.52,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.57,
+        "mu_kinetic": 0.41
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0363
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "mooni",
+      "name": "Mooni",
+      "species_theme": "Moon",
+      "art_png": "assets/characters/creature_05_mooni.png",
+      "art_svg": "assets/characters/creature_05_mooni.svg",
+      "mass_kg": 1.0,
+      "height_m": 0.4,
+      "collision_restitution": 0.48,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.28,
+        "mu_kinetic": 0.2
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0192
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "crystowl",
+      "name": "Crystowl",
+      "species_theme": "Crystal",
+      "art_png": "assets/characters/creature_06_crystowl.png",
+      "art_svg": "assets/characters/creature_06_crystowl.svg",
+      "mass_kg": 3.2,
+      "height_m": 0.67,
+      "collision_restitution": 0.25,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.72,
+        "mu_kinetic": 0.48
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0539
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "pufflet",
+      "name": "Pufflet",
+      "species_theme": "Cloud",
+      "art_png": "assets/characters/creature_07_pufflet.png",
+      "art_svg": "assets/characters/creature_07_pufflet.svg",
+      "mass_kg": 0.9,
+      "height_m": 0.38,
+      "collision_restitution": 0.73,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.23,
+        "mu_kinetic": 0.15
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0173
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "glimm",
+      "name": "Glimm",
+      "species_theme": "Light",
+      "art_png": "assets/characters/creature_08_glimm.png",
+      "art_svg": "assets/characters/creature_08_glimm.svg",
+      "mass_kg": 1.3,
+      "height_m": 0.46,
+      "collision_restitution": 0.64,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.42,
+        "mu_kinetic": 0.3
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0254
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "tumble",
+      "name": "Tumble",
+      "species_theme": "Earth",
+      "art_png": "assets/characters/creature_09_tumble.png",
+      "art_svg": "assets/characters/creature_09_tumble.svg",
+      "mass_kg": 3.9,
+      "height_m": 0.75,
+      "collision_restitution": 0.29,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.9,
+        "mu_kinetic": 0.67
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0675
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    },
+    {
+      "character_id": "aster",
+      "name": "Aster",
+      "species_theme": "Cosmic",
+      "art_png": "assets/characters/creature_10_aster.png",
+      "art_svg": "assets/characters/creature_10_aster.svg",
+      "mass_kg": 1.7,
+      "height_m": 0.52,
+      "collision_restitution": 0.58,
+      "ground_contact": {
+        "reference_surface": "dry_wood",
+        "mu_static": 0.36,
+        "mu_kinetic": 0.24
+      },
+      "air_drag": {
+        "Cd": 1.0,
+        "projected_area_m2": 0.0324
+      },
+      "notes_he": "ערכי הדגמה מומצאים אך בטווח סביר ליצורי משחק. לא לייחס חוקי פיזיקה קסומים לצבע/טיפוס.",
+      "physical_parameter_revision": 1
+    }
+  ],
+  "disclaimer_he": "פרופילים משחקיים לדוגמה; מסה אינה משקל. מקדם חיכוך תלוי בצמד משטחים. אנימציה אינה רשאית לשנות חוק פיזיקלי."
+}

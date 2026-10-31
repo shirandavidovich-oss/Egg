@@ -17,7 +17,7 @@
     --ui-font: "Rubik", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
   }
   #ui, #hud, #coinLayer { font-family: var(--ui-font); color: var(--ink); }
-  #ui[hidden], #hud[hidden] { display: none !important; }
+  #ui[hidden], #hud[hidden], #ui [hidden], .sheet [hidden] { display: none !important; }
   .ltr, .m { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
 
   /* ---- the home-screen overlay over the egg's room ---- */
@@ -157,7 +157,7 @@
   .lab-screen { display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
   .lab { position: relative; flex: 1 1 auto; min-height: 330px; height: 56vh; border: 1px solid var(--line); border-radius: 22px; background: #fff; overflow: hidden; touch-action: none; }
   .lab canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .lab .say { position: absolute; top: 12px; right: 12px; max-width: 62%; z-index: 2; font-size: 15px; }
+  .lab .say { position: absolute; top: 12px; right: 12px; max-width: 54%; z-index: 2; font-size: 15px; }
   .lab .say[hidden] { display: none; }
   .lab-tools { position: absolute; bottom: 10px; right: 10px; left: 10px; display: flex; justify-content: space-between; gap: 8px; z-index: 2; }
   .chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 12px 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.95); font: 600 14px var(--ui-font); color: var(--ink); cursor: pointer; }
@@ -241,6 +241,31 @@
   .devtools { margin-top: 22px; padding: 14px; border: 1.5px dashed #C9CCD1; border-radius: 16px; }
   .devtools h4 { margin: 0 0 8px; font-size: 14px; color: var(--ink-2); }
   .devtools .btn { min-height: 44px; font-size: 15px; margin: 4px 0 4px 8px; }
+
+  /* spring modes, stages, surfaces, angle */
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: #F1F2F4; }
+  .seg button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; font: 600 15px var(--ui-font); color: var(--ink-2); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(20,24,30,0.12); }
+  .stagebar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .stagebar button { height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font: 700 15px var(--ui-font); color: var(--ink-2); cursor: pointer; }
+  .stagebar button.done { background: #EFE8FC; border-color: #D9CBF8; color: #5B37B8; }
+  .stagebar button[aria-current] { border-color: var(--violet); color: #5B37B8; box-shadow: 0 0 0 2px rgba(138,96,232,0.2); }
+  .stagebar button:disabled { opacity: 0.4; cursor: default; }
+  .task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; }
+  .task small { display: block; font-size: 12.5px; color: #6E48C9; font-weight: 700; margin-bottom: 2px; }
+  .task p { margin: 0; font-size: 15.5px; font-weight: 500; line-height: 1.4; }
+  .task .btn { min-height: 46px; padding: 0 16px; font-size: 16px; flex: none; }
+  .surfaces { display: flex; gap: 8px; }
+  .surfaces button { flex: 1; min-height: 44px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font: 600 14px var(--ui-font); color: var(--ink); cursor: pointer; }
+  .surfaces button[aria-pressed="true"] { border-color: var(--blue); background: #F2F8FF; }
+  .angle-row { display: flex; align-items: center; gap: 10px; }
+  .angle-row .ang { flex: 1; min-width: 0; }
+  .step { width: 48px; height: 48px; flex: none; border-radius: 14px; border: 1.5px solid #3a3a40; background: #fff; font: 700 24px var(--ui-font); color: var(--ink); cursor: pointer; }
+  .step:disabled, input[type=range]:disabled { opacity: 0.35; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  table.cmp th { text-align: right; color: var(--ink-2); font-weight: 500; padding: 7px 4px; }
+  table.cmp td { text-align: center; padding: 7px 4px; border-bottom: 1px dashed var(--line); font-weight: 700; font-variant-numeric: tabular-nums; }
+  table.cmp td b { display: block; font-size: 14px; }
 
   @media (prefers-reduced-motion: reduce) {
     .screen-in, .hello img, .intro .scene img, .lever .hint, .result.show, .sheet, .sheet-back { animation: none !important; }

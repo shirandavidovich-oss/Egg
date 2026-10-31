@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "questions": [
+    {
+      "id": "flat_forces",
+      "stage": 1,
+      "kind": "choice",
+      "question_he": "היצור עומד על רצפה ישרה ולא נע. האם פועלים עליו כוחות?",
+      "choices_he": [
+        "לא, כי הוא לא זז",
+        "כן: כוח הכובד ונורמל מאזנים",
+        "רק כוח הכובד"
+      ],
+      "correct_index": 1,
+      "explanation_he": "במצב זה mg כלפי מטה ו-N כלפי מעלה, ולכן הכוח השקול אפס."
+    },
+    {
+      "id": "gravity_angle",
+      "stage": 2,
+      "kind": "choice",
+      "question_he": "הגדלנו את הזווית. האם הכובד mg גדל?",
+      "choices_he": [
+        "כן",
+        "לא, כל עוד m ו-g קבועים"
+      ],
+      "correct_index": 1,
+      "explanation_he": "כוח הכובד נשאר mg. רק הרכיבים ביחס למדרון משתנים."
+    },
+    {
+      "id": "parallel",
+      "stage": 3,
+      "kind": "choice",
+      "question_he": "מהו רכיב הכובד במורד מישור משופע בזווית θ מהאופק?",
+      "choices_he": [
+        "mg cosθ",
+        "mg sinθ",
+        "N"
+      ],
+      "correct_index": 1,
+      "explanation_he": "רכיב הכובד המקביל למישור: mg sinθ."
+    },
+    {
+      "id": "normal",
+      "stage": 3,
+      "kind": "choice",
+      "question_he": "איזה ביטוי מתאר נורמל כאשר אין כוחות נוספים בניצב?",
+      "choices_he": [
+        "N=mg",
+        "N=mg cosθ",
+        "N=mg sinθ"
+      ],
+      "correct_index": 1,
+      "explanation_he": "הכוח הנורמלי שווה לרכיב הכובד הניצב למישור."
+    },
+    {
+      "id": "static_not_max",
+      "stage": 4,
+      "kind": "choice",
+      "question_he": "הגוף לא מחליק. האם החיכוך הסטטי תמיד שווה ל-µsN?",
+      "choices_he": [
+        "כן",
+        "לא; זה רק גודל מרבי"
+      ],
+      "correct_index": 1,
+      "explanation_he": "חיכוך סטטי מתאזן לפי הצורך, עד המקסימום."
+    },
+    {
+      "id": "threshold",
+      "stage": 4,
+      "kind": "choice",
+      "question_he": "µs=0.6. האם הגוף יחליק ממנוחה בזווית 30°?",
+      "choices_he": [
+        "כן",
+        "לא"
+      ],
+      "correct_index": 1,
+      "explanation_he": "tan30°≈0.577, נמוך מ-0.6 ולכן ניתן להישאר במנוחה."
+    },
+    {
+      "id": "acc_numeric",
+      "stage": 5,
+      "kind": "choice",
+      "question_he": "m=2 kg, θ=40°, g=10, µs=0.6, µk=0.4. מה התאוצה כשהגוף מתחיל להחליק?",
+      "choices_he": [
+        "0 m/s²",
+        "≈3.36 m/s²",
+        "≈6.43 m/s²"
+      ],
+      "correct_index": 1,
+      "explanation_he": "tan40°>0.6 ולכן הוא מחליק. a=g(sin40°−0.4cos40°)≈3.36 m/s²."
+    },
+    {
+      "id": "mass_cancels",
+      "stage": 6,
+      "kind": "choice",
+      "question_he": "שתי דמויות עם חיכוך זהה אבל מסות שונות על אותו מדרון. מי תאיץ יותר בהחלקה?",
+      "choices_he": [
+        "הכבדה",
+        "הקלה",
+        "שתיהן באותה תאוצה"
+      ],
+      "correct_index": 2,
+      "explanation_he": "במודל עם אותו µ, המסה מצטמצמת במשוואת התאוצה. רק כוח מוחלט משתנה."
+    },
+    {
+      "id": "third_law",
+      "stage": 7,
+      "kind": "choice",
+      "question_he": "האם הנורמל הוא כוח התגובה לכוח הכובד לפי החוק השלישי?",
+      "choices_he": [
+        "כן",
+        "לא"
+      ],
+      "correct_index": 1,
+      "explanation_he": "לא. הנורמל והכובד פועלים על אותו גוף; פעולת-תגובה מופיעות על גופים שונים."
+    }
+  ]
+}

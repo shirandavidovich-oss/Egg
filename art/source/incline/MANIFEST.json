@@ -1,0 +1,279 @@
+{
+  "title": "מי מושך אותי?! — מישור משופע, כוחות וחיכוך",
+  "package_version": "1.0",
+  "created": "2026-10-31",
+  "purpose": "Integrate into existing egg-hatch physics learning game; not a standalone Android application",
+  "file_count_excluding_manifest": 54,
+  "files": [
+    {
+      "path": "00_READ_FIRST.md",
+      "bytes": 4099,
+      "sha256": "0c275243591e95619172d1ad96fa61d3c408e3d32e12f906beeeaf9d0139dd88"
+    },
+    {
+      "path": "01_SEND_THIS_TO_CLAUDE.md",
+      "bytes": 5208,
+      "sha256": "7601b7f776d02494a0bc23ac8ace353c2f41508b57899f1dc8eacd0e1081ba92"
+    },
+    {
+      "path": "assets/backgrounds/pencil_physics_lab_1024x1536.png",
+      "bytes": 1728497,
+      "sha256": "57de659ff1614f8e49bf0b9dd224e6b90ad37d5f7f39e7eee3347802424fc923"
+    },
+    {
+      "path": "assets/characters/creature_01_sparkit.png",
+      "bytes": 464723,
+      "sha256": "1b8126fa60f89b94de144f7b20424fc2855e0c0493ad36a04d82b297c191e62b"
+    },
+    {
+      "path": "assets/characters/creature_01_sparkit_preview.png",
+      "bytes": 88546,
+      "sha256": "c4ecbafc893a51f1e19d1089e0d733e4b27375c9a8b2a3a960084e46dee3d0f6"
+    },
+    {
+      "path": "assets/characters/creature_02_mossy.png",
+      "bytes": 517692,
+      "sha256": "0a6e827e72e450ed5580ce16abd575c3440136dcdbecd1339641fd492a7158c7"
+    },
+    {
+      "path": "assets/characters/creature_02_mossy_preview.png",
+      "bytes": 93866,
+      "sha256": "45afc1ba3270b941357ed1eedfa108bfb68b93537fd6569698891f965584abbc"
+    },
+    {
+      "path": "assets/characters/creature_03_bloop.png",
+      "bytes": 482193,
+      "sha256": "c2b8567cf4b3869f2bc6cc4d8a9974845c25f723798514c8936a9742fdc70ff8"
+    },
+    {
+      "path": "assets/characters/creature_03_bloop_preview.png",
+      "bytes": 94692,
+      "sha256": "5a54dfb0f0d1e719ad0bc1f315fc7231d5f5753b1bb33f7bbcc15467a8321961"
+    },
+    {
+      "path": "assets/characters/creature_04_cinder.png",
+      "bytes": 435918,
+      "sha256": "3d37bd5ffba92feb5022c22ead54514eeda74d2ab84dbe90d85d174dd98bd297"
+    },
+    {
+      "path": "assets/characters/creature_04_cinder_preview.png",
+      "bytes": 84254,
+      "sha256": "21f32b39489e51281d2677c6681f8d0941d52b74d67c1c266a1505a0e5a05118"
+    },
+    {
+      "path": "assets/characters/creature_05_mooni.png",
+      "bytes": 458267,
+      "sha256": "3cca34dba9199636c0c4944ccb7402935a99d41f59541f59f380669c97080e9f"
+    },
+    {
+      "path": "assets/characters/creature_05_mooni_preview.png",
+      "bytes": 81892,
+      "sha256": "161c56ff508e4ce6e91c42b05e26991b42e5dd01dc5b23169e5fe2bbae18b765"
+    },
+    {
+      "path": "assets/characters/creature_06_crystowl.png",
+      "bytes": 497856,
+      "sha256": "d4059fc4973d3e949fc4fbf0cd07076f2fab1eb868dffa028385019655f138a7"
+    },
+    {
+      "path": "assets/characters/creature_06_crystowl_preview.png",
+      "bytes": 85736,
+      "sha256": "d215883496b97072e0b1887608128bd048cd4accaeaa2f58153893a506e3f96e"
+    },
+    {
+      "path": "assets/characters/creature_07_pufflet.png",
+      "bytes": 490824,
+      "sha256": "0cf5478a8d8580590e47a1f67c46f369864f0f83024053c8649642a042791226"
+    },
+    {
+      "path": "assets/characters/creature_07_pufflet_preview.png",
+      "bytes": 92643,
+      "sha256": "899890ff945cac0289d323d3edda116eec0cd15169444c03e8eddb87fe55ff46"
+    },
+    {
+      "path": "assets/characters/creature_08_glimm.png",
+      "bytes": 620361,
+      "sha256": "4f0bac141f73497ea61a8725f9989a81993f7dc72112103c4f21eb210c4581ff"
+    },
+    {
+      "path": "assets/characters/creature_08_glimm_preview.png",
+      "bytes": 113390,
+      "sha256": "003d71fa2b4b281e4cffe3197e9fda8b4a4bc120d8fc8cde2e7c100e8d634f51"
+    },
+    {
+      "path": "assets/characters/creature_09_tumble.png",
+      "bytes": 500019,
+      "sha256": "bacebc4388718d251be5dd2ae0108aad861265275ab8aba127d80087f73c80d8"
+    },
+    {
+      "path": "assets/characters/creature_09_tumble_preview.png",
+      "bytes": 88076,
+      "sha256": "98d9de022855fdbd439fd630cdfbb293f138dbc3e6ae981712a24099692fbbdf"
+    },
+    {
+      "path": "assets/characters/creature_10_aster.png",
+      "bytes": 615572,
+      "sha256": "5eb18a813b8816d99aa5c2612a755c14e89d6b25e918ac8cb0b4b7094dd1e849"
+    },
+    {
+      "path": "assets/characters/creature_10_aster_preview.png",
+      "bytes": 115368,
+      "sha256": "e3a2839445617622c53abfa2827e05a75b7182049a6111f09f2108ced3f5b134"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_0deg_components.png",
+      "bytes": 55415,
+      "sha256": "675e75f79acc48f193fd875cb8a5c40d44bce9681ae88d35ca163d697a058d4b"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_0deg_components.svg",
+      "bytes": 2571,
+      "sha256": "dd99c788524ab094150b716237609f36f652aa8ec7ac61780561e885a43d1e3a"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_0deg_real.png",
+      "bytes": 49232,
+      "sha256": "a89c803f32cac03f0f7016a95280e4d2a8c995aa1bbb8a5521886e535836e7f1"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_0deg_real.svg",
+      "bytes": 2518,
+      "sha256": "754e7f5d6c828621a423cf807e2be81a9d86b1e97c799ad4bec1ee286bfad707"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_30deg_components.svg",
+      "bytes": 2784,
+      "sha256": "2001b0bdd56edef54ae9480060e46440e9e77177f7720f478626259ef5600a5a"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_30deg_real.svg",
+      "bytes": 2727,
+      "sha256": "a1d766797348dfcd9f06b27cd4ab235e20a921bc8e234eb619c6282b2f5a310b"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_40deg_components.png",
+      "bytes": 77855,
+      "sha256": "ae3ce7560fedada8ad5fa3d81ae236ea362b486a0a4fe1d165e254b9ced29754"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_40deg_components.svg",
+      "bytes": 2761,
+      "sha256": "4fc7c1b56b81421ffa606ddb71a388f87f21d24683f9ad6a8e7f4c545db903a8"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_40deg_real.png",
+      "bytes": 68451,
+      "sha256": "606724a2e69af3cdf47506ea2398665c0901f7a1ac92d55f98cea27f51323337"
+    },
+    {
+      "path": "assets/diagrams/correct_vectors_40deg_real.svg",
+      "bytes": 2704,
+      "sha256": "9bc61924084042dd41f10b6f10dde3fcef9a43043527fca75c21006555b1ead7"
+    },
+    {
+      "path": "assets/reference/approved_white_pencil_ui.png",
+      "bytes": 2341287,
+      "sha256": "661ab8d0aa9540cd45a6187fc1230de89b2e19b43daef9e7473dbc7c91c17f8b"
+    },
+    {
+      "path": "assets/reference/inclined_plane_storyboard_concept.png",
+      "bytes": 2213464,
+      "sha256": "dfbabc256ef29464365dae5ba8e1b335afde31f9da1e044627da7595c3871ee3"
+    },
+    {
+      "path": "data/base_character_physics_profiles.json",
+      "bytes": 7609,
+      "sha256": "86a79b2197f8d4db71c89198f49e78e8e1cc211000d3d27d4ed7f8c53a824749"
+    },
+    {
+      "path": "data/character_surface_physics.json",
+      "bytes": 6392,
+      "sha256": "faf79594e567191c86132d6c0bcf6e06eb82293a4147f36e1f2d8799228166a1"
+    },
+    {
+      "path": "data/question_bank.json",
+      "bytes": 3940,
+      "sha256": "d27e4e65fae2d1004cee3de07176452299f1786daf7727bd5ed0a1265c3b6119"
+    },
+    {
+      "path": "data/stage_flow.json",
+      "bytes": 2397,
+      "sha256": "5a9764c21f614da3a9cd15053b5587d5d1b7d65734d56ce87dc48b744f4bcbf4"
+    },
+    {
+      "path": "demo/README.md",
+      "bytes": 1719,
+      "sha256": "824af9bdef71f2b7bc981e6641a1dd3420e730599177e22559bd26a749fa9990"
+    },
+    {
+      "path": "demo/data.js",
+      "bytes": 9325,
+      "sha256": "83d6f872f392a59747e121acbf607968cc36acc8668251ae03af70b89173e7c6"
+    },
+    {
+      "path": "demo/index.html",
+      "bytes": 23778,
+      "sha256": "9ba008115101422116354b06d631d305626eb2e40909b40d89bb160a505ba30e"
+    },
+    {
+      "path": "docs/01_GAME_AND_LEARNING_DESIGN.md",
+      "bytes": 7887,
+      "sha256": "a23131a29a660d039a1d7a76bec53521d1a414c9c99aaf56deddb2f250569b33"
+    },
+    {
+      "path": "docs/02_CAMERA_STORYBOARD.md",
+      "bytes": 5192,
+      "sha256": "384878f1d02d2cd13114b2e5079a9be53ac86925f6f294fa5c7971ed2eee5f97"
+    },
+    {
+      "path": "docs/03_VISUAL_UI_AND_ASSETS.md",
+      "bytes": 4471,
+      "sha256": "ad6e2fc4a1a90360fdd4c9c2a97581c05e8afc90b13fb2ecac29ecf72431e447"
+    },
+    {
+      "path": "docs/04_PHYSICS_SPEC.md",
+      "bytes": 4974,
+      "sha256": "6bc9a6564e8f9d19f454c895f7a25724552649b5595c1efccc20a5f621cc7658"
+    },
+    {
+      "path": "docs/05_CHARACTERS_AND_REAL_TRADING.md",
+      "bytes": 5258,
+      "sha256": "2a80f381a648a5ef6936818de151ab2a8a9861da2a2b7ae3c263e12e3bafe792"
+    },
+    {
+      "path": "docs/06_PROGRESS_QUESTIONS_AND_COINS.md",
+      "bytes": 3448,
+      "sha256": "35c3b85dcfd2204d722daab380c3769f58868b40764c8af5c6752bd3c8a6db23"
+    },
+    {
+      "path": "docs/07_DEVELOPMENT_TESTS.md",
+      "bytes": 3788,
+      "sha256": "def6fe461e5dd3ea2fee6e9ed98d72e01399f90fe9899c31c030a4c5d6632e85"
+    },
+    {
+      "path": "docs/08_FUTURE_WORKFLOW.md",
+      "bytes": 1133,
+      "sha256": "70504550cb7ce9b15f254ed66070ecc134f45d2f6044e7047c842106b3b8595d"
+    },
+    {
+      "path": "physics/incline_physics.js",
+      "bytes": 2571,
+      "sha256": "e2e5a57e86fa4dcbc39c7acb7d2677faa2d2ae62559e232e51eb47cbec3fd166"
+    },
+    {
+      "path": "tests/README.md",
+      "bytes": 427,
+      "sha256": "d89dc7d1d775e8fe5e493d2e9e9fb89d1dee1dfc605ffe5c3fed2adadcde4c72"
+    },
+    {
+      "path": "tests/test_physics.js",
+      "bytes": 1717,
+      "sha256": "871c42001c15448c4c4a966ccb39a6237953ee19bb98489a1e66922587c58d3c"
+    },
+    {
+      "path": "tests/validate_package.py",
+      "bytes": 1488,
+      "sha256": "433d833f601c025183eaccecb172465c00a57fba70e1a98cb5e2d079d767c15c"
+    }
+  ]
+}

@@ -48,11 +48,16 @@ player's coins or progress.
 
 | What | File |
 |---|---|
-| Spring physics (pure functions + fixed-step sim) | `art/physics/spring.js` |
+| Spring physics: hanging, and from a wall on a floor with friction | `art/physics/spring.js` |
+| Inclined plane physics (forces, static/kinetic friction, sliding) | `art/physics/incline.js` |
 | Player profile: coins ledger, progress, owned creatures | `art/physics/profile.js` |
 | Screens, lever, lab, coins, map | `art/physics/ui.js`, `ui.css`, `ui.html` |
-| Tests (run in the APK build) | `tests/spring.test.js`, `tests/profile.test.js` |
-| The full spec and art it is built from | `art/source/physics/` |
+| Tests (run in the APK build) | `tests/spring.test.js`, `tests/incline.test.js`, `tests/profile.test.js` |
+| The specs and art they are built from | `art/source/physics/`, `art/source/incline/` |
+
+Mini games so far: **קפיץ־קפוץ** (springs; switch between a hanging spring and a spring from the wall
+on wood, ice or rubber) and **מי מושך אותי?!** (inclined plane in 7 stages; only the angle and the
+surface can change, the creature's body is fixed).
 
 These files are pulled into `index.html` by `art/build.py`, so they update phones without a reinstall.
 

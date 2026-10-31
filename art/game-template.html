@@ -43,6 +43,21 @@
   let EYE = 1, DEPTH = 1;
   let roomTex = null;          // baked pencil grain
 
+  // ======================================================================
+  //  ARRIVAL MAGIC  (the egg appears in a violet whirl the first time)
+  //  Every number here can be tuned freely.
+  // ======================================================================
+  const MAGIC = {
+    enabled: true,
+    onlyFirstTime: false,   // false while we develop: plays on every launch
+    count: 260,             // particles at full strength
+    colors: ["#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd", "#e9d5ff", "#6d28d9"],
+    speed: 1,               // spin and rise speed
+    intensity: 1,           // brightness and density
+    duration: 5.6,          // seconds from first sparkle to the egg standing there
+    pulseAt: 4.1            // when the final pulse reveals the egg
+  };
+
   // the nest's inner bowl, as fractions of the nest drawing
   const NEST = { bowlY: 0.53, cx: 0.505, lipCx: 0.505, lipCy: 0.40, lipRx: 0.36, lipRy: 0.17 };
 
@@ -63,7 +78,9 @@
     fallDir: { side: 0, fwd: 0 },
     t: 0,                     // progress of falling / rising
     downTime: 0,
-    hop: 0
+    hop: 0,
+    fear: 0,                  // drives the mouth: 0 smiling … 1 scared
+    lurch: 0                  // brief lean toward/away from you before toppling
   };
 
   // ======================================================================
@@ -204,7 +221,16 @@
     const slopeFwd = tilt.dy;
     const slope = Math.hypot(slopeSide, slopeFwd);
 
-    if (egg.state === "stand") {
+    // how scared the face looks
+    const fearWant = egg.state === "stand" ? clamp(egg.panic, 0, 1.2)
+      : egg.state === "falling" ? 1.25 : egg.state === "down" ? 0.7 : 0.3;
+    egg.fear += (fearWant - egg.fear) * (1 - Math.exp(-dt / 0.18));
+
+    if (egg.state === "arriving") {
+      updateMagic(dt);
+      egg.side = magic.wobble; egg.fwd = 0; egg.panic = 0;
+      if (magic.t >= MAGIC.duration) { egg.state = "stand"; egg.side = 0; markArrived(); }
+    } else if (egg.state === "stand") {
       // panic grows with the slope past CALM
       const want = clamp((slope - CALM) / (FALL - CALM), 0, 1.4);
       egg.panic += (want - egg.panic) * (1 - Math.exp(-dt / (want > egg.panic ? 0.15 : 0.5)));
@@ -221,17 +247,20 @@
       if (slope > FALL) egg.overTime += dt; else egg.overTime = Math.max(0, egg.overTime - dt * 2);
       if (egg.overTime > FALL_HOLD) {
         egg.state = "falling"; egg.t = 0;
-        if (Math.abs(slopeSide) >= Math.abs(slopeFwd)) egg.fallDir = { side: Math.sign(slopeSide), fwd: 0 };
-        else egg.fallDir = { side: 0, fwd: Math.sign(slopeFwd) };
+        // an egg always ends up on its side; falling toward or away from you
+        // starts with a lurch that way, then it rolls onto a side
+        const sd = Math.sign(slopeSide) || (Math.random() < 0.5 ? -1 : 1);
+        egg.fallDir = { side: sd, fwd: Math.abs(slopeFwd) > Math.abs(slopeSide) ? Math.sign(slopeFwd) : 0 };
         egg.fromSide = egg.side; egg.fromFwd = egg.fwd;
       }
     } else if (egg.state === "falling") {
       egg.t = Math.min(1, egg.t + dt / 0.75);
       const p = easeOutBounce(egg.t);
       egg.side = lerp(egg.fromSide, egg.fallDir.side * Math.PI / 2, p);
-      egg.fwd = lerp(egg.fromFwd, egg.fallDir.fwd * Math.PI / 2, p);
+      egg.fwd = lerp(egg.fromFwd, 0, p);
+      egg.lurch = egg.fallDir.fwd * Math.sin(Math.min(1, egg.t * 1.6) * Math.PI) * 0.6;
       egg.panic = Math.max(0, egg.panic - dt * 1.2);
-      if (egg.t >= 1) { egg.state = "down"; egg.downTime = 0; }
+      if (egg.t >= 1) { egg.state = "down"; egg.downTime = 0; egg.lurch = 0; }
     } else if (egg.state === "down") {
       egg.panic = Math.max(0, egg.panic - dt * 2);
       // lies there until the phone has been level for a moment
@@ -244,7 +273,7 @@
       const k = t < 0.45 ? 1 - Math.sin(t / 0.45 * Math.PI) * 0.18 : 1 - (t - 0.45) / 0.55;
       const up = Math.max(0, k);
       egg.side = egg.fallDir.side * Math.PI / 2 * Math.pow(up, 1.3);
-      egg.fwd = egg.fallDir.fwd * Math.PI / 2 * Math.pow(up, 1.3);
+      egg.fwd = 0;
       egg.hop = t > 0.8 ? Math.sin((t - 0.8) / 0.2 * Math.PI) : 0;
       if (egg.t >= 1) {
         egg.state = "stand"; egg.side = 0; egg.fwd = 0; egg.vSide = 0; egg.vFwd = 0;
@@ -352,46 +381,144 @@
     ctx.restore();
   }
 
-  function drawEgg(L) {
-    const M = META;
-    const s = L.eggScale;
-    // feet stand on the bowl floor
+  // where the egg's feet are on screen, and how big one drawing pixel is there
+  function eggAnchor(L) {
     const footWorldY = L.nestTop + L.nestH * NEST.bowlY;
     const zE = L.zN + L.nestW * 0.02;
     const [fx, fy, f] = proj(0, footWorldY, zE);
-    const k = s * f;
-    const breathe = 1 + Math.sin(time * 1.6) * 0.008;
-    const hopY = -egg.hop * 18 * f;
+    return { fx, fy, f, k: L.eggScale * f };
+  }
 
-    // lean toward / away from you: foreshorten the height
+  // the body's transform: pivots on the feet, leans, and (when fallen) lies in the nest
+  function bodyMatrix(A) {
+    const M = META, k = A.k;
     const fw = egg.fwd;
-    const squash = Math.max(0.5, Math.cos(fw));
     const sideAng = egg.side;
-    // distance from the feet to the middle of the shell
     const hc = (M.body.feetY - M.body.h * 0.42) * k;
+    const breathe = 1 + Math.sin(time * 1.6) * 0.008;
+    const hopY = -egg.hop * 18 * A.f;
+    const squash = Math.max(0.82, Math.cos(fw));
+    // a lurch toward you swells the egg a little, away shrinks it
+    const lurchScale = 1 + egg.lurch * 0.18;
+    const m = new DOMMatrix();
+    m.translateSelf(A.fx - Math.sin(sideAng) * hc * 0.8, A.fy + hopY - (1 - Math.cos(sideAng)) * hc * 0.15);
+    m.rotateSelf(sideAng * 180 / Math.PI);
+    m.scaleSelf(k * lurchScale, k * squash * breathe * lurchScale);
+    m.translateSelf(-M.body.w / 2, -M.body.feetY);
+    return m;
+  }
+
+  function drawEgg(L, alpha) {
+    const M = META;
+    const A = eggAnchor(L);
+    const m = bodyMatrix(A);
+    const k = A.k;
+    // how far the feet have let go of the ground (0 standing, 1 lying)
+    const detach = egg.state === "falling" ? Math.min(1, egg.t * 1.4)
+      : egg.state === "down" ? 1 : egg.state === "rising" ? 1 - egg.t : 0;
 
     ctx.save();
-    // a sideways fall pivots on the feet, then slides back so the egg lies inside the nest
-    ctx.translate(fx - Math.sin(sideAng) * hc * 0.8, fy + hopY - (1 - Math.cos(sideAng)) * hc * 0.15);
-    // falling toward or away from you sinks the egg down into the bowl
-    ctx.translate(0, Math.abs(Math.sin(fw)) * hc * 0.35);
-    ctx.rotate(sideAng);
-    ctx.scale(k, k * squash * breathe);
-    ctx.translate(-M.body.w / 2, -M.body.feetY);
+    ctx.globalAlpha = alpha;
 
-    ctx.drawImage(img.body, 0, 0, M.body.w, M.body.h);
-
-    // arms: hang at rest, wave when the egg is losing its balance
+    // ---- legs and shoes ----
     const p = egg.panic;
+    for (const side of ["L", "R"]) {
+      const leg = M["leg" + side], shoe = M["shoe" + side];
+      const hip = m.transformPoint({ x: leg.hipX, y: leg.hipY - 8 });
+      // planted foot: stays where it stood, unless the egg is lying down
+      const restX = A.fx + (leg.footX - M.body.w / 2) * k;
+      const restY = A.fy + (leg.footY - M.body.feetY) * k;
+      // little panicky steps, the feet take turns
+      const ph = side === "L" ? 0 : Math.PI;
+      const lift = reduceMotion ? 0 : Math.max(0, Math.sin(time * 11 + ph)) * p * 14 * k;
+      const shuffle = Math.sin(egg.side) * 40 * k * (side === "L" ? 0.7 : 1);
+      const planted = { x: restX + shuffle, y: restY - lift };
+      const carried = m.transformPoint({ x: leg.footX, y: leg.footY });
+      const foot = { x: lerp(planted.x, carried.x, detach), y: lerp(planted.y, carried.y, detach) };
+      drawLeg(hip, foot, (leg.midX - (leg.hipX + leg.footX) / 2) * k, k);
+      // shoe
+      const shoeAng = lerp(Math.sin(egg.side) * 0.25 - (lift > 0 ? 0.12 : 0) * (side === "L" ? 1 : -1), egg.side, detach);
+      ctx.save();
+      ctx.translate(foot.x, foot.y);
+      ctx.rotate(shoeAng);
+      ctx.scale(k, k);
+      ctx.drawImage(img["shoe" + side], shoe.x - leg.footX, shoe.y - leg.footY, shoe.w, shoe.h);
+      ctx.restore();
+    }
+
+    // ---- body ----
+    ctx.save();
+    ctx.setTransform(new DOMMatrix([DPR, 0, 0, DPR, 0, 0]).multiply(m));
+    ctx.drawImage(img.body, 0, 0, M.body.w, M.body.h);
+    drawMouth(M.mouth);
+
+    // ---- arms: hang at rest, wave when losing balance ----
     const flap = reduceMotion ? 0 : 1;
-    // the arm on the high side reaches further out to counterbalance
     const lean = clamp(egg.side * 3, -1, 1);
     const raiseL = p * (1.55 + 0.55 * Math.sin(time * 15) * flap) * (1 + Math.max(0, -lean) * 0.4);
     const raiseR = p * (1.55 + 0.55 * Math.sin(time * 15 + 2.1) * flap) * (1 + Math.max(0, lean) * 0.4);
-    const downArms = egg.state === "down" ? 0.5 : 0;
+    const downArms = egg.state === "down" ? 0.5 : egg.state === "falling" ? 1.2 * (1 - egg.t) : 0;
     drawArm(img.armL, M.armL, raiseL + downArms);
     drawArm(img.armR, M.armR, -(raiseR + downArms));
     ctx.restore();
+    ctx.restore();
+  }
+
+  // a thin pencil leg from hip to foot that bows when squashed
+  function drawLeg(hip, foot, bend, k) {
+    const dx = foot.x - hip.x, dy = foot.y - hip.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const rest = 55 * k;
+    const squeeze = Math.max(0, rest - len) / rest;      // knees bend when compressed
+    const nx = -dy / len, ny = dx / len;
+    const b = bend + squeeze * 30 * k * Math.sign(bend || 1);
+    const cx = (hip.x + foot.x) / 2 + nx * b, cy = (hip.y + foot.y) / 2 + ny * b;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#232326";
+    ctx.lineWidth = Math.max(1.5, 7 * k);
+    ctx.beginPath(); ctx.moveTo(hip.x, hip.y); ctx.quadraticCurveTo(cx, cy, foot.x, foot.y); ctx.stroke();
+    // a lighter graphite edge, like the drawing
+    ctx.strokeStyle = "rgba(90,90,96,0.6)";
+    ctx.lineWidth = Math.max(0.6, 2 * k);
+    ctx.beginPath(); ctx.moveTo(hip.x + 2 * k, hip.y); ctx.quadraticCurveTo(cx + 2 * k, cy, foot.x + 2 * k, foot.y); ctx.stroke();
+  }
+
+  // mouth in drawing pixels: a smile that flattens, then worries, then opens
+  function drawMouth(mo) {
+    const f = clamp(egg.fear, 0, 1.3);
+    const half = mo.w / 2 * (1 - 0.3 * Math.min(1, f));
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1e1e21";
+    ctx.lineWidth = 4;
+    if (egg.state === "down") {
+      // dazed: a small wavy line
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const x = mo.x - half * 0.7 + (half * 1.4 * i) / 12;
+        const y = mo.y + Math.sin(i * 1.4 + time * 3) * 2.5;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+      return;
+    }
+    if (f > 1.05) {
+      // about to go over: a little round "oh"
+      const o = Math.min(1, (f - 1.05) / 0.2);
+      ctx.beginPath();
+      ctx.ellipse(mo.x, mo.y + 2, 6 + 5 * o, 7 + 7 * o, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "#2a2a2e"; ctx.fill(); ctx.stroke();
+      return;
+    }
+    const curve = lerp(13, -9, Math.min(1, f));   // + smile, - frown
+    const base = ctx.globalAlpha;
+    for (let k2 = 0; k2 < 2; k2++) {
+      ctx.globalAlpha = base * (k2 ? 0.45 : 1);
+      ctx.beginPath();
+      ctx.moveTo(mo.x - half, mo.y - curve * 0.15 + k2);
+      ctx.quadraticCurveTo(mo.x, mo.y + curve + k2, mo.x + half, mo.y - curve * 0.15 + k2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = base;
   }
 
   function drawArm(im, a, angle) {
@@ -402,19 +529,186 @@
     ctx.restore();
   }
 
-  function drawEggShadow(L) {
-    const footWorldY = L.nestTop + L.nestH * NEST.bowlY;
-    const zE = L.zN + L.nestW * 0.02;
-    const [fx, fy, f] = proj(0, footWorldY, zE);
-    const w = META.body.w * L.eggScale * f;
+  function drawEggShadow(L, alpha) {
+    const A = eggAnchor(L);
+    const w = META.body.w * A.k;
     const off = Math.sin(egg.side) * w * 0.25;
-    const spread = 1 + Math.abs(Math.sin(egg.side)) * 0.8 + Math.abs(Math.sin(egg.fwd)) * 0.3;
+    const spread = 1 + Math.abs(Math.sin(egg.side)) * 0.8;
     ctx.save();
-    ctx.translate(fx + off, fy);
+    ctx.globalAlpha = alpha;
+    ctx.translate(A.fx + off, A.fy);
     ctx.scale(1, 0.2);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 0.55 * spread);
     g.addColorStop(0, "rgba(20,20,24,0.4)"); g.addColorStop(1, "rgba(20,20,24,0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, w * 0.55 * spread, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  // ======================================================================
+  //  ARRIVAL MAGIC
+  // ======================================================================
+  const magic = { t: 0, parts: [], sparks: [], wobble: 0, pulse: 0, glowCache: {} };
+  const easeInOut = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  function shouldPlayMagic() {
+    if (!MAGIC.enabled) return false;
+    if (!MAGIC.onlyFirstTime) return true;
+    try { return !localStorage.getItem("egg.arrived"); } catch (e) { return true; }
+  }
+  function markArrived() { try { localStorage.setItem("egg.arrived", "1"); } catch (e) {} }
+
+  // pre-drawn soft glow dots, one per colour
+  function glowSprite(col) {
+    if (magic.glowCache[col]) return magic.glowCache[col];
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, "rgba(255,255,255,1)");
+    gr.addColorStop(0.18, col);
+    gr.addColorStop(0.5, col + "55");
+    gr.addColorStop(1, col + "00");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    return (magic.glowCache[col] = c);
+  }
+
+  // how strong the magic is at time t (0…1, peaking past 1 at the pulse)
+  function magicStrength(t) {
+    const P = MAGIC.pulseAt, D = MAGIC.duration;
+    if (t < P) return easeInOut(clamp((t - 0.2) / (P - 0.4), 0, 1));
+    if (t < P + 0.35) return 1 + 0.6 * Math.sin((t - P) / 0.35 * Math.PI);
+    return Math.max(0, 1 - easeInOut((t - P - 0.35) / (D - P - 0.35)));
+  }
+  // how solid the egg is
+  function eggSolidity(t) {
+    const P = MAGIC.pulseAt;
+    if (t < 0.8) return 0;
+    if (t < P) {
+      const a = Math.pow((t - 0.8) / (P - 0.8), 1.6) * 0.75;
+      return a * (0.85 + 0.15 * Math.sin(t * 23));          // a shimmer while it forms
+    }
+    return Math.min(1, 0.75 + (t - P) / 0.25 * 0.25);
+  }
+
+  function newParticle(burst) {
+    return {
+      th: Math.random() * Math.PI * 2,
+      w: (1.6 + Math.random() * 2.4) * (Math.random() < 0.5 ? 1 : 1.15),
+      h: burst ? Math.random() : Math.random() * 0.15,
+      rise: 0.14 + Math.random() * 0.22,
+      rj: 0.75 + Math.random() * 0.5,
+      size: 0.6 + Math.random() * 1.4,
+      col: MAGIC.colors[Math.floor(Math.random() * MAGIC.colors.length)],
+      trail: [], out: 0, bright: Math.random() < 0.08
+    };
+  }
+
+  function updateMagic(dt) {
+    magic.t += dt;
+    const S = magicStrength(magic.t) * MAGIC.intensity;
+    const want = Math.round(MAGIC.count * Math.min(1, S));
+    while (magic.parts.length < want) magic.parts.push(newParticle(magic.parts.length === 0));
+    const sp = MAGIC.speed;
+    for (let i = magic.parts.length - 1; i >= 0; i--) {
+      const q = magic.parts[i];
+      q.th += q.w * sp * dt * (1 + q.h * 0.6);
+      q.h += q.rise * sp * dt;
+      q.out += (magic.t > MAGIC.pulseAt ? 2.4 : 0) * dt;    // the pulse flings them outward
+      if (q.h > 1.15 || (q.h > 1 && magic.parts.length > want)) magic.parts.splice(i, 1);
+    }
+    // little starbursts now and then
+    if (Math.random() < S * 6 * dt) magic.sparks.push({ x: Math.random(), y: Math.random(), life: 0, size: 0.5 + Math.random() });
+    for (let i = magic.sparks.length - 1; i >= 0; i--) {
+      magic.sparks[i].life += dt / 0.6;
+      if (magic.sparks[i].life >= 1) magic.sparks.splice(i, 1);
+    }
+    if (Math.abs(magic.t - MAGIC.pulseAt) < dt) magic.pulse = 0.0001;
+    if (magic.pulse > 0) magic.pulse += dt / 0.9;
+    // the egg rocks gently as it forms, then settles
+    const settle = magic.t < MAGIC.pulseAt ? 1 : Math.max(0, 1 - (magic.t - MAGIC.pulseAt) / 1.2);
+    magic.wobble = reduceMotion ? 0 : Math.sin(magic.t * 5.2) * 0.05 * settle * Math.min(1, magic.t / 1.5);
+  }
+
+  // where the whirl stands on screen
+  function magicFrame(L) {
+    const A = eggAnchor(L);
+    const eggH = META.body.h * A.k;
+    return { cx: A.fx, base: A.fy + eggH * 0.05, height: eggH * 1.45, R: META.body.w * A.k * 0.75 };
+  }
+
+  function particlePos(q, F) {
+    const r = F.R * (0.45 + 0.75 * q.h) * q.rj * (1 + q.out * 0.6);
+    const x = F.cx + Math.cos(q.th) * r;
+    const depth = Math.sin(q.th);                    // < 0 behind the egg
+    const y = F.base - q.h * F.height + depth * F.R * 0.12;
+    return { x, y, depth };
+  }
+
+  function drawMagicParticles(L, behind) {
+    if (egg.state !== "arriving" && magic.parts.length === 0) return;
+    const F = magicFrame(L);
+    const S = magicStrength(magic.t) * MAGIC.intensity;
+    ctx.save();
+    for (const q of magic.parts) {
+      const p = particlePos(q, F);
+      if ((p.depth < 0) !== behind) { q.trail.length = 0; continue; }
+      q.trail.push(p); if (q.trail.length > 7) q.trail.shift();
+      const fadeTop = q.h > 0.85 ? Math.max(0, 1 - (q.h - 0.85) / 0.3) : Math.min(1, q.h / 0.08);
+      const a = clamp(S, 0, 1.3) * fadeTop * (behind ? 0.55 : 1);
+      if (a <= 0.01) continue;
+      // trail
+      if (q.trail.length > 2) {
+        ctx.globalAlpha = a * 0.35;
+        ctx.strokeStyle = q.col;
+        ctx.lineWidth = q.size * 1.4;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(q.trail[0].x, q.trail[0].y);
+        for (let i = 1; i < q.trail.length; i++) ctx.lineTo(q.trail[i].x, q.trail[i].y);
+        ctx.stroke();
+      }
+      // glowing dot
+      const size = (q.bright ? 14 : 8) * q.size * (1 + p.depth * 0.25) * (U / 400);
+      ctx.globalAlpha = a * (q.bright ? 1 : 0.85);
+      ctx.drawImage(glowSprite(q.col), p.x - size, p.y - size, size * 2, size * 2);
+    }
+    ctx.restore();
+  }
+
+  function drawMagicFront(L) {
+    if (egg.state !== "arriving") return;
+    const F = magicFrame(L);
+    const S = magicStrength(magic.t) * MAGIC.intensity;
+    ctx.save();
+    // starbursts
+    for (const s of magic.sparks) {
+      const x = F.cx + (s.x - 0.5) * F.R * 2.6, y = F.base - s.y * F.height * 1.1;
+      const life = Math.sin(s.life * Math.PI);
+      const r = (5 + 9 * s.size) * life * (U / 400);
+      ctx.globalAlpha = life * Math.min(1, S);
+      ctx.strokeStyle = "#ede4ff";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r);
+      ctx.moveTo(x - r * 0.4, y - r * 0.4); ctx.lineTo(x + r * 0.4, y + r * 0.4);
+      ctx.moveTo(x + r * 0.4, y - r * 0.4); ctx.lineTo(x - r * 0.4, y + r * 0.4);
+      ctx.stroke();
+      ctx.drawImage(glowSprite("#a78bfa"), x - r, y - r, r * 2, r * 2);
+    }
+    // the reveal pulse: a ring and a soft flash
+    if (magic.pulse > 0 && magic.pulse < 1) {
+      const t = magic.pulse, e = 1 - Math.pow(1 - t, 3);
+      const cy = F.base - F.height * 0.38;
+      ctx.globalAlpha = (1 - t) * 0.9;
+      ctx.strokeStyle = "#a78bfa";
+      ctx.lineWidth = 3 * (1 - t) + 1;
+      ctx.beginPath(); ctx.ellipse(F.cx, cy, F.R * (0.6 + e * 2.2), F.R * (0.6 + e * 2.2) * 0.9, 0, 0, Math.PI * 2); ctx.stroke();
+      const g = ctx.createRadialGradient(F.cx, cy, 0, F.cx, cy, F.R * 2.4);
+      g.addColorStop(0, `rgba(237,228,255,${0.75 * (1 - t)})`);
+      g.addColorStop(0.4, `rgba(167,139,250,${0.35 * (1 - t)})`);
+      g.addColorStop(1, "rgba(167,139,250,0)");
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = g; ctx.fillRect(F.cx - F.R * 2.5, cy - F.R * 2.5, F.R * 5, F.R * 5);
+    }
     ctx.restore();
   }
 
@@ -423,21 +717,43 @@
     ctx.fillStyle = "#ecebe8";
     ctx.fillRect(0, 0, W, H);
     drawRoom();
-    if (loadedCount >= 4) {
-      const L = layout();
-      drawNest(L, false);
-      drawEggShadow(L);
-      drawEgg(L);
-      drawNest(L, true);
+    const arriving = egg.state === "arriving";
+    const S = arriving ? magicStrength(magic.t) * MAGIC.intensity : 0;
+    if (S > 0) {
+      // the room dims so the magic glows against it
+      ctx.fillStyle = `rgba(26,18,44,${0.32 * Math.min(1, S)})`;
+      ctx.fillRect(0, 0, W, H);
     }
-    // grain over everything, so it all reads as one drawing
-    ctx.globalAlpha = 1;
-    ctx.drawImage(roomTex, 0, 0, W, H);
-    // vignette
+    if (loadedCount >= 6) {
+      const L = layout();
+      const solid = arriving ? eggSolidity(magic.t) : 1;
+      drawNest(L, false);
+      drawMagicParticles(L, true);
+      drawEggShadow(L, solid);
+      if (solid > 0.01) drawEgg(L, solid);
+      if (arriving && solid < 1) {
+        // violet light inside the forming egg
+        const A = eggAnchor(L);
+        const cy = A.fy - META.body.h * A.k * 0.5;
+        const r = META.body.w * A.k * 0.75;
+        const g = ctx.createRadialGradient(A.fx, cy, 0, A.fx, cy, r);
+        g.addColorStop(0, `rgba(196,181,253,${0.55 * Math.min(1, S) * (1 - solid * 0.6)})`);
+        g.addColorStop(1, "rgba(139,92,246,0)");
+        ctx.fillStyle = g; ctx.fillRect(A.fx - r, cy - r, r * 2, r * 2);
+      }
+      drawNest(L, true);
+      ctx.drawImage(roomTex, 0, 0, W, H);
+      drawMagicParticles(L, false);
+      drawMagicFront(L);
+    } else {
+      ctx.drawImage(roomTex, 0, 0, W, H);
+    }
     const v = ctx.createRadialGradient(W / 2, H * 0.45, U * 0.35, W / 2, H / 2, Math.hypot(W, H) * 0.62);
     v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(20,20,24,0.22)");
     ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
   }
+
+  if (shouldPlayMagic()) egg.state = "arriving";
 
   // ======================================================================
   //  LOOP

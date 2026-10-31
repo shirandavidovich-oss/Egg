@@ -7,9 +7,10 @@ def uri(name):
     with open(os.path.join(here, name), 'rb') as f:
         return 'data:image/webp;base64,' + base64.b64encode(f.read()).decode()
 art = {'body': uri('egg-body.webp'), 'armL': uri('egg-arm-left.webp'),
-       'armR': uri('egg-arm-right.webp'), 'nest': uri('nest.webp')}
+       'armR': uri('egg-arm-right.webp'), 'nest': uri('nest.webp'),
+       'shoeL': uri('egg-shoe-left.webp'), 'shoeR': uri('egg-shoe-right.webp')}
 meta = json.load(open(os.path.join(here, 'parts.json')))
-meta = {k: meta[k] for k in ('armL', 'armR', 'body')}
+meta = {k: meta[k] for k in ('armL', 'armR', 'body', 'shoeL', 'shoeR', 'legL', 'legR', 'mouth')}
 js = 'const ART = ' + json.dumps(art) + ';\nconst META = ' + json.dumps(meta) + ';'
 page = open(os.path.join(here, 'game-template.html')).read().replace('/*ART*/', js)
 out = os.path.join(here, '..', 'app', 'src', 'main', 'assets', 'index.html')

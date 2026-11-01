@@ -59,6 +59,14 @@ Mini games so far: **קפיץ־קפוץ** (springs; switch between a hanging spr
 on wood, ice or rubber) and **מי מושך אותי?!** (inclined plane in 7 stages; only the angle and the
 surface can change, the creature's body is fixed).
 
+**Calculator, explanations, history** (`art/physics/explain.js`, data in `art/physics/laws-data.js`):
+- A calculator button sits in the top bar of every physics screen, next to the sound button (degrees, g, π, ans).
+- Tap a formula (or its ▶) to play a short explanation: each letter appears with its meaning and current value,
+  the operations are said in words, the numbers are put in, and an arrow carries the answer to the result.
+- Names of laws (📜, e.g. חוק הוק) and of scientists are tappable: when, who, why it was needed, how it was found.
+  From there: a timeline chart (year across, scientists down in א-ב order); tap a name to learn who they were.
+- Tests: `tests/explain.test.js`.
+
 These files are pulled into `index.html` by `art/build.py`, so they update phones without a reinstall.
 
 ## Live wallpaper

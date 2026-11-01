@@ -393,6 +393,132 @@
   .kgraph { position: relative; }
   .kgraph canvas { position: relative !important; inset: auto !important; width: 100% !important; height: 130px !important; }
 
+  /* ---------- explain: calculator, formula movies, laws, scientists, timeline ---------- */
+  .ex-back { position: fixed; inset: 0; z-index: 65; background: rgba(32,35,42,0.32); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn .18s; font-family: var(--ui-font); color: var(--ink); }
+  .ex-panel { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; overflow-x: hidden; background: #fff; border-radius: 24px 24px 0 0; padding: 8px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); animation: sheetUp .28s cubic-bezier(.2,.8,.2,1); box-shadow: 0 -10px 30px rgba(0,0,0,0.12); }
+  .ex-bar { position: sticky; top: -8px; z-index: 2; display: flex; align-items: center; gap: 6px; min-height: 48px; margin: 0 -16px 6px; padding: 0 8px; background: #fff; border-bottom: 1px solid var(--line); }
+  .ex-title { flex: 1; font-weight: 800; font-size: 17px; }
+  .ex-x, .ex-nav { border: 0; background: none; color: var(--ink-2); cursor: pointer; min-width: 44px; min-height: 44px; border-radius: 12px; font: 600 15px var(--ui-font); display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+  .ex-x { font-size: 28px; line-height: 1; }
+  .ex-nav svg { width: 20px; height: 20px; }
+  .ex-x:active, .ex-nav:active { background: #F0F1F3; }
+  .ex-panel h3 { margin: 4px 0 8px; font-size: 22px; font-weight: 800; }
+  .ex-panel h4 { margin: 16px 0 4px; font-size: 15px; color: var(--violet); }
+  .ex-panel p { margin: 0 0 10px; line-height: 1.55; color: var(--ink); font-size: 15.5px; }
+  .ex-panel .fine { font-size: 13px; color: var(--ink-2); }
+  .ex-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .ex-actions .btn { flex: 1; }
+
+  /* tappable law and scientist names */
+  .lawlink { all: unset; cursor: pointer; color: #6A43D6; font-weight: 600; border-bottom: 1.5px dotted #A989F2; padding: 0 1px; border-radius: 4px; -webkit-tap-highlight-color: transparent; }
+  .lawlink:active { background: #EFE8FD; }
+  .lawlink.law::before { content: "📜"; font-size: 0.8em; margin-inline-end: 2px; }
+  .mv-play { flex: none; align-self: center; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #CDBDF6; background: #F4F1FD; color: var(--violet); font-size: 13px; cursor: pointer; display: grid; place-items: center; padding: 0 0 0 2px; }
+  .mv-play.wide { width: auto; height: 36px; border-radius: 999px; padding: 0 14px; font: 600 14px var(--ui-font); margin: 6px 0 8px; display: inline-flex; align-items: center; }
+  .mv-play:active { background: #E6DDFB; }
+  .formula .eq .m { cursor: pointer; }
+  .cloud .eqs div { cursor: pointer; }
+  .cloud .eqs div::after { content: " ▶"; font-size: 10px; color: var(--violet); }
+
+  /* the movie */
+  .mv-prog { height: 4px; border-radius: 4px; background: #EEF0F2; overflow: hidden; margin: 2px 0 10px; }
+  .mv-prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #A989F2, var(--violet)); }
+  .mv { position: relative; padding: 6px 0 4px; min-height: 230px; }
+  .mv-top { display: flex; align-items: center; gap: 10px; margin-bottom: 44px; }
+  .mv-rel { font: 700 30px "Cambria Math", Georgia, serif; color: var(--ink-2); }
+  .mv-rhs { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+  .mv-card { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 62px; padding: 7px 9px 6px; border: 1.5px solid #3a3a40; border-radius: 14px; background: #fff; box-shadow: 0 2px 0 rgba(30,30,34,0.18); }
+  .mv-card .mv-letter { font: 700 28px/1.05 "Cambria Math", "STIX Two Math", Georgia, serif; }
+  .mv-card small { font-size: 11px; color: var(--ink-2); max-width: 92px; text-align: center; line-height: 1.2; margin-top: 2px; }
+  .mv-card .mv-val { margin-top: 4px; background: #EAF3FE; color: var(--blue-press); border-radius: 8px; padding: 1px 7px; font: 700 14px var(--ui-font); white-space: nowrap; }
+  .mv-card .mv-val i { font-style: normal; font-weight: 500; font-size: 11px; }
+  .mv-lhs { min-width: 92px; border-color: var(--violet); border-width: 2px; }
+  .mv-lhs .mv-val { background: #F4F1FD; color: #4F33A8; font-size: 16px; }
+  .mv-lhs.lit { animation: mvPulse 1s ease-out; }
+  .mv-lhs.got { background: #F4F1FD; animation: mvPop .5s cubic-bezier(.3,1.6,.5,1); }
+  .mv-op { display: inline-flex; flex-direction: column; align-items: center; min-width: 40px; }
+  .mv-op b { font: 700 28px/1 "Cambria Math", Georgia, serif; color: #C2418F; }
+  .mv-op small { font-size: 11px; color: #C2418F; font-weight: 600; white-space: nowrap; }
+  .mv-par { font: 400 40px/1 "Cambria Math", Georgia, serif; color: var(--ink-2); }
+  .mv-num .mv-letter { color: #B8741A; }
+  .mv-fn .mv-letter { font-size: 20px; }
+  .mv-tok { opacity: 0.12; transform: translateY(10px) scale(0.85); transition: opacity .35s, transform .45s cubic-bezier(.3,1.5,.5,1), box-shadow .3s, border-color .3s; }
+  .mv-tok.in { opacity: 1; transform: none; }
+  .mv-tok.in:not(.glow) { animation: mvPop .55s cubic-bezier(.3,1.6,.5,1); }
+  .mv-tok.glow.mv-card { border-color: var(--violet); box-shadow: 0 0 0 4px rgba(138,96,232,0.18); }
+  .mv-sum { margin: 14px auto 0; width: fit-content; max-width: 100%; padding: 8px 14px; border-radius: 14px; background: #FFF7E0; border: 1.5px dashed #E5B84A; font: 600 18px var(--ui-font); color: #6B4A00; text-align: center; animation: mvPop .5s cubic-bezier(.3,1.6,.5,1); overflow-wrap: anywhere; }
+  .mv-sum b { color: #4F33A8; white-space: nowrap; }
+  .mv-arrow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .mv-arrow path { fill: none; stroke: var(--violet); stroke-width: 3; stroke-linecap: round; }
+  .mv-fly { position: absolute; left: 0; top: 0; z-index: 3; padding: 5px 12px; border-radius: 999px; background: var(--violet); color: #fff; font: 800 16px var(--ui-font); white-space: nowrap; pointer-events: none; box-shadow: 0 6px 16px rgba(138,96,232,0.4); }
+  .mv-cap { min-height: 3.2em; margin: 14px 0 6px; padding: 10px 14px; border-radius: 16px; background: #F7F8FA; font-size: 17px; line-height: 1.45; font-weight: 500; }
+  .mv-formula { text-align: center; font: 600 15px "Cambria Math", Georgia, serif; color: var(--ink-2); }
+  @keyframes mvPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.12); } 100% { transform: none; } }
+  @keyframes mvPulse { 0% { box-shadow: 0 0 0 0 rgba(138,96,232,0.5); } 100% { box-shadow: 0 0 0 16px rgba(138,96,232,0); } }
+
+  /* law card */
+  .law-name { color: #4F33A8; }
+  .law-when { font-size: 15px; margin-bottom: 8px; }
+  .law-f { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; }
+  .law-f .m { font: 600 22px "Cambria Math", Georgia, serif; background: #F4F1FD; color: #4F33A8; border-radius: 12px; padding: 6px 14px; cursor: pointer; }
+  .law-simple { background: #EAF8F2; color: #17765A !important; border-radius: 14px; padding: 10px 12px; font-weight: 500; }
+  .law-events { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
+  .law-events li { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 8px; align-items: center; font-size: 14px; color: var(--ink-2); }
+  .law-events .yr { font-variant-numeric: tabular-nums; color: var(--ink); min-width: 3em; }
+  .law-events li span { grid-column: 1 / -1; padding-inline-start: 3.6em; }
+  .sci-chip, .law-chip { border: 1.5px solid #CDBDF6; background: #F8F5FE; color: #4F33A8; border-radius: 999px; padding: 5px 12px; font: 600 14px var(--ui-font); cursor: pointer; min-height: 36px; justify-self: start; }
+  .law-chip small { color: var(--ink-2); font-weight: 500; margin-inline-start: 4px; }
+  .law-chip.big { font-size: 16px; min-height: 48px; width: 100%; }
+  .sci-chip:active, .law-chip:active { background: #E6DDFB; }
+
+  /* scientist card */
+  .sci-head { display: flex; align-items: center; gap: 12px; }
+  .sci-head h3 { margin: 0; }
+  .sci-face { flex: none; width: 58px; height: 58px; border-radius: 50%; border: 2px solid #3a3a40; display: grid; place-items: center; font: 800 26px var(--ui-font); background: #FFF7E0; color: #6B4A00; }
+  .sci-years { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+  .sci-role { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .sci-role .tag { background: #EAF3FE; color: var(--blue-press); font-size: 13px; }
+  .sci-fun { background: #FFF7E0; border-radius: 14px; padding: 10px 12px; font-size: 15px; line-height: 1.5; }
+  .sci-fun b { color: #B8741A; }
+  .sci-laws { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+  /* timeline */
+  .tl { display: grid; grid-template-columns: 1fr auto; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; }
+  .tl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tl-scroll svg { display: block; }
+  .tl-names { display: flex; flex-direction: column; border-left: 1px solid var(--line); background: #fff; }
+  .tl-name { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; padding: 0 10px; font: 700 14px var(--ui-font); color: #4F33A8; min-width: 84px; white-space: nowrap; }
+  .tl-name:nth-child(odd) { background: #F6F7F9; }
+  .tl-name:active { background: #EFE8FD; }
+  .tl-year { font: 600 11px var(--ui-font); fill: #8A9099; text-anchor: middle; }
+  .tl-lab { font: 700 11px var(--ui-font); fill: #20232A; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 3px; direction: rtl; unicode-bidi: plaintext; }
+  .tl-pt { cursor: pointer; }
+  .tl-pt:active circle:nth-child(2) { r: 10; }
+  .tl-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tl-legend .law-chip { font-size: 12.5px; min-height: 32px; padding: 3px 10px; display: inline-flex; align-items: center; gap: 6px; }
+  .tl-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* calculator */
+  .calc-screen { background: #F4F5F7; border-radius: 18px; padding: 10px 14px; margin-bottom: 12px; min-height: 104px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; }
+  .calc-hist { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .calc-hist button { all: unset; cursor: pointer; font-size: 13px; color: var(--ink-2); }
+  .calc-hist b { color: var(--ink); }
+  .calc-expr { font: 600 30px var(--ui-font); color: var(--ink); overflow-wrap: anywhere; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .calc-expr.err { color: var(--red); animation: calcShake .35s; }
+  .calc-prev { font: 500 18px var(--ui-font); color: var(--blue-press); min-height: 1.3em; }
+  .calc-keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .ck { min-height: 52px; border-radius: 14px; border: 1.5px solid #3a3a40; background: #fff; font: 600 20px var(--ui-font); color: var(--ink); cursor: pointer; box-shadow: 0 2px 0 rgba(30,30,34,0.2); -webkit-tap-highlight-color: transparent; }
+  .ck.fn { background: #F4F1FD; color: #4F33A8; font-size: 17px; }
+  .ck.clr { background: #FDEDEB; color: #B23A30; }
+  .ck.eq { grid-column: span 2; background: var(--blue); color: #fff; border-color: var(--blue-press); font-size: 24px; }
+  .ck:active { transform: translateY(2px); box-shadow: none; }
+  .calc-note { text-align: center; margin-top: 10px !important; }
+  @keyframes calcShake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  @media (prefers-reduced-motion: reduce) { .ex-panel, .ex-back, .mv-tok, .mv-sum, .mv-lhs { animation: none !important; transition: none !important; } }
+  .formula .eq > span:first-child { flex: 1; min-width: 0; }
+  .formula .eq .m { white-space: nowrap; }
+  .formula .eq .mv-play { width: 30px; height: 30px; font-size: 11px; }
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
@@ -412,6 +538,7 @@
     <button class="icon-btn" id="uiBack" type="button" aria-label="חזרה"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="title-wrap"><h1 id="uiTitle"></h1><p id="uiSub"></p></div>
     <button class="icon-btn" id="uiSound" type="button" aria-label="השתקה"></button>
+    <button class="icon-btn" id="uiCalc" type="button" aria-label="מחשבון"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2.5"/><rect x="8" y="6" width="8" height="3.5" rx="0.8"/><path d="M8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01"/></g></svg></button>
     <div class="coins" id="uiCoins" role="status" aria-label="מטבעות"><span class="coin" aria-hidden="true"></span><b class="num">0</b></div>
   </header>
   <main id="screen"></main>
@@ -3306,6 +3433,638 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
 })();
 </script>
 <script>
+// Laws, theories and the scientists behind them (Hebrew). Used by explain.js:
+// tap a law's name -> a card (when, who, why it was needed, how it was found),
+// a timeline chart (year x scientist, names in alphabetical order), tap a scientist -> who they were.
+// Years before the common era are negative numbers.
+const LAWS_DATA = {
+  scientists: {
+    archimedes: { name: "ארכימדס", full: "ארכימדס מסירקוזה", born: -287, died: -212, place: "סירקוזה, סיציליה (יוון העתיקה)", role: "מתמטיקאי, פיזיקאי ומהנדס",
+      bio: "אחד המדענים הגדולים של העולם העתיק. חישב את השטח של עיגול בדיוק מפתיע, המציא מכונות להרמת מים ולהגנה על העיר שלו, וגילה למה דברים צפים במים.",
+      fun: "לפי הסיפור קפץ מהאמבטיה וצעק 'אאורקה!' (מצאתי!) כשהבין למה המים עולים כשנכנסים לאמבט." },
+    davinci: { name: "דה וינצ׳י", full: "לאונרדו דה וינצ׳י", born: 1452, died: 1519, place: "וינצ׳י, איטליה", role: "אמן, ממציא ומהנדס",
+      bio: "צייר המונה ליזה, אבל גם חוקר סקרן של כל דבר: מים, ציפורים, גוף האדם ומכונות. מילא אלפי דפים ברישומים ובניסויים.",
+      fun: "כתב את המחברות שלו בכתב ראי, מימין לשמאל. רוב התגליות שלו נשארו בתוכן ולא פורסמו בימי חייו." },
+    stevin: { name: "סטווין", full: "סימון סטווין", born: 1548, died: 1620, place: "ברוז׳, פלנדריה (היום בלגיה)", role: "מתמטיקאי ומהנדס",
+      bio: "מהנדס שבנה סכרים ותעלות בהולנד וכתב ספרים בשפה פשוטה כדי שגם אנשים רגילים יבינו מדע. הוא הפיץ את השברים העשרוניים (כמו 0.5).",
+      fun: "הציור של שרשרת הכדורים על משולש היה כל כך גאוני בעיניו, שהוא שם אותו על שער הספר שלו." },
+    galileo: { name: "גלילאו", full: "גלילאו גליליי", born: 1564, died: 1642, place: "פיזה, איטליה", role: "פיזיקאי, אסטרונום ומתמטיקאי",
+      bio: "נחשב לאבי המדע הניסויי: במקום רק לחשוב איך העולם עובד, הוא מדד. שיפר את הטלסקופ וגילה את הירחים של צדק.",
+      fun: "בלי שעון מדויק, הוא מדד זמן לפי כמות מים שזרמה מכלי, ולפי הדופק של עצמו." },
+    kepler: { name: "קפלר", full: "יוהאנס קפלר", born: 1571, died: 1630, place: "וייל דר שטאט, גרמניה", role: "אסטרונום ומתמטיקאי",
+      bio: "עבד עם המדידות המדויקות ביותר של כוכב הלכת מאדים, ואחרי שנים של חישובים הבין שכוכבי הלכת נעים באליפסות ולא במעגלים.",
+      fun: "כתב גם את אחד מסיפורי המדע הבדיוני הראשונים: מסע לירח." },
+    descartes: { name: "דקארט", full: "רנה דקארט", born: 1596, died: 1650, place: "לה אה, צרפת", role: "פילוסוף ומתמטיקאי",
+      bio: "המציא את מערכת הצירים, הרעיון שאפשר לתאר כל נקודה בעזרת שני מספרים. בזכותו יש לנו גרפים.",
+      fun: "לפי הסיפור, את רעיון הצירים קיבל כשהסתכל על זבוב על התקרה וחשב איך לתאר איפה הוא." },
+    huygens: { name: "הויגנס", full: "כריסטיאן הויגנס", born: 1629, died: 1695, place: "האג, הולנד", role: "מתמטיקאי, פיזיקאי ואסטרונום",
+      bio: "בנה את שעון המטוטלת הראשון, שהיה מדויק פי עשרות משעונים קודמים. גילה את הטבעות של שבתאי והציע שאור הוא גל.",
+      fun: "המציא גם את קפיץ השיער בשעוני כיס, קפיץ זעיר שמתנודד ושומר על הזמן." },
+    hooke: { name: "הוק", full: "רוברט הוק", born: 1635, died: 1703, place: "האי וייט, אנגליה", role: "פיזיקאי, ממציא ואדריכל",
+      bio: "היה אחראי על הניסויים של החברה המלכותית בלונדון ובנה מכשירים מדויקים. הסתכל במיקרוסקופ על פקק ונתן לחללים הקטנים את השם 'תאים'.",
+      fun: "כדי שאף אחד לא יגנוב לו את הרעיון, פרסם את חוק הקפיץ קודם כחידה של אותיות מבולגנות." },
+    newton: { name: "ניוטון", full: "אייזק ניוטון", born: 1643, died: 1727, place: "וולסת׳ורפ, אנגליה", role: "פיזיקאי ומתמטיקאי",
+      bio: "הראה שאותם חוקים פועלים על תפוח שנופל ועל הירח שמקיף את כדור הארץ. המציא (במקביל ללייבניץ) את החשבון הדיפרנציאלי, ופירק אור לבן לצבעי הקשת.",
+      fun: "יחידת הכוח, הניוטון (N), נקראת על שמו. מתיחה של קפיץ ב-1 N היא בערך המשקל של תפוח קטן." },
+    leibniz: { name: "לייבניץ", full: "גוטפריד וילהלם לייבניץ", born: 1646, died: 1716, place: "לייפציג, גרמניה", role: "מתמטיקאי ופילוסוף",
+      bio: "המציא את החשבון הדיפרנציאלי והאינטגרלי (במקביל לניוטון) ואת הסימנים שמשתמשים בהם עד היום. עבד גם על השיטה הבינארית, של 0 ו-1, שעליה בנויים מחשבים.",
+      fun: "בנה מכונת חישוב שידעה לחבר, לחסר, לכפול ולחלק." },
+    amontons: { name: "אמונטון", full: "גיום אמונטון", born: 1663, died: 1705, place: "פריז, צרפת", role: "פיזיקאי וממציא",
+      bio: "ממציא של מכשירי מדידה: מדי חום ולחץ. חקר איך חיכוך מתנהג במכונות.",
+      fun: "התחרש כנער, וזה רק חיזק את העניין שלו במכונות ובניסויים." },
+    coulomb: { name: "קולון", full: "שארל-אוגוסטן דה קולון", born: 1736, died: 1806, place: "אנגולם, צרפת", role: "פיזיקאי ומהנדס צבאי",
+      bio: "מהנדס שבנה מבצרים ואחר כך חקר חיכוך, חבלים ומכונות. מאוחר יותר מדד את הכוח בין מטענים חשמליים.",
+      fun: "יחידת המטען החשמלי, הקולון (C), נקראת על שמו." },
+    coriolis: { name: "קוריוליס", full: "גספאר-גוסטב קוריוליס", born: 1792, died: 1843, place: "פריז, צרפת", role: "מתמטיקאי ומהנדס",
+      bio: "רצה למדוד כמה עבודה מכונות באמת עושות. הוא נתן למילה 'עבודה' את המשמעות שלה בפיזיקה, וקבע ש-½·m·v² היא האנרגיה של תנועה.",
+      fun: "יש כוח שנקרא על שמו, כוח קוריוליס, שמסובב רוחות וסופות על כדור הארץ המסתובב." },
+    ohm: { name: "אוהם", full: "גאורג שימון אוהם", born: 1789, died: 1854, place: "ארלנגן, גרמניה", role: "פיזיקאי ומורה למתמטיקה",
+      bio: "מורה בבית ספר שעשה ניסויים בחשמל בזמנו הפנוי, והכין לבד חוטים באורכים שונים כדי למדוד.",
+      fun: "בהתחלה צחקו על החוק שלו. היום יחידת ההתנגדות, האוהם (Ω), נקראת על שמו." },
+    mayer: { name: "מאייר", full: "יוליוס רוברט מאייר", born: 1814, died: 1878, place: "היילברון, גרמניה", role: "רופא ופיזיקאי",
+      bio: "רופא אוניה שהבחין במשהו מוזר, ומזה הגיע לאחד הרעיונות הגדולים בפיזיקה: אנרגיה לא נעלמת, רק משנה צורה.",
+      fun: "במסע לג׳אווה ראה שהדם של המלחים אדום יותר באזור החם, והבין שהגוף צריך 'לשרוף' פחות כדי לשמור על חום." },
+    joule: { name: "ג׳אול", full: "ג׳יימס פרסקוט ג׳אול", born: 1818, died: 1889, place: "סלפורד, אנגליה", role: "פיזיקאי (ומבשל בירה)",
+      bio: "בנו של בעל מבשלת בירה, שרצה לדעת איזה מנוע חסכוני יותר. מדד בדיוק עצום כמה חום נוצר מעבודה.",
+      fun: "יחידת האנרגיה, הג׳אול (J), נקראת על שמו. לפי הסיפור מדד טמפרטורה של מים למעלה ולמטה במפל, בירח הדבש שלו." },
+    helmholtz: { name: "הלמהולץ", full: "הרמן פון הלמהולץ", born: 1821, died: 1894, place: "פוטסדאם, גרמניה", role: "פיזיקאי ורופא",
+      bio: "חקר גם את העין והאוזן וגם פיזיקה. כתב בשפה מתמטית מסודרת שאנרגיה נשמרת בכל תהליך בטבע.",
+      fun: "המציא מכשיר שמאפשר להסתכל לתוך העין, שרופאים משתמשים בו עד היום." }
+  },
+
+  laws: [
+    { id: "lever", name: "חוק המנוף", short: "מנוף", formula: "F₁·d₁ = F₂·d₂", year: -250, yearText: "בערך 250 לפני הספירה",
+      events: [{ sci: "archimedes", year: -250, what: "כתב את החוק בספר 'על שיווי משקל של משטחים'" }],
+      simple: "כוח קטן רחוק מנקודת המשען מאזן כוח גדול קרוב אליה. לכן נדנדה מאוזנת גם כשהגדול יושב קרוב למרכז.",
+      need: "לבנות מכונות שמרימות משאות כבדים: אבנים לבניין, מים מבארות ואוניות.",
+      how: "ארכימדס הוכיח את החוק כמו משפט בגיאומטריה, מתוך הנחות פשוטות על מאזניים סימטריים.",
+      aliases: ["חוק המנוף", "מנוף"] },
+    { id: "friction", name: "חוקי החיכוך", short: "חיכוך", formula: "f_k = μk·N", year: 1699, yearText: "1699 (ונוסח מחדש ב-1781)",
+      events: [
+        { sci: "davinci", year: 1493, what: "רשם במחברות שהחיכוך תלוי בכובד ולא בשטח המגע, אבל לא פרסם" },
+        { sci: "amontons", year: 1699, what: "גילה מחדש ופרסם: החיכוך יחסי לכוח הלוחץ ולא תלוי בשטח" },
+        { sci: "coulomb", year: 1781, what: "הבחין בין חיכוך סטטי (לפני תנועה) לחיכוך קינטי (בזמן תנועה)" }],
+      simple: "ככל שלוחצים חזק יותר על המשטח, קשה יותר להחליק. החיכוך לא תלוי בגודל השטח, רק בחומרים ובכוח הלחיצה.",
+      need: "מכונות התבלו ובזבזו כוח, ומהנדסי הצי הצרפתי רצו לדעת כמה כוח צריך כדי להזיז ספינות, חבלים וגלגלות.",
+      how: "גררו גושים של עץ ומתכת על משטחים שונים, הוסיפו משקולות ומדדו את הכוח שצריך כדי להתחיל לזוז ולהמשיך לזוז.",
+      aliases: ["חוקי החיכוך", "חיכוך סטטי", "חיכוך קינטי", "החיכוך", "חיכוך"] },
+    { id: "incline", name: "חוק המדרון (פירוק כוחות)", short: "מדרון", formula: "F = mg·sinθ", year: 1586, yearText: "1586",
+      events: [
+        { sci: "stevin", year: 1586, what: "הוכיח עם שרשרת כדורים על משולש כמה כוח מושך במורד מדרון" },
+        { sci: "galileo", year: 1638, what: "פרסם ניסויים של כדורים מתגלגלים במדרון" }],
+      simple: "על מדרון רק חלק מהכובד מושך במורד. ככל שהמדרון תלול יותר, החלק הזה גדול יותר.",
+      need: "להרים משאות בעזרת מישור משופע, כמו רמפה, ולדעת כמה כוח זה יחסוך.",
+      how: "סטווין דמיין שרשרת סגורה של כדורים שתלויה על משולש. אם היא הייתה מתחילה לזוז לבד, היא הייתה זזה לנצח, וזה בלתי אפשרי. לכן היא מאוזנת, ומזה יוצא החוק.",
+      aliases: ["חוק המדרון", "רכיב במורד המדרון", "במורד המדרון", "לאורך המדרון", "המדרון", "מדרון"] },
+    { id: "fall", name: "חוק הנפילה (תנועה בתאוצה קבועה)", short: "נפילה", formula: "x = ½·a·t²", year: 1638, yearText: "1638 (הניסויים בערך ב-1604)",
+      events: [{ sci: "galileo", year: 1638, what: "פרסם בספר 'שני מדעים חדשים'" }],
+      simple: "גוף שמאיץ באופן קבוע עובר בשנייה השנייה יותר דרך מאשר בראשונה: אחרי פי 2 זמן, פי 4 מרחק.",
+      need: "דברים נופלים מהר מדי כדי למדוד אותם, ורצו להבין איך בדיוק נעים פגזים וכדורים.",
+      how: "גלילאו 'האט' את הנפילה: גלגל כדורים במדרון ארוך ומדד זמן לפי מים שזרמו מכלי.",
+      aliases: ["חוק הנפילה", "נפילה חופשית", "תאוצה קבועה"] },
+    { id: "kepler", name: "חוקי קפלר", short: "קפלר", formula: "T² ∝ a³", year: 1609, yearText: "1609 ו-1619",
+      events: [{ sci: "kepler", year: 1609, what: "שני החוקים הראשונים: מסלולים אליפטיים" }, { sci: "kepler", year: 1619, what: "החוק השלישי: הקשר בין המרחק לזמן ההקפה" }],
+      simple: "כוכבי הלכת נעים סביב השמש באליפסות, מהר יותר כשהם קרובים אליה ולאט יותר כשהם רחוקים.",
+      need: "המדידות של מאדים לא התאימו לתנועה במעגלים, ואסטרונומים רצו לחזות איפה יהיו כוכבי הלכת.",
+      how: "קפלר עבד שנים על המדידות המדויקות של טיכו ברהה וניסה צורה אחרי צורה, עד שאליפסה התאימה בדיוק.",
+      aliases: ["חוקי קפלר", "קפלר"] },
+    { id: "axes", name: "מערכת הצירים (גרף)", short: "צירים", formula: "(x, y)", year: 1637, yearText: "1637",
+      events: [{ sci: "descartes", year: 1637, what: "פרסם את הגיאומטריה האנליטית: כל נקודה = שני מספרים" }],
+      simple: "שני קווים, אחד לרוחב ואחד לגובה, וכל נקודה מתוארת בשני מספרים. ככה מציירים גרף.",
+      need: "לחבר בין גיאומטריה (צורות) לאלגברה (משוואות), כדי לפתור בעיות של צורות בעזרת חשבון.",
+      how: "דקארט הראה שכל קו ועקומה אפשר לכתוב כמשוואה, וכל משוואה אפשר לצייר.",
+      aliases: ["מערכת הצירים", "מערכת צירים", "השיפוע של הגרף", "גרף"] },
+    { id: "momentum", name: "שימור תנע", short: "תנע", formula: "m1·v1 + m2·v2 = const", year: 1669, yearText: "1669",
+      events: [
+        { sci: "descartes", year: 1644, what: "הציע ש'כמות התנועה' בעולם נשמרת (עוד בלי כיוון)" },
+        { sci: "huygens", year: 1669, what: "פרסם את חוקי ההתנגשות הנכונים, עם כיוון" },
+        { sci: "newton", year: 1687, what: "חיבר את זה לחוקי התנועה" }],
+      simple: "כשגופים דוחפים זה את זה, מה שאחד מקבל קדימה, השני מקבל אחורה. הסכום הכולל לא משתנה.",
+      need: "החברה המלכותית בלונדון ביקשה ב-1668 ממדענים לגלות את החוקים של התנגשויות.",
+      how: "הויגנס חקר התנגשויות של כדורים, ודמיין אותן גם מתוך סירה שנעה, כדי לראות מה נשאר זהה.",
+      aliases: ["שימור תנע", "שימור התנע", "תנע"] },
+    { id: "period", name: "זמן מחזור של תנודה", short: "זמן מחזור", formula: "T = 2π·√(m/k)", year: 1673, yearText: "1673",
+      events: [{ sci: "huygens", year: 1673, what: "פרסם את הנוסחה לזמן המחזור של מטוטלת בספר על שעונים" }],
+      simple: "קפיץ או מטוטלת חוזרים על התנועה באותו קצב, לא משנה אם התנודה גדולה או קטנה. בזכות זה אפשר לבנות שעון.",
+      need: "שעונים לא היו מדויקים, ובים אי אפשר היה לדעת איפה האוניה בלי לדעת את השעה המדויקת.",
+      how: "הויגנס חישב בגיאומטריה איך מטוטלת נעה, ובנה שעונים לפי החישוב.",
+      aliases: ["זמן מחזור", "תדירות זוויתית", "תנודה הרמונית"] },
+    { id: "hooke", name: "חוק הוק", short: "הוק", formula: "F = −k·s", year: 1660, yearText: "1660 (פורסם ב-1678)",
+      events: [{ sci: "hooke", year: 1660, what: "גילה את החוק" }, { sci: "hooke", year: 1678, what: "פרסם: 'כמו המתיחה, כך הכוח'" }],
+      simple: "ככל שמותחים קפיץ יותר, הוא מושך חזרה חזק יותר, באותו יחס. מותחים פי 2, הוא מושך פי 2.",
+      need: "לבנות שעונים עם קפיצים במקום מטוטלות, כדי שיעבדו גם בכיס וגם באוניה שמתנדנדת.",
+      how: "הוק תלה משקולות על קפיצים וחוטי מתכת ומדד כמה הם נמתחים. ב-1676 פרסם חידה של אותיות, ורק ב-1678 גילה את הפתרון.",
+      aliases: ["חוק הוק", "הוק"] },
+    { id: "kinetic", name: "אנרגיה קינטית", short: "½mv²", formula: "E_k = ½·m·v²", year: 1686, yearText: "1686 (וב-1829 בצורה של היום)",
+      events: [
+        { sci: "leibniz", year: 1686, what: "טען ש-m·v² ('כוח חי') נשמר בהתנגשויות" },
+        { sci: "coriolis", year: 1829, what: "הוסיף את ה-½ והגדיר 'עבודה'" }],
+      simple: "גוף שזז נושא אנרגיה. מהירות כפולה = פי 4 אנרגיה, ולכן קשה כל כך לעצור משהו מהיר.",
+      need: "ויכוח גדול: מה באמת 'הכוח' של גוף שזז? ואחר כך מהנדסים רצו למדוד כמה מכונות עושות.",
+      how: "לייבניץ בדק כמה גבוה גוף יכול לעלות עם המהירות שלו. קוריוליס חיבר את זה לעבודה של כוח לאורך דרך.",
+      aliases: ["אנרגיה קינטית", "אנרגיית תנועה"] },
+    { id: "newton", name: "חוקי התנועה של ניוטון", short: "חוקי ניוטון", formula: "ΣF = m·a", year: 1687, yearText: "1687",
+      events: [{ sci: "galileo", year: 1638, what: "רעיון ההתמדה: גוף ממשיך לנוע עד שמשהו עוצר אותו" }, { sci: "newton", year: 1687, what: "פרסם את שלושת החוקים בספר 'העקרונות המתמטיים'" }],
+      simple: "1. בלי כוח, גוף ממשיך כמו שהוא. 2. כוח גורם לתאוצה, וגוף כבד מאיץ פחות. 3. כשאתה דוחף משהו, הוא דוחף אותך בחזרה.",
+      need: "להסביר בחוקים אחדים גם תנועה על הארץ וגם תנועה של כוכבי הלכת. אדמונד האלי שאל את ניוטון ב-1684 איזה מסלול יוצא מכוח משיכה, וזה דחף אותו לכתוב.",
+      how: "ניוטון חיבר את הניסויים של גלילאו, את חוקי קפלר ואת המתמטיקה החדשה שהמציא.",
+      aliases: ["החוק השני של ניוטון", "החוק הראשון של ניוטון", "החוק השלישי של ניוטון", "חוקי התנועה", "חוקי ניוטון", "הכוח השקול", "הכוחות מתחברים", "פעולה ותגובה", "התמדה"] },
+    { id: "gravity", name: "חוק הכבידה של ניוטון", short: "כבידה", formula: "W = m·g", year: 1687, yearText: "1687",
+      events: [{ sci: "newton", year: 1687, what: "כל שני גופים מושכים זה את זה" }],
+      simple: "כדור הארץ מושך כל דבר כלפי מטה. גוף כבד פי 2 נמשך פי 2, ולכן הכול נופל באותה מהירות (בלי אוויר).",
+      need: "להבין למה דברים נופלים ולמה הירח לא נופל עלינו.",
+      how: "ניוטון השווה את התאוצה של תפוח לתאוצה של הירח, וראה שהמשיכה נחלשת עם המרחק באותו כלל.",
+      aliases: ["חוק הכבידה", "כוח הכובד", "הכבידה", "כבידה"] },
+    { id: "ohm", name: "חוק אוהם", short: "אוהם", formula: "V = I·R", year: 1827, yearText: "1827",
+      events: [{ sci: "ohm", year: 1827, what: "פרסם את 'המעגל הגלווני'" }],
+      simple: "ככל שדוחפים חזק יותר (מתח), זורם יותר חשמל (זרם). חוט צר וארוך מפריע לזרם (התנגדות).",
+      need: "אחרי שהומצאה הסוללה, איש לא ידע לחזות כמה חשמל יזרום בחוט.",
+      how: "אוהם בנה מעגלים עם חוטים שהכין בעצמו באורכים שונים, ומדד את הזרם עם מחט של מצפן שזזה.",
+      aliases: ["חוק אוהם"] },
+    { id: "energy", name: "שימור אנרגיה", short: "שימור אנרגיה", formula: "E_k + E_p + Q = const", year: 1847, yearText: "1842–1847",
+      events: [
+        { sci: "mayer", year: 1842, what: "הציע שחום ותנועה הם צורות של אותו דבר" },
+        { sci: "joule", year: 1845, what: "מדד כמה חום נוצר מעבודה, בניסוי גלגל המשוטים" },
+        { sci: "helmholtz", year: 1847, what: "ניסח בצורה מתמטית שאנרגיה נשמרת תמיד" }],
+      simple: "אנרגיה לא נוצרת ולא נעלמת, רק עוברת מצורה לצורה: מקפיץ לתנועה, מתנועה לגובה, ומחיכוך לחום.",
+      need: "מנועי קיטור היו בכל מקום, ורצו לדעת כמה עבודה אפשר לקבל מפחם, ולאן 'נעלמת' העבודה שמתבזבזת.",
+      how: "ג׳אול הפיל משקולות שסובבו גלגל משוטים בתוך מים, ומדד שהמים התחממו בדיוק לפי העבודה של המשקולות.",
+      aliases: ["שימור אנרגיה", "שימור האנרגיה", "חום מחיכוך", "האנרגיה בהתחלה"] }
+  ]
+};
+
+// ======================================================================
+//  EXPLAIN: calculator, "how did we get this?" formula movies, laws and
+//  scientists (cards + a timeline chart). Pure math at the top (tested in
+//  node); the screens are built by EggExplain.create(...) inside ui.js.
+// ======================================================================
+const EggExplain = (() => {
+  "use strict";
+  // ---------------- math: tokens and a small safe parser (no eval) ----------------
+  const OPS = { "·": "mul", "×": "mul", "*": "mul", "/": "div", "÷": "div", "+": "add", "−": "sub", "-": "sub", "^": "pow", "²": "sq", "³": "cube", "√": "sqrt" };
+  const RELS = "=≤≥<>≈∝";
+  const SUBS = "₀₁₂₃₄₅₆₇₈₉";
+  function tokenize(src, symRe, isSym = () => true) {
+    const out = [], re = symRe ? new RegExp(symRe.source, "y") : null;
+    let i = 0;
+    while (i < src.length) {
+      const c = src[i], rest = src.slice(i);
+      if (/\s/.test(c)) { i++; continue; }
+      let m;
+      if ((m = /^\d*\.?\d+/.exec(rest)) || (m = /^\d+\.?/.exec(rest))) { out.push({ t: "num", v: parseFloat(m[0]), s: m[0] }); i += m[0].length; continue; }
+      if (c === "½") { out.push({ t: "num", v: 0.5, s: "½" }); i++; continue; }
+      if (RELS.includes(c)) { out.push({ t: "rel", v: c }); i++; continue; }
+      if (c in OPS) { out.push({ t: "op", v: OPS[c], s: c }); i++; continue; }
+      if (c === "(") { out.push({ t: "lp" }); i++; continue; }
+      if (c === ")") { out.push({ t: "rp" }); i++; continue; }
+      if (SUBS.includes(c) && out.length && out[out.length - 1].t === "sym") { out[out.length - 1].k += c; i++; continue; }
+      if ((m = /^const/.exec(rest))) { out.push({ t: "word", v: "const" }); i += 5; continue; }
+      if ((m = /^(sin|cos|tan)/.exec(rest))) { out.push({ t: "fn", v: m[1] }); i += 3; continue; }
+      if (re) { re.lastIndex = i; m = re.exec(src); if (m && m[0] && isSym(m[0])) { out.push({ t: "sym", k: m[0] }); i += m[0].length; continue; } }
+      if (/[A-Za-zα-ωΑ-ΩΣΔ]/.test(c)) { out.push({ t: "sym", k: c }); i++; continue; }
+      i++;                                                   // anything else (a stray mark) is skipped
+    }
+    return out;
+  }
+  // value of a token list; env(name) gives a symbol's number. Trig works in degrees, like a school calculator.
+  function evaluate(tokens, env) {
+    let p = 0;
+    const peek = () => tokens[p], next = () => tokens[p++];
+    const isOp = (t, ...v) => t && t.t === "op" && v.includes(t.v);
+    const starts = (t) => t && (t.t === "num" || t.t === "sym" || t.t === "fn" || t.t === "lp" || isOp(t, "sqrt"));
+    const fail = () => { throw new Error("bad"); };
+    function expr() { let v = term(); while (isOp(peek(), "add", "sub")) { const o = next().v, r = term(); v = o === "add" ? v + r : v - r; } return v; }
+    function term() {
+      let v = unary();
+      for (;;) {
+        const t = peek();
+        if (isOp(t, "mul", "div")) { next(); const r = unary(); v = t.v === "mul" ? v * r : v / r; }
+        else if (starts(t)) v *= unary();                    // 2π, 2(3+1)
+        else return v;
+      }
+    }
+    function unary() { const t = peek(); if (isOp(t, "sub", "add")) { next(); const v = unary(); return t.v === "sub" ? -v : v; } return power(); }
+    function power() { const v = postfix(); if (isOp(peek(), "pow")) { next(); return Math.pow(v, unary()); } return v; }
+    function postfix() { let v = primary(); while (isOp(peek(), "sq", "cube")) v = Math.pow(v, next().v === "sq" ? 2 : 3); return v; }
+    function primary() {
+      const t = next(); if (!t) fail();
+      if (t.t === "num") return t.v;
+      if (t.t === "sym") { const v = env(t.k); if (typeof v !== "number" || !isFinite(v)) fail(); return v; }
+      if (t.t === "lp") { const v = expr(); if (peek() && peek().t === "rp") next(); else if (peek()) fail(); return v; }   // a missing ")" at the very end is forgiven
+      if (isOp(t, "sqrt")) { const v = postfix(); if (v < 0) fail(); return Math.sqrt(v); }
+      if (t.t === "fn") { const a = postfix() * Math.PI / 180; const r = Math[t.v](a); return Math.abs(r) < 1e-12 ? 0 : r; }
+      fail();
+    }
+    if (!tokens.length) fail();
+    const v = expr();
+    if (p < tokens.length) fail();
+    if (!isFinite(v)) fail();
+    return v;
+  }
+  const fmtNum = (v) => {
+    if (typeof v !== "number" || !isFinite(v)) return "?";
+    const a = Math.abs(v);
+    let s = a === 0 ? "0" : a >= 1000 ? v.toFixed(0) : a >= 100 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toPrecision(2);
+    if (s.includes(".") && !/e/.test(s)) s = s.replace(/0+$/, "").replace(/\.$/, "");
+    return s.replace("-", "−");
+  };
+  // timeline x position: ancient years are squeezed into a short stretch before a break
+  function timeScale(years, x0, x1) {
+    const ancient = years.some((y) => y < 1400), A = ancient ? 54 : 0;
+    const lo = 1450, hi = 1900;
+    return (y) => y < 1400 ? x0 + A * 0.45 : x0 + A + (x1 - x0 - A) * (Math.max(lo, Math.min(hi, y)) - lo) / (hi - lo);
+  }
+  const yearsText = (b, d) => b < 0 ? `${-b}–${-d} לפנה״ס` : `${b}–${d}`;
+
+  // ======================================================================
+  function create(o) {
+    const { SYM, SYM_RE, symbolize, esc, laws, sfx = () => {}, live = () => ({}), closeInfo = () => {}, reduceMotion = false } = o;
+    const DATA = laws, LAWS = DATA.laws, SCI = DATA.scientists;
+    const lawById = (id) => LAWS.find((l) => l.id === id);
+    const isSym = (k) => !!SYM[k];
+    const symHtml = (k) => esc(k).replace(/_(\w+)$/, "<sub>$1</sub>");
+    const shortName = (k) => { const n = (SYM[k] && SYM[k].n) || ""; return n.includes(":") ? n.split(":").pop().trim() : n; };
+
+    // ---------------- panels stacked over everything (but under the symbol tips) ----------------
+    const stack = [];
+    let layer = null, timers = [], anims = [];
+    const stopMovie = () => { timers.forEach(clearTimeout); timers = []; anims.forEach((a) => { try { a.cancel(); } catch (e) {} }); anims = []; };
+    function render() {
+      stopMovie();
+      const top = stack[stack.length - 1];
+      if (!top) { if (layer) layer.remove(); layer = null; return; }
+      if (!layer || !layer.isConnected) {
+        layer = document.createElement("div"); layer.className = "ex-back"; layer.dir = "rtl";
+        document.body.appendChild(layer);
+        layer.addEventListener("click", (e) => { if (e.target === layer) closeAll(); });
+      }
+      layer.innerHTML = `<div class="ex-panel ${top.cls || ""}" role="dialog"><div class="ex-bar">
+        ${stack.length > 1 ? `<button class="ex-nav" type="button" data-ex="back"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>חזרה</span></button>` : ""}
+        <span class="ex-title"></span><button class="ex-x" type="button" data-ex="close" aria-label="סגור">×</button></div><div class="ex-body"></div></div>`;
+      layer.querySelector(".ex-title").textContent = top.title || "";
+      top.build(layer.querySelector(".ex-body"));
+    }
+    function push(p) { stack.push(p); render(); sfx(); }
+    function back() { if (!stack.length) return false; stack.pop(); render(); return true; }
+    function closeAll() { stack.length = 0; render(); }
+
+    // ---------------- making names of laws and scientists tappable ----------------
+    const SCI_WORDS = { archimedes: ["ארכימדס"], davinci: ["דה וינצ׳י", "לאונרדו"], stevin: ["סטווין"], galileo: ["גלילאו"], descartes: ["דקארט"], huygens: ["הויגנס"], leibniz: ["לייבניץ"], amontons: ["אמונטון"], coriolis: ["קוריוליס"], mayer: ["מאייר"], helmholtz: ["הלמהולץ"] };
+    // (ניוטון, ג׳אול, קולון, אוהם are also names of units, so alone they stay plain text; inside a law's name they link)
+    const LINKS = [];
+    for (const l of LAWS) for (const a of l.aliases) LINKS.push({ a, kind: "law", id: l.id });
+    for (const id in SCI_WORDS) for (const a of SCI_WORDS[id]) LINKS.push({ a, kind: "sci", id });
+    LINKS.sort((x, y) => y.a.length - x.a.length);
+    const LINK_RE = new RegExp(`(^|[^\\u05D0-\\u05EA׳'])([הובלשמ]?)(${LINKS.map((l) => l.a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?=$|[^\\u05D0-\\u05EA])`, "g");
+    function linkify(root) {
+      if (!root) return;
+      const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
+      while (w.nextNode()) { const n = w.currentNode; if (!n.parentElement.closest("button, a, em, sub, .sym, .lawlink")) nodes.push(n); }
+      for (const n of nodes) {
+        const t = n.nodeValue; LINK_RE.lastIndex = 0; if (!LINK_RE.test(t)) continue;
+        const frag = document.createDocumentFragment(); let last = 0, m; LINK_RE.lastIndex = 0;
+        while ((m = LINK_RE.exec(t))) {
+          const start = m.index + m[1].length + m[2].length, L = LINKS.find((x) => x.a === m[3]);
+          frag.append(t.slice(last, start));
+          const b = document.createElement("button"); b.type = "button"; b.className = "lawlink " + L.kind;
+          b.dataset[L.kind] = L.id; b.textContent = m[3]; frag.append(b);
+          last = start + m[3].length;
+        }
+        frag.append(t.slice(last)); n.replaceWith(frag);
+      }
+    }
+    // formula rows: a ▶ to play the explanation, law names become links
+    function decorate(root) {
+      if (!root) return;
+      for (const eq of root.querySelectorAll(".eq")) {
+        const lab = eq.querySelector("span:first-child"); if (lab && !lab.classList.contains("m")) linkify(lab);
+        if (eq.querySelector(".m") && !eq.querySelector(".mv-play")) eq.insertAdjacentHTML("beforeend", `<button class="mv-play" type="button" data-movie aria-label="איך מגיעים לתוצאה?">▶</button>`);
+      }
+      for (const kf of root.querySelectorAll(".kf")) if (!kf.nextElementSibling || !kf.nextElementSibling.classList.contains("mv-play")) kf.insertAdjacentHTML("afterend", `<button class="mv-play wide" type="button" data-movie>▶ איך זה עובד?</button>`);
+    }
+    // the formula text of an element (subscripts as _x), and the number shown next to it
+    function readFormula(el) {
+      const c = el.cloneNode(true);
+      c.querySelectorAll("em, .mv-play").forEach((x) => x.remove());
+      c.querySelectorAll("sub").forEach((s) => s.replaceWith("_" + s.textContent));
+      const em = el.querySelector("em");
+      return { f: c.textContent.replace(/\s+/g, " ").trim(), result: em ? em.textContent.trim() : "" };
+    }
+
+    // ---------------- the formula movie ----------------
+    const LIVE_KEY = { "μs": "mus", "μk": "muk", "θ": "deg", "ω": "w", k_eq: "keq", s_eq: "eq", f_k: "fk", v_avg: "vavg" };
+    function valueOf(k, L) {
+      if (k === "g") return 9.81;
+      if (k === "π") return Math.PI;
+      if (k === "mg") return typeof L.m === "number" ? L.m * 9.81 : undefined;
+      const v = L[LIVE_KEY[k] || k];
+      return typeof v === "number" && isFinite(v) ? v : undefined;
+    }
+    const OP_WORD = { mul: "כפול", div: "חלקי", add: "ועוד", sub: "פחות", pow: "בחזקת", sq: "בריבוע", cube: "בשלישית", sqrt: "שורש" };
+    const OP_SHOW = { mul: "×", div: "÷", add: "+", sub: "−", pow: "^", sq: "²", cube: "³", sqrt: "√" };
+    const FN_WORD = { sin: "סינוס", cos: "קוסינוס", tan: "טנגנס" };
+    const REL_WORD = { "=": "שווה", "≤": "קטן או שווה ל-", "≥": "גדול או שווה ל-", "<": "קטן מ-", ">": "גדול מ-", "≈": "בערך", "∝": "יחסי ל-" };
+
+    function openMovie(src) {
+      closeInfo();
+      const L = (() => { try { return live() || {}; } catch (e) { return {}; } })();
+      push({ title: "איך מגיעים לתוצאה?", cls: "mv-panel", build: (body) => buildMovie(body, src, L) });
+    }
+    function buildMovie(body, src, L) {
+      const toks = tokenize(src.f, SYM_RE, isSym);
+      const ri = toks.findIndex((t) => t.t === "rel");
+      const lhs = ri > 0 ? toks.slice(0, ri) : [], rel = ri > 0 ? toks[ri].v : "=", rhs = ri > 0 ? toks.slice(ri + 1) : toks;
+      const ri2 = rhs.findIndex((t) => t.t === "rel"), calc = ri2 >= 0 ? rhs.slice(0, ri2) : rhs;
+      const lhsKey = lhs.length === 1 && lhs[0].t === "sym" ? lhs[0].k : null;
+      const lhsText = lhsKey ? symHtml(lhsKey) : esc(lhs.map(tokText).join(" ")) || "?";
+      const lhsName = lhsKey ? shortName(lhsKey) : (src.label || "");
+      let computed; try { computed = evaluate(calc, (k) => valueOf(k, L)); } catch (e) {}
+      const unit = lhsKey && SYM[lhsKey] && SYM[lhsKey].u && SYM[lhsKey].u !== "—" ? " " + SYM[lhsKey].u : "";
+      const result = src.result || (computed !== undefined ? fmtNum(computed) + unit : "");
+      // numbers in place of the letters, when the screen knows them
+      const subParts = []; let allKnown = true;
+      calc.forEach((t, i) => {
+        const pv = calc[i - 1];
+        if (pv && ["num", "sym", "rp"].includes(pv.t) && (["num", "sym", "fn", "lp"].includes(t.t) || (t.t === "op" && t.v === "sqrt"))) subParts.push("×");   // 2π means 2 × π
+        if (t.t === "sym") { const v = valueOf(t.k, L); if (v === undefined) { allKnown = false; subParts.push(t.k); } else subParts.push(t.k === "π" ? "3.14" : v < 0 ? `(${fmtNum(v)})` : fmtNum(v)); }
+        else subParts.push(tokText(t, true));
+      });
+      const subLine = allKnown && calc.length ? subParts.join(" ").replace(/\( /g, "(").replace(/ \)/g, ")").replace(/√ /g, "√").replace(/ ([²³])/g, "$1").replace(/^− /, "−").replace(/\(− /g, "(−") : "";
+
+      body.innerHTML = `
+        <div class="mv-prog"><i></i></div>
+        <div class="mv" dir="ltr">
+          <div class="mv-top"><div class="mv-card mv-lhs"><b class="mv-letter">${lhsText}</b><small dir="rtl">${esc(lhsName)}</small><span class="mv-val">?</span></div><span class="mv-rel">${esc(rel)}</span></div>
+          <div class="mv-rhs">${rhs.map((t, i) => tokHtml(t, i, rhs, L)).join("")}</div>
+          <div class="mv-sum" hidden></div>
+          <svg class="mv-arrow" aria-hidden="true"><defs><marker id="mvHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A60E8"/></marker></defs><path class="mv-line" d=""/></svg>
+          <div class="mv-fly" hidden></div>
+        </div>
+        <div class="mv-cap" aria-live="polite"></div>
+        <div class="mv-formula" dir="ltr">${esc(src.f).replace(/_(\w+)/g, "<sub>$1</sub>")}</div>
+        <div class="ex-actions"><button class="btn primary" type="button" data-ex="replay">▶ שוב</button><button class="btn secondary" type="button" data-ex="close">הבנתי</button></div>`;
+      const cap = body.querySelector(".mv-cap"), prog = body.querySelector(".mv-prog i");
+      const toksEl = [...body.querySelectorAll(".mv-tok")], lhsEl = body.querySelector(".mv-lhs");
+      // the script: one beat per piece, then all together, then the arrow carries the answer over
+      const beats = [];
+      beats.push({ cap: lhsKey ? `רוצים לדעת כמה זה ${B(lhsKey.replace(/_/g, ""))}: ${lhsName}. בואו נראה מאיפה זה מגיע.` : "בואו נראה מאיפה זה מגיע.", do: () => lhsEl.classList.add("lit") });
+      rhs.forEach((t, i) => {
+        if (t.t === "lp" || t.t === "rp") return;
+        const els = toksEl.filter((e) => +e.dataset.i === i || (+e.dataset.pair === i));
+        beats.push({ cap: tokCaption(t, i, rhs, L), do: () => { els.forEach((e) => e.classList.add("in")); toksEl.filter((e) => (e.dataset.paren !== undefined) && +e.dataset.open < i && +e.dataset.close > i).forEach((e) => e.classList.add("in")); } });
+      });
+      beats.push({ cap: subLine ? "עכשיו שמים מספרים במקום האותיות ומחשבים:" : "עכשיו מחשבים את הכול יחד:", do: () => {
+        toksEl.forEach((e) => e.classList.add("in", "glow"));
+        const s = body.querySelector(".mv-sum"); s.hidden = false; s.innerHTML = subLine ? `${esc(subLine)}${result ? ` <b>= ${esc(result)}</b>` : ""}` : (result ? `<b>= ${esc(result)}</b>` : "✓");
+      }, long: true });
+      beats.push({ cap: rel === "=" ? `החץ לוקח את התוצאה אל ${lhsKey ? B(lhsKey.replace(/_/g, "")) : "הצד השני"}${result ? `: ${B(result)}` : ""}. זהו!` : `ולכן ${lhsKey ? B(lhsKey.replace(/_/g, "")) : "הצד השמאלי"} ${REL_WORD[rel] || ""} מה שחישבנו.`, do: () => flyAnswer(body, result) , long: true });
+
+      const BEAT = reduceMotion ? 0 : 1650;
+      const run = () => {
+        stopMovie();
+        toksEl.forEach((e) => e.classList.remove("in", "glow")); lhsEl.classList.remove("lit", "got");
+        body.querySelector(".mv-val").textContent = "?"; body.querySelector(".mv-sum").hidden = true;
+        body.querySelector(".mv-line").setAttribute("d", ""); body.querySelector(".mv-fly").hidden = true;
+        if (reduceMotion) { beats.forEach((b) => b.do()); cap.textContent = beats[beats.length - 1].cap; prog.style.width = "100%"; return; }
+        let t = 250; const total = beats.reduce((s, b) => s + (b.long ? BEAT * 1.5 : BEAT), 0);
+        prog.style.transition = "none"; prog.style.width = "0%";
+        timers.push(setTimeout(() => { prog.style.transition = `width ${total}ms linear`; prog.style.width = "100%"; }, 60));
+        beats.forEach((b) => { timers.push(setTimeout(() => { cap.textContent = b.cap; b.do(); }, t)); t += b.long ? BEAT * 1.5 : BEAT; });
+      };
+      body._replay = run;
+      requestAnimationFrame(run);
+    }
+    function flyAnswer(body, result) {
+      const mv = body.querySelector(".mv"), from = body.querySelector(".mv-sum:not([hidden])") || body.querySelector(".mv-rhs"), to = body.querySelector(".mv-lhs");
+      const R = mv.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+      const x1 = a.left + a.width / 2 - R.left, y1 = a.top - R.top + 2, x2 = b.left + b.width / 2 - R.left, y2 = b.bottom - R.top + 4;
+      const cx = (x1 + x2) / 2 + (x2 < x1 ? -40 : 40), cy = Math.min(y1, y2) + (y1 - y2) * 0.15 - 10;
+      const svg = body.querySelector(".mv-arrow"), path = svg.querySelector(".mv-line");
+      svg.setAttribute("viewBox", `0 0 ${R.width} ${R.height}`);
+      path.setAttribute("d", `M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}`); path.setAttribute("marker-end", "url(#mvHead)");
+      const len = path.getTotalLength ? path.getTotalLength() : 200;
+      path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+      try { anims.push(path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 900, easing: "ease-in-out", fill: "forwards" })); } catch (e) { path.style.strokeDashoffset = 0; }
+      const fly = body.querySelector(".mv-fly"), val = body.querySelector(".mv-val");
+      const land = () => { val.textContent = result || "✓"; to.classList.add("got"); fly.hidden = true; sfx(); };
+      if (!result) { timers.push(setTimeout(land, 900)); return; }
+      fly.hidden = false; fly.textContent = result;
+      const fw = fly.offsetWidth, fh = fly.offsetHeight, pts = [];
+      for (let i = 0; i <= 14; i++) { const s = i / 14, x = (1 - s) * (1 - s) * x1 + 2 * (1 - s) * s * cx + s * s * x2, y = (1 - s) * (1 - s) * y1 + 2 * (1 - s) * s * cy + s * s * y2; pts.push({ transform: `translate(${x - fw / 2}px, ${y - fh / 2}px) scale(${1 + Math.sin(s * Math.PI) * 0.25})` }); }
+      try { const an = fly.animate(pts, { duration: 1100, easing: "ease-in-out", fill: "forwards" }); anims.push(an); an.onfinish = land; } catch (e) { land(); }
+    }
+    function tokText(t, numeric) {
+      if (t.t === "num") return t.s;
+      if (t.t === "sym") return t.k;
+      if (t.t === "op") return numeric ? OP_SHOW[t.v] : t.s;
+      if (t.t === "fn") return t.v;
+      if (t.t === "lp") return "(";
+      if (t.t === "rp") return ")";
+      if (t.t === "rel") return t.v;
+      return "const";
+    }
+    const leadingMinus = (t, i, arr) => t.t === "op" && t.v === "sub" && (i === 0 || ["op", "lp", "rel"].includes(arr[i - 1].t));
+    function tokHtml(t, i, arr, L) {
+      if (t.t === "lp" || t.t === "rp") {
+        // find the partner so the brackets appear with what is inside them
+        let depth = 0, j = i;
+        if (t.t === "lp") { for (j = i; j < arr.length; j++) { if (arr[j].t === "lp") depth++; if (arr[j].t === "rp" && --depth === 0) break; } return `<span class="mv-tok mv-par" data-paren data-open="${i}" data-close="${j}">(</span>`; }
+        for (j = i; j >= 0; j--) { if (arr[j].t === "rp") depth++; if (arr[j].t === "lp" && --depth === 0) break; }
+        return `<span class="mv-tok mv-par" data-paren data-open="${j}" data-close="${i}">)</span>`;
+      }
+      if (t.t === "sym") {
+        const v = valueOf(t.k, L), u = SYM[t.k] && SYM[t.k].u && SYM[t.k].u !== "—" ? SYM[t.k].u : "";
+        return `<span class="mv-tok mv-card" data-i="${i}"><b class="mv-letter">${symHtml(t.k)}</b><small dir="rtl">${esc(shortName(t.k) || t.k)}</small>${v !== undefined ? `<span class="mv-val">${esc(t.k === "π" ? "3.14" : fmtNum(v))}${u ? ` <i>${esc(u)}</i>` : ""}</span>` : ""}</span>`;
+      }
+      if (t.t === "num") return `<span class="mv-tok mv-card mv-num" data-i="${i}"><b class="mv-letter">${esc(t.s)}</b><small dir="rtl">${t.s === "½" ? "חצי" : "מספר"}</small></span>`;
+      if (t.t === "fn") return `<span class="mv-tok mv-card mv-fn" data-i="${i}"><b class="mv-letter">${t.v}</b><small dir="rtl">${FN_WORD[t.v]}</small></span>`;
+      if (t.t === "op") return `<span class="mv-tok mv-op" data-i="${i}"><b>${OP_SHOW[t.v]}</b><small dir="rtl">${leadingMinus(t, i, arr) ? "מינוס" : OP_WORD[t.v]}</small></span>`;
+      if (t.t === "rel") return `<span class="mv-tok mv-op" data-i="${i}"><b>${esc(t.v)}</b><small dir="rtl">${esc(REL_WORD[t.v] || "")}</small></span>`;
+      return `<span class="mv-tok mv-op" data-i="${i}"><b>קבוע</b><small dir="rtl">לא משתנה</small></span>`;
+    }
+    const B = (x) => "\u2066" + x + "\u2069";              // keeps numbers, units and letters left-to-right inside Hebrew
+    function tokCaption(t, i, arr, L) {
+      const prev = arr[i - 1], nxt = arr[i + 1];
+      const vs = (x) => { if (!x || x.t !== "sym") return x && x.t === "num" ? B(x.s) : ""; const v = valueOf(x.k, L); return B(v === undefined ? x.k : fmtNum(v)); };
+      if (t.t === "sym") {
+        if (t.k === "π") return "π (פאי) הוא מספר קבוע, בערך 3.14. הוא מופיע כשיש משהו שחוזר כמו סיבוב.";
+        if (t.k === "g") return "g היא תאוצת הכובד: כדור הארץ מושך, וזה 9.81 בכל שנייה.";
+        const v = valueOf(t.k, L), u = SYM[t.k] && SYM[t.k].u !== "—" ? SYM[t.k].u : "";
+        return `${B(t.k.replace(/_/g, ""))} זה ${shortName(t.k) || "גודל"}${v !== undefined ? `. עכשיו: ${B(fmtNum(v) + " " + u)}` : ""}.`;
+      }
+      if (t.t === "num") return t.s === "½" ? "½ זה חצי: בסוף מחלקים ב-2." : `המספר ${t.s}.`;
+      if (t.t === "fn") return `${FN_WORD[t.v]}: בודק איזה חלק מהכוח הולך בכיוון שלנו, לפי הזווית.`;
+      if (t.t === "rel") return `${REL_WORD[t.v] || t.v}: זה גבול, לא תמיד שוויון.`;
+      if (t.t === "word") return "קבוע: המספר הזה לא משתנה, מה שלא יקרה.";
+      if (leadingMinus(t, i, arr)) return "המינוס אומר: הכיוון הפוך. הקפיץ מושך הפוך מהכיוון שמתחנו.";
+      const chain = i >= 2 && arr[i - 2].t === "op" && ["mul", "div"].includes(arr[i - 2].v);
+      const a = chain ? "מה שיצא עד עכשיו" : vs(prev), b = vs(nxt);
+      switch (t.v) {
+        case "mul": return a && b ? (chain ? `כפול: מכפילים את מה שיצא עד עכשיו ב-${b}.` : `כפול: לוקחים את ${a}, ${b} פעמים (${B(a + " × " + b)}).`) : "כפול: מגדילים פי כמה שכתוב.";
+        case "div": return a && b ? `חלקי: מחלקים את ${a} ל-${b} חלקים שווים.` : "חלקי: מחלקים לחלקים שווים.";
+        case "add": return "ועוד: מחברים יחד.";
+        case "sub": return "פחות: מורידים.";
+        case "sq": return a ? `בריבוע: כופלים את ${a} בעצמו (${B(a + " × " + a)}).` : "בריבוע: כופלים את המספר בעצמו.";
+        case "cube": return "בשלישית: כופלים את המספר בעצמו שלוש פעמים.";
+        case "pow": return "בחזקה: כופלים את המספר בעצמו כמה פעמים.";
+        case "sqrt": return "שורש: מחפשים איזה מספר, כפול עצמו, נותן את מה שבפנים.";
+      }
+      return "";
+    }
+
+    // ---------------- law and scientist cards ----------------
+    function lawFormulaHtml(l) {
+      const t = tokenize(l.formula, SYM_RE, isSym), ri = t.findIndex((x) => x.t === "rel");
+      const playable = ri === 1 && t[0].t === "sym" && t[ri].v === "=";
+      return `<div class="law-f"><span class="m" dir="ltr">${esc(l.formula)}</span>${playable ? `<button class="mv-play wide" type="button" data-movie="${esc(l.formula)}">▶ איך זה עובד?</button>` : ""}</div>`;
+    }
+    function openLaw(id) {
+      const l = lawById(id); if (!l) return;
+      closeInfo();
+      push({ title: "חוק בפיזיקה", cls: "law-panel", build: (body) => {
+        body.innerHTML = `<h3 class="law-name">${esc(l.name)}</h3>
+          <div class="law-when"><span class="tag">מתי?</span> ${esc(l.yearText)}</div>
+          ${lawFormulaHtml(l)}
+          <p class="law-simple">${esc(l.simple)}</p>
+          <h4>למה היה צריך את זה?</h4><p>${esc(l.need)}</p>
+          <h4>איך גילו?</h4><p>${esc(l.how)}</p>
+          <h4>מי גילה?</h4>
+          <ul class="law-events">${l.events.map((e) => `<li><b class="yr">${e.year < 0 ? -e.year + " לפנה״ס" : e.year}</b><button class="sci-chip" type="button" data-sci="${e.sci}">${esc(SCI[e.sci].full)}</button><span>${esc(e.what)}</span></li>`).join("")}</ul>
+          <div class="ex-actions"><button class="btn secondary" type="button" data-ex="timeline">📈 ציר הזמן של כל החוקים</button></div>`;
+        symbolize && body.querySelectorAll(".law-f .m").forEach(symbolize);
+      } });
+    }
+    function openSci(id) {
+      const s = SCI[id]; if (!s) return;
+      closeInfo();
+      const mine = LAWS.filter((l) => l.events.some((e) => e.sci === id));
+      push({ title: "מי זה?", cls: "sci-panel", build: (body) => {
+        body.innerHTML = `<div class="sci-head"><div class="sci-face" aria-hidden="true">${esc(s.name.replace(/[׳']/g, "").slice(0, 1))}</div>
+            <div><h3>${esc(s.full)}</h3><div class="sci-years" dir="rtl">${esc(yearsText(s.born, s.died))} · ${esc(s.place)}</div></div></div>
+          <div class="sci-role">${s.role.split(/,| ו/).map((r) => r.trim()).filter(Boolean).map((r) => `<span class="tag">${esc(r)}</span>`).join("")}</div>
+          <p>${esc(s.bio)}</p>
+          <div class="sci-fun"><b>הידעת?</b> ${esc(s.fun)}</div>
+          <h4>מה גילה (מהחוקים שלנו)</h4>
+          <div class="sci-laws">${mine.map((l) => `<button class="law-chip" type="button" data-law="${l.id}">${esc(l.name)} <small>${l.events.filter((e) => e.sci === id).map((e) => e.year < 0 ? -e.year + " לפנה״ס" : e.year).join(", ")}</small></button>`).join("")}</div>
+          <div class="ex-actions"><button class="btn secondary" type="button" data-ex="timeline">📈 ציר הזמן</button></div>`;
+      } });
+    }
+
+    // ---------------- the timeline: when (across) x who (down, א-ב) ----------------
+    const COLORS = ["#258EF6", "#E2574C", "#25B58B", "#8A60E8", "#F49A35", "#D99A1C", "#1A9DB0", "#C2418F", "#5B6BD6", "#7A8B2A", "#B8741A", "#3F8F5A", "#9C4FD0", "#D0612F"];
+    function openTimeline() {
+      push({ title: "ציר הזמן של החוקים", cls: "tl-panel", build: (body) => {
+        const evs = [];
+        LAWS.forEach((l, li) => l.events.forEach((e) => evs.push({ ...e, law: l, color: COLORS[li % COLORS.length] })));
+        const ids = [...new Set(evs.map((e) => e.sci))].sort((a, b) => SCI[a].name.localeCompare(SCI[b].name, "he"));
+        const ROW = 44, TOPP = 26, AX = 30, H = TOPP + ids.length * ROW + AX;
+        const PW = Math.max(760, (body.clientWidth || 360) - 100), X0 = 16, X1 = PW - 18;
+        const X = timeScale(evs.map((e) => e.year), X0, X1), Y = (id) => TOPP + ids.indexOf(id) * ROW + ROW / 2;
+        let svg = "";
+        ids.forEach((id, i) => { if (i % 2 === 0) svg += `<rect x="0" y="${TOPP + i * ROW}" width="${PW}" height="${ROW}" fill="#F6F7F9"/>`; });
+        for (const y of [1500, 1600, 1700, 1800, 1900]) svg += `<line x1="${X(y)}" x2="${X(y)}" y1="${TOPP}" y2="${H - AX}" stroke="#DFE1E4" stroke-dasharray="3 4"/><text x="${X(y)}" y="${H - AX + 18}" class="tl-year">${y}</text><text x="${X(y)}" y="16" class="tl-year">${y}</text>`;
+        if (evs.some((e) => e.year < 1400)) { const xb = X0 + 44; svg += `<path d="M${xb - 4} ${H - AX - 6}l4 -8M${xb + 2} ${H - AX - 6}l4 -8" stroke="#9AA0A8" stroke-width="1.5"/><text x="${X(-250)}" y="${H - AX + 18}" class="tl-year">עת עתיקה</text>`; }
+        svg += `<line x1="${X0}" x2="${X1}" y1="${H - AX}" y2="${H - AX}" stroke="#9AA0A8" stroke-width="1.3"/>`;
+        // points: one per person and year (several laws in the same year share a point)
+        const groups = {};
+        evs.forEach((e) => { const g = e.sci + "|" + e.year; (groups[g] = groups[g] || []).push(e); });
+        const placed = {};
+        Object.values(groups).sort((a, b) => a[0].year - b[0].year).forEach((g) => {
+          const e = g[0], x = X(e.year), y = Y(e.sci), row = (placed[e.sci] = placed[e.sci] || []);
+          const near = row.filter((px) => Math.abs(px - x) < 46).length; row.push(x);
+          const ly = near % 2 ? y + 19 : y - 11;
+          const multi = [...new Set(g.map((q) => q.law.id))];
+          const label = multi.length > 1 ? `${multi.length} חוקים` : e.law.short;
+          const attr = multi.length > 1 ? `data-ex="pick" data-laws="${multi.join(",")}"` : `data-law="${e.law.id}"`;
+          svg += `<g class="tl-pt" ${attr} role="button" tabindex="0"><circle cx="${x}" cy="${y}" r="13" fill="transparent"/><circle cx="${x}" cy="${y}" r="7" fill="${multi.length > 1 ? "#fff" : e.color}" stroke="${e.color}" stroke-width="2.5"/><text x="${x}" y="${ly}" class="tl-lab">${esc(label)}</text></g>`;
+        });
+        body.innerHTML = `<p class="fine">לרוחב: מתי גילו. לגובה: מי גילה (לפי א״ב). לחצו על נקודה כדי לקרוא על החוק, ועל שם כדי להכיר את המדען.</p>
+          <div class="tl" dir="ltr">
+            <div class="tl-scroll"><svg width="${PW}" height="${H}" viewBox="0 0 ${PW} ${H}">${svg}</svg></div>
+            <div class="tl-names" style="padding-top:${TOPP}px;padding-bottom:${AX}px">${ids.map((id) => `<button type="button" class="tl-name" data-sci="${id}" style="height:${ROW}px" dir="rtl">${esc(SCI[id].name)}</button>`).join("")}</div>
+          </div>
+          <div class="tl-legend">${LAWS.map((l, li) => `<button type="button" class="law-chip" data-law="${l.id}"><i style="background:${COLORS[li % COLORS.length]}"></i>${esc(l.name)}</button>`).join("")}</div>`;
+        const sc = body.querySelector(".tl-scroll");
+        requestAnimationFrame(() => { sc.scrollLeft = Math.max(0, X(1560) - 10); });
+      } });
+    }
+    function openPick(ids) {
+      push({ title: "באותה שנה", build: (body) => {
+        body.innerHTML = `<div class="sci-laws">${ids.map((id) => { const l = lawById(id); return `<button class="law-chip big" type="button" data-law="${id}">${esc(l.name)}</button>`; }).join("")}</div>`;
+      } });
+    }
+
+    // ---------------- calculator ----------------
+    const CALC_RE = /(ans|π|g)/;
+    const calc = { expr: "", ans: 0, hist: [] };
+    const KEYS = [["C", "⌫", "(", ")", "÷"], ["sin", "cos", "tan", "√", "×"], ["7", "8", "9", "x²", "−"], ["4", "5", "6", "^", "+"], ["1", "2", "3", "π", "g"], ["0", ".", "ans", "="]];
+    const calcEval = (s) => evaluate(tokenize(s, CALC_RE), (k) => ({ ans: calc.ans, π: Math.PI, g: 9.81 })[k]);
+    function openCalc() {
+      if (stack.length && stack[stack.length - 1].cls === "calc-panel") return;
+      push({ title: "מחשבון", cls: "calc-panel", build: (body) => {
+        body.innerHTML = `<div class="calc-screen" dir="ltr"><div class="calc-hist"></div><div class="calc-expr"></div><div class="calc-prev"></div></div>
+          <div class="calc-keys" dir="ltr">${KEYS.flat().map((k) => `<button type="button" class="ck ${/^\d|\.$/.test(k) ? "num" : k === "=" ? "eq" : k === "C" || k === "⌫" ? "clr" : "fn"}" data-k="${k}">${k === "x²" ? "x<sup>2</sup>" : k}</button>`).join("")}</div>
+          <p class="fine calc-note">זוויות במעלות · <bdi dir="ltr">g = 9.81</bdi> · <bdi dir="ltr">ans</bdi> היא התוצאה הקודמת</p>`;
+        const paint = () => {
+          body.querySelector(".calc-expr").textContent = calc.expr || "0";
+          let pv = ""; if (calc.expr) { try { const v = calcEval(calc.expr); if (String(fmtNum(v)) !== calc.expr) pv = "= " + fmtNum(v); } catch (e) {} }
+          body.querySelector(".calc-prev").textContent = pv;
+          body.querySelector(".calc-hist").innerHTML = calc.hist.slice(0, 3).map((h) => `<button type="button" data-h="${esc(h.v)}">${esc(h.e)} = <b>${esc(h.v)}</b></button>`).join("");
+        };
+        body.addEventListener("click", (e) => {
+          const h = e.target.closest("[data-h]"); if (h) { calc.expr += h.dataset.h.replace("−", "-") ; paint(); return; }
+          const b = e.target.closest("[data-k]"); if (!b) return;
+          const k = b.dataset.k;
+          if (k === "C") calc.expr = "";
+          else if (k === "⌫") calc.expr = calc.expr.replace(/(sin\(|cos\(|tan\(|ans|√\(|.)$/, "");
+          else if (k === "=") {
+            try { const v = calcEval(calc.expr), s = fmtNum(v); calc.hist.unshift({ e: calc.expr, v: s }); calc.ans = v; calc.expr = s.replace("−", "-"); sfx(); }
+            catch (err) { const ex = body.querySelector(".calc-expr"); ex.classList.remove("err"); void ex.offsetWidth; ex.classList.add("err"); return; }
+          }
+          else if (k === "sin" || k === "cos" || k === "tan") calc.expr += k + "(";
+          else if (k === "√") calc.expr += "√(";
+          else if (k === "x²") calc.expr += "²";
+          else if (k === "−") calc.expr += "-";
+          else calc.expr += k;
+          paint();
+        });
+        paint();
+      } });
+    }
+
+    // ---------------- clicks (called from ui.js's one capture listener) ----------------
+    function handleClick(e) {
+      const t = e.target;
+      const ex = t.closest("[data-ex]");
+      if (ex && layer && layer.contains(ex)) {
+        e.preventDefault(); e.stopPropagation();
+        const a = ex.dataset.ex;
+        if (a === "close") closeAll(); else if (a === "back") back(); else if (a === "timeline") openTimeline();
+        else if (a === "pick") openPick(ex.dataset.laws.split(","));
+        else if (a === "replay") { const b = layer.querySelector(".ex-body"); b && b._replay && b._replay(); }
+        return true;
+      }
+      const law = t.closest("[data-law]"); if (law) { e.preventDefault(); e.stopPropagation(); openLaw(law.dataset.law); return true; }
+      const sci = t.closest("[data-sci]"); if (sci) { e.preventDefault(); e.stopPropagation(); openSci(sci.dataset.sci); return true; }
+      const play = t.closest("[data-movie]");
+      if (play && play.dataset.movie) { e.preventDefault(); e.stopPropagation(); openMovie({ f: play.dataset.movie, result: "" }); return true; }
+      const host = play ? (play.closest(".eq") || play.parentElement) : null;
+      const fEl = host ? (host.querySelector(".m, .kf") || host.parentElement.querySelector(".kf")) : t.closest(".formula .eq .m, .cloud .eqs div, .kcard .kf, .law-f .m");
+      if (fEl) {
+        e.preventDefault(); e.stopPropagation();
+        const r = readFormula(fEl), eq = fEl.closest(".eq");
+        r.label = eq && eq.querySelector("span:first-child") ? eq.querySelector("span:first-child").textContent.trim() : "";
+        openMovie(r); return true;
+      }
+      return false;
+    }
+
+    return { handleClick, back, closeAll, decorate, linkify, openCalc, openLaw, openSci, openTimeline, isOpen: () => stack.length > 0 };
+  }
+
+  return { tokenize, evaluate, fmtNum, timeScale, create };
+})();
+
 // ======================================================================
 //  PHYSICS  (casual physics with the player's own creature)
 //  Screens: choose a way -> topic machine -> spring intro -> spring lab,
@@ -3498,6 +4257,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
   }
   function back() {
     if (document.querySelector(".symtip")) { closeSym(); return; }
+    if (EX.back()) return;
     if (document.querySelector(".cloud")) { closeInfo(); return; }
     const sheet = document.querySelector(".sheet-back");
     if (sheet) { sheet.remove(); return; }
@@ -3506,6 +4266,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
   }
   function closeUI() {
     if (cleanup) { cleanup(); cleanup = null; }
+    EX.closeAll();
     ui.hidden = true; G.covered = false; stack.length = 0; current = null;
     syncHud();
   }
@@ -3525,6 +4286,8 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
   // sound on / off (kept with the player's settings)
   function paintSound() { const on = P.data.settings.sound_on !== false; $("#uiSound").innerHTML = soundIcon(on); $("#uiSound").setAttribute("aria-label", on ? "השתקה" : "הפעלת צליל"); G.audio.mute(!on); }
   $("#uiSound").addEventListener("click", () => { P.data.settings.sound_on = P.data.settings.sound_on === false; P.save(); paintSound(); });
+  // calculator (always in the top bar, next to the sound button)
+  $("#uiCalc").addEventListener("click", () => { closeInfo(); EX.openCalc(); });
 
   // ---------------- the home overlay ----------------
   function syncHud() {
@@ -4077,7 +4840,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
   // formula cards repaint many times a second: rebuild them only when the formulas change, otherwise just the numbers
   function setFormula(el, html) {
     const sig = html.replace(/<em>[\s\S]*?<\/em>/g, "<em></em>");
-    if (el.dataset.sig !== sig) { el.innerHTML = html; el.dataset.sig = sig; el.querySelectorAll(".m").forEach(symbolize); return; }
+    if (el.dataset.sig !== sig) { el.innerHTML = html; el.dataset.sig = sig; el.querySelectorAll(".m").forEach(symbolize); EX.decorate(el); return; }
     const tmp = document.createElement("div"); tmp.innerHTML = html;
     const now = el.querySelectorAll("em"), next = tmp.querySelectorAll("em");
     next.forEach((e, i) => { if (now[i] && now[i].innerHTML !== e.innerHTML) now[i].innerHTML = e.innerHTML; });
@@ -4089,6 +4852,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
     const el = document.createElement("div"); el.className = "symtip"; el.dir = "rtl";
     el.innerHTML = `<div class="sym-head"><b class="sym-big" dir="ltr">${esc(key).replace(/_(\w+)$/, "<sub>$1</sub>")}</b><span>${esc(S.n)}</span></div><p>${esc(S.d)}</p>
       <div class="units"><div><small>יחידה</small><b dir="ltr">${esc(S.u)}</b><span>${esc(S.un)}</span></div><div><small>ביחידות יסוד SI</small><b dir="ltr">${esc(S.si)}</b></div></div>`;
+    EX.linkify(el.querySelector("p"));
     document.body.appendChild(el);
     const r = anchor.getBoundingClientRect(), cw = el.offsetWidth, ch = el.offsetHeight;
     el.style.left = clamp(r.left + r.width / 2 - cw / 2, 10, innerWidth - cw - 10) + "px";
@@ -4097,6 +4861,8 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
     G.sfx.pop();
   }
 
+  // calculator, formula movies, laws and scientists (explain.js)
+  const EX = EggExplain.create({ SYM, SYM_RE, symbolize, esc, laws: LAWS_DATA, sfx: () => G.sfx.pop(), live: () => infoLive(), closeInfo: () => closeInfo(), reduceMotion });
   const infoBtn = (key) => `<button class="info" type="button" data-info="${key}" aria-label="מה זה?">?</button>`;
   let infoOpenedAt = 0;
   function closeInfo() { document.querySelector(".cloud")?.remove(); closeSym(); }
@@ -4109,6 +4875,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
     el.innerHTML = `<button class="x" type="button" aria-label="סגור">×</button><h4>${esc(I.t)}</h4><p>${esc(I.p)}</p>
       <div class="eqs">${I.eq.map((e) => `<div>${esc(e)}</div>`).join("")}</div>${live ? `<div class="live">${esc(live)}</div>` : ""}`;
     el.querySelectorAll(".eqs div").forEach(symbolize);
+    EX.linkify(el.querySelector("p"));
     el.insertAdjacentHTML("beforeend", `<div class="sym-hint">לחצו על כל אות בנוסחה</div>`);
     document.body.appendChild(el);
     const r = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { left: anchor.x - 20, right: anchor.x + 20, top: anchor.y - 20, bottom: anchor.y + 20, width: 40, height: 40 };
@@ -4125,6 +4892,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
     const sb = e.target.closest("[data-sym]");
     if (sb) { e.preventDefault(); e.stopPropagation(); openSym(sb.dataset.sym, sb); return; }
     if (!e.target.closest(".symtip")) { closeSym(); document.querySelectorAll(".sym.on").forEach((x) => x.classList.remove("on")); }
+    if (EX.handleClick(e)) return;
     const b = e.target.closest("[data-info]");
     if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info, b); return; }
     if (!e.target.closest(".cloud") && performance.now() - infoOpenedAt > 400) closeInfo();
@@ -4149,8 +4917,18 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
     ctx.strokeStyle = look.col; ctx.lineWidth = look.w; path(); ctx.stroke();
     ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = Math.max(0.6, look.w * 0.3); path(-look.w * 0.25 * ny, look.w * 0.25 * nx); ctx.stroke();
     if (label) {
-      ctx.fillStyle = "#606671"; ctx.font = "600 11px " + FONT; ctx.direction = "ltr"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
-      ctx.fillText("k = " + k, Math.abs(ux) > 0.5 ? x0 + ux * (lead + span * 0.5) - 20 : x0 + look.amp + 10, Math.abs(ux) > 0.5 ? y0 - look.amp - 10 : y0 + uy * (lead + span * 0.18));
+      // a big, easy to read k in a little white tag next to the coils
+      const txt = "k = " + k, sm = " N/m";
+      ctx.direction = "ltr"; ctx.textBaseline = "middle";
+      ctx.font = "800 19px " + FONT; const tw = ctx.measureText(txt).width;
+      ctx.font = "600 12px " + FONT; const sw = ctx.measureText(sm).width;
+      const bw = tw + sw + 16, bh = 28, horiz = Math.abs(ux) > 0.5;
+      let bx = horiz ? x0 + ux * (lead + span * 0.5) - bw / 2 : x0 + look.amp + 12, by = horiz ? y0 - look.amp - 10 - bh / 2 : y0 + uy * (lead + span * 0.55);
+      const cw = ctx.canvas.width / (ctx.getTransform().a || 1); if (bx + bw > cw - 4) bx = cw - 4 - bw; if (bx < 4) bx = 4;   // stay on screen
+      ctx.fillStyle = "rgba(255,255,255,0.92)"; ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 1.3;
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(bx, by - bh / 2, bw, bh, 9); else ctx.rect(bx, by - bh / 2, bw, bh); ctx.fill(); ctx.stroke();
+      ctx.textAlign = "left"; ctx.fillStyle = "#20232A"; ctx.font = "800 19px " + FONT; ctx.fillText(txt, bx + 8, by + 1);
+      ctx.fillStyle = "#606671"; ctx.font = "600 12px " + FONT; ctx.fillText(sm, bx + 8 + tw, by + 2);
     }
     ctx.restore();
   }
@@ -6266,6 +7044,7 @@ const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אנ
       <details><summary class="linkish">כל 16 הנוסחאות של הנושא</summary>${all.map(card).join("")}</details>
       <div class="actions"><button class="btn primary" type="button" data-close>חזרה למסילה</button></div>`);
     el.querySelectorAll(".kf").forEach(symbolize);
+    EX.decorate(el);
     for (const b of el.querySelectorAll("[data-say]")) b.addEventListener("click", () => { const f = KF(b.dataset.say); if (!speakHe(`${f.t}. ${f.sym}. ${f.ex}`)) b.textContent = "—"; });
     return el;
   }

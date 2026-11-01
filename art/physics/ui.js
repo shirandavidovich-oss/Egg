@@ -190,6 +190,7 @@
   }
   function back() {
     if (document.querySelector(".symtip")) { closeSym(); return; }
+    if (EX.back()) return;
     if (document.querySelector(".cloud")) { closeInfo(); return; }
     const sheet = document.querySelector(".sheet-back");
     if (sheet) { sheet.remove(); return; }
@@ -198,6 +199,7 @@
   }
   function closeUI() {
     if (cleanup) { cleanup(); cleanup = null; }
+    EX.closeAll();
     ui.hidden = true; G.covered = false; stack.length = 0; current = null;
     syncHud();
   }
@@ -217,6 +219,8 @@
   // sound on / off (kept with the player's settings)
   function paintSound() { const on = P.data.settings.sound_on !== false; $("#uiSound").innerHTML = soundIcon(on); $("#uiSound").setAttribute("aria-label", on ? "השתקה" : "הפעלת צליל"); G.audio.mute(!on); }
   $("#uiSound").addEventListener("click", () => { P.data.settings.sound_on = P.data.settings.sound_on === false; P.save(); paintSound(); });
+  // calculator (always in the top bar, next to the sound button)
+  $("#uiCalc").addEventListener("click", () => { closeInfo(); EX.openCalc(); });
 
   // ---------------- the home overlay ----------------
   function syncHud() {
@@ -769,7 +773,7 @@
   // formula cards repaint many times a second: rebuild them only when the formulas change, otherwise just the numbers
   function setFormula(el, html) {
     const sig = html.replace(/<em>[\s\S]*?<\/em>/g, "<em></em>");
-    if (el.dataset.sig !== sig) { el.innerHTML = html; el.dataset.sig = sig; el.querySelectorAll(".m").forEach(symbolize); return; }
+    if (el.dataset.sig !== sig) { el.innerHTML = html; el.dataset.sig = sig; el.querySelectorAll(".m").forEach(symbolize); EX.decorate(el); return; }
     const tmp = document.createElement("div"); tmp.innerHTML = html;
     const now = el.querySelectorAll("em"), next = tmp.querySelectorAll("em");
     next.forEach((e, i) => { if (now[i] && now[i].innerHTML !== e.innerHTML) now[i].innerHTML = e.innerHTML; });
@@ -781,6 +785,7 @@
     const el = document.createElement("div"); el.className = "symtip"; el.dir = "rtl";
     el.innerHTML = `<div class="sym-head"><b class="sym-big" dir="ltr">${esc(key).replace(/_(\w+)$/, "<sub>$1</sub>")}</b><span>${esc(S.n)}</span></div><p>${esc(S.d)}</p>
       <div class="units"><div><small>יחידה</small><b dir="ltr">${esc(S.u)}</b><span>${esc(S.un)}</span></div><div><small>ביחידות יסוד SI</small><b dir="ltr">${esc(S.si)}</b></div></div>`;
+    EX.linkify(el.querySelector("p"));
     document.body.appendChild(el);
     const r = anchor.getBoundingClientRect(), cw = el.offsetWidth, ch = el.offsetHeight;
     el.style.left = clamp(r.left + r.width / 2 - cw / 2, 10, innerWidth - cw - 10) + "px";
@@ -789,6 +794,8 @@
     G.sfx.pop();
   }
 
+  // calculator, formula movies, laws and scientists (explain.js)
+  const EX = EggExplain.create({ SYM, SYM_RE, symbolize, esc, laws: LAWS_DATA, sfx: () => G.sfx.pop(), live: () => infoLive(), closeInfo: () => closeInfo(), reduceMotion });
   const infoBtn = (key) => `<button class="info" type="button" data-info="${key}" aria-label="מה זה?">?</button>`;
   let infoOpenedAt = 0;
   function closeInfo() { document.querySelector(".cloud")?.remove(); closeSym(); }
@@ -801,6 +808,7 @@
     el.innerHTML = `<button class="x" type="button" aria-label="סגור">×</button><h4>${esc(I.t)}</h4><p>${esc(I.p)}</p>
       <div class="eqs">${I.eq.map((e) => `<div>${esc(e)}</div>`).join("")}</div>${live ? `<div class="live">${esc(live)}</div>` : ""}`;
     el.querySelectorAll(".eqs div").forEach(symbolize);
+    EX.linkify(el.querySelector("p"));
     el.insertAdjacentHTML("beforeend", `<div class="sym-hint">לחצו על כל אות בנוסחה</div>`);
     document.body.appendChild(el);
     const r = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { left: anchor.x - 20, right: anchor.x + 20, top: anchor.y - 20, bottom: anchor.y + 20, width: 40, height: 40 };
@@ -817,6 +825,7 @@
     const sb = e.target.closest("[data-sym]");
     if (sb) { e.preventDefault(); e.stopPropagation(); openSym(sb.dataset.sym, sb); return; }
     if (!e.target.closest(".symtip")) { closeSym(); document.querySelectorAll(".sym.on").forEach((x) => x.classList.remove("on")); }
+    if (EX.handleClick(e)) return;
     const b = e.target.closest("[data-info]");
     if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info, b); return; }
     if (!e.target.closest(".cloud") && performance.now() - infoOpenedAt > 400) closeInfo();
@@ -841,8 +850,18 @@
     ctx.strokeStyle = look.col; ctx.lineWidth = look.w; path(); ctx.stroke();
     ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = Math.max(0.6, look.w * 0.3); path(-look.w * 0.25 * ny, look.w * 0.25 * nx); ctx.stroke();
     if (label) {
-      ctx.fillStyle = "#606671"; ctx.font = "600 11px " + FONT; ctx.direction = "ltr"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
-      ctx.fillText("k = " + k, Math.abs(ux) > 0.5 ? x0 + ux * (lead + span * 0.5) - 20 : x0 + look.amp + 10, Math.abs(ux) > 0.5 ? y0 - look.amp - 10 : y0 + uy * (lead + span * 0.18));
+      // a big, easy to read k in a little white tag next to the coils
+      const txt = "k = " + k, sm = " N/m";
+      ctx.direction = "ltr"; ctx.textBaseline = "middle";
+      ctx.font = "800 19px " + FONT; const tw = ctx.measureText(txt).width;
+      ctx.font = "600 12px " + FONT; const sw = ctx.measureText(sm).width;
+      const bw = tw + sw + 16, bh = 28, horiz = Math.abs(ux) > 0.5;
+      let bx = horiz ? x0 + ux * (lead + span * 0.5) - bw / 2 : x0 + look.amp + 12, by = horiz ? y0 - look.amp - 10 - bh / 2 : y0 + uy * (lead + span * 0.55);
+      const cw = ctx.canvas.width / (ctx.getTransform().a || 1); if (bx + bw > cw - 4) bx = cw - 4 - bw; if (bx < 4) bx = 4;   // stay on screen
+      ctx.fillStyle = "rgba(255,255,255,0.92)"; ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 1.3;
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(bx, by - bh / 2, bw, bh, 9); else ctx.rect(bx, by - bh / 2, bw, bh); ctx.fill(); ctx.stroke();
+      ctx.textAlign = "left"; ctx.fillStyle = "#20232A"; ctx.font = "800 19px " + FONT; ctx.fillText(txt, bx + 8, by + 1);
+      ctx.fillStyle = "#606671"; ctx.font = "600 12px " + FONT; ctx.fillText(sm, bx + 8 + tw, by + 2);
     }
     ctx.restore();
   }
@@ -2958,6 +2977,7 @@
       <details><summary class="linkish">כל 16 הנוסחאות של הנושא</summary>${all.map(card).join("")}</details>
       <div class="actions"><button class="btn primary" type="button" data-close>חזרה למסילה</button></div>`);
     el.querySelectorAll(".kf").forEach(symbolize);
+    EX.decorate(el);
     for (const b of el.querySelectorAll("[data-say]")) b.addEventListener("click", () => { const f = KF(b.dataset.say); if (!speakHe(`${f.t}. ${f.sym}. ${f.ex}`)) b.textContent = "—"; });
     return el;
   }

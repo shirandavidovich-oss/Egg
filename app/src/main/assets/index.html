@@ -519,6 +519,27 @@
   .formula .eq .m { white-space: nowrap; }
   .formula .eq .mv-play { width: 30px; height: 30px; font-size: 11px; }
 
+  /* movie controls: seek bar (drag = pause, let go = carries on after 3 s), play/pause, round speed button for the right thumb */
+  .mv-ctl { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; }
+  .mv-pp { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid #3a3a40; background: #fff; font: 700 15px var(--ui-font); color: var(--ink); cursor: pointer; box-shadow: 0 2px 0 rgba(30,30,34,0.2); }
+  .mv-track { position: relative; flex: 1; min-width: 0; }
+  .mv-hold { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; white-space: nowrap; font: 600 12.5px var(--ui-font); color: #6B4A00; background: #FFF1C4; border-radius: 999px; padding: 3px 10px; direction: rtl; }
+  input[type=range].mv-seek { direction: ltr; -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; margin: 0; cursor: pointer; touch-action: none; }
+  input[type=range].mv-seek::-webkit-slider-runnable-track { height: 10px; border-radius: 10px; background: linear-gradient(90deg, var(--violet) var(--p, 0%), #E7E9EC var(--p, 0%)); }
+  input[type=range].mv-seek::-moz-range-track { height: 10px; border-radius: 10px; background: linear-gradient(90deg, var(--violet) var(--p, 0%), #E7E9EC var(--p, 0%)); }
+  input[type=range].mv-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -10px; border-radius: 50%; background: #fff; border: 3px solid var(--violet); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  input[type=range].mv-seek::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 3px solid var(--violet); }
+  .mv-speed { flex: none; position: relative; width: 60px; height: 60px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+    background: conic-gradient(var(--violet) var(--f, 100%), #E7E9EC 0); box-shadow: 0 3px 8px rgba(138,96,232,0.35); }
+  .mv-speed span { position: absolute; inset: 6px; border-radius: 50%; background: #fff; display: grid; place-items: center; font: 800 16px var(--ui-font); color: #4F33A8; direction: ltr; }
+  .mv-speed.slow span { background: #F4F1FD; }
+  .mv-speed:active { transform: scale(0.94); }
+  .mv.scrub .mv-tok, .mv.scrub .mv-sum, .mv.scrub .mv-lhs { animation: none !important; transition: none !important; }
+
+  /* mass m and metre m look different: mass is an orange slanted letter, metres a teal upright unit */
+  .sym[data-sym="m"], .sym[data-sym="m1"], .sym[data-sym="m2"], .mv-mass .mv-letter { color: #D0612F; }
+  .mv-card .mv-val i.unit.metre { color: #17876A; font-weight: 700; font-family: var(--ui-font); font-style: normal; }
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
@@ -3687,10 +3708,10 @@ const EggExplain = (() => {
 
     // ---------------- panels stacked over everything (but under the symbol tips) ----------------
     const stack = [];
-    let layer = null, timers = [], anims = [];
-    const stopMovie = () => { timers.forEach(clearTimeout); timers = []; anims.forEach((a) => { try { a.cancel(); } catch (e) {} }); anims = []; };
+    let layer = null;
+    let stopMovie = () => {};
     function render() {
-      stopMovie();
+      stopMovie(); stopMovie = () => {};
       const top = stack[stack.length - 1];
       if (!top) { if (layer) layer.remove(); layer = null; return; }
       if (!layer || !layer.isConnected) {
@@ -3792,7 +3813,6 @@ const EggExplain = (() => {
       const subLine = allKnown && calc.length ? subParts.join(" ").replace(/\( /g, "(").replace(/ \)/g, ")").replace(/√ /g, "√").replace(/ ([²³])/g, "$1").replace(/^− /, "−").replace(/\(− /g, "(−") : "";
 
       body.innerHTML = `
-        <div class="mv-prog"><i></i></div>
         <div class="mv" dir="ltr">
           <div class="mv-top"><div class="mv-card mv-lhs"><b class="mv-letter">${lhsText}</b><small dir="rtl">${esc(lhsName)}</small><span class="mv-val">?</span></div><span class="mv-rel">${esc(rel)}</span></div>
           <div class="mv-rhs">${rhs.map((t, i) => tokHtml(t, i, rhs, L)).join("")}</div>
@@ -3802,56 +3822,99 @@ const EggExplain = (() => {
         </div>
         <div class="mv-cap" aria-live="polite"></div>
         <div class="mv-formula" dir="ltr">${esc(src.f).replace(/_(\w+)/g, "<sub>$1</sub>")}</div>
-        <div class="ex-actions"><button class="btn primary" type="button" data-ex="replay">▶ שוב</button><button class="btn secondary" type="button" data-ex="close">הבנתי</button></div>`;
-      const cap = body.querySelector(".mv-cap"), prog = body.querySelector(".mv-prog i");
-      const toksEl = [...body.querySelectorAll(".mv-tok")], lhsEl = body.querySelector(".mv-lhs");
+        <div class="mv-ctl" dir="ltr">
+          <button class="mv-pp" type="button" aria-label="עצירה">❚❚</button>
+          <div class="mv-track"><div class="mv-hold" hidden></div><input class="mv-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="איפה בסרטון"></div>
+          <button class="mv-speed" type="button" aria-label="מהירות"><span>1×</span></button>
+        </div>
+        <div class="ex-actions"><button class="btn secondary" type="button" data-ex="close">הבנתי</button></div>`;
+      const cap = body.querySelector(".mv-cap"), mvEl = body.querySelector(".mv");
+      const toksEl = [...body.querySelectorAll(".mv-tok")], lhsEl = body.querySelector(".mv-lhs"), lhsVal = lhsEl.querySelector(".mv-val");
+      const sumEl = body.querySelector(".mv-sum"), line = body.querySelector(".mv-line"), fly = body.querySelector(".mv-fly");
       // the script: one beat per piece, then all together, then the arrow carries the answer over
       const beats = [];
       beats.push({ cap: lhsKey ? `רוצים לדעת כמה זה ${B(lhsKey.replace(/_/g, ""))}: ${lhsName}. בואו נראה מאיפה זה מגיע.` : "בואו נראה מאיפה זה מגיע.", do: () => lhsEl.classList.add("lit") });
       rhs.forEach((t, i) => {
         if (t.t === "lp" || t.t === "rp") return;
-        const els = toksEl.filter((e) => +e.dataset.i === i || (+e.dataset.pair === i));
+        const els = toksEl.filter((e) => +e.dataset.i === i);
         beats.push({ cap: tokCaption(t, i, rhs, L), do: () => { els.forEach((e) => e.classList.add("in")); toksEl.filter((e) => (e.dataset.paren !== undefined) && +e.dataset.open < i && +e.dataset.close > i).forEach((e) => e.classList.add("in")); } });
       });
       beats.push({ cap: subLine ? "עכשיו שמים מספרים במקום האותיות ומחשבים:" : "עכשיו מחשבים את הכול יחד:", do: () => {
         toksEl.forEach((e) => e.classList.add("in", "glow"));
-        const s = body.querySelector(".mv-sum"); s.hidden = false; s.innerHTML = subLine ? `${esc(subLine)}${result ? ` <b>= ${esc(result)}</b>` : ""}` : (result ? `<b>= ${esc(result)}</b>` : "✓");
+        sumEl.hidden = false; sumEl.innerHTML = subLine ? `${esc(subLine)}${result ? ` <b>= ${esc(result)}</b>` : ""}` : (result ? `<b>= ${esc(result)}</b>` : "✓");
       }, long: true });
-      beats.push({ cap: rel === "=" ? `החץ לוקח את התוצאה אל ${lhsKey ? B(lhsKey.replace(/_/g, "")) : "הצד השני"}${result ? `: ${B(result)}` : ""}. זהו!` : `ולכן ${lhsKey ? B(lhsKey.replace(/_/g, "")) : "הצד השמאלי"} ${REL_WORD[rel] || ""} מה שחישבנו.`, do: () => flyAnswer(body, result) , long: true });
+      beats.push({ cap: rel === "=" ? `החץ לוקח את התוצאה אל ${lhsKey ? B(lhsKey.replace(/_/g, "")) : "הצד השני"}${result ? `: ${B(result)}` : ""}. זהו!` : `ולכן ${lhsKey ? B(lhsKey.replace(/_/g, "")) : "הצד השמאלי"} ${REL_WORD[rel] || ""} מה שחישבנו.`, do: () => {}, long: true, arrow: true });
 
-      const BEAT = reduceMotion ? 0 : 1650;
-      const run = () => {
-        stopMovie();
+      // ---- a little video: a clock, a seek bar, pause, and quarter speeds ----
+      const BEAT = 1650, LEAD = 250, FLY = 1100;
+      let t0 = LEAD; beats.forEach((bt) => { bt.start = t0; t0 += bt.long ? BEAT * 1.5 : BEAT; });
+      const total = t0;
+      let t = 0, playing = !reduceMotion, speed = 1, applied = 0, geo = null, last = 0, resumeAt = 0, raf = 0, landed = false;
+      const seek = body.querySelector(".mv-seek"), pp = body.querySelector(".mv-pp"), sp = body.querySelector(".mv-speed"), hold = body.querySelector(".mv-hold");
+      function reset() {
         toksEl.forEach((e) => e.classList.remove("in", "glow")); lhsEl.classList.remove("lit", "got");
-        body.querySelector(".mv-val").textContent = "?"; body.querySelector(".mv-sum").hidden = true;
-        body.querySelector(".mv-line").setAttribute("d", ""); body.querySelector(".mv-fly").hidden = true;
-        if (reduceMotion) { beats.forEach((b) => b.do()); cap.textContent = beats[beats.length - 1].cap; prog.style.width = "100%"; return; }
-        let t = 250; const total = beats.reduce((s, b) => s + (b.long ? BEAT * 1.5 : BEAT), 0);
-        prog.style.transition = "none"; prog.style.width = "0%";
-        timers.push(setTimeout(() => { prog.style.transition = `width ${total}ms linear`; prog.style.width = "100%"; }, 60));
-        beats.forEach((b) => { timers.push(setTimeout(() => { cap.textContent = b.cap; b.do(); }, t)); t += b.long ? BEAT * 1.5 : BEAT; });
-      };
-      body._replay = run;
-      requestAnimationFrame(run);
-    }
-    function flyAnswer(body, result) {
-      const mv = body.querySelector(".mv"), from = body.querySelector(".mv-sum:not([hidden])") || body.querySelector(".mv-rhs"), to = body.querySelector(".mv-lhs");
-      const R = mv.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
-      const x1 = a.left + a.width / 2 - R.left, y1 = a.top - R.top + 2, x2 = b.left + b.width / 2 - R.left, y2 = b.bottom - R.top + 4;
-      const cx = (x1 + x2) / 2 + (x2 < x1 ? -40 : 40), cy = Math.min(y1, y2) + (y1 - y2) * 0.15 - 10;
-      const svg = body.querySelector(".mv-arrow"), path = svg.querySelector(".mv-line");
-      svg.setAttribute("viewBox", `0 0 ${R.width} ${R.height}`);
-      path.setAttribute("d", `M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}`); path.setAttribute("marker-end", "url(#mvHead)");
-      const len = path.getTotalLength ? path.getTotalLength() : 200;
-      path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
-      try { anims.push(path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 900, easing: "ease-in-out", fill: "forwards" })); } catch (e) { path.style.strokeDashoffset = 0; }
-      const fly = body.querySelector(".mv-fly"), val = body.querySelector(".mv-val");
-      const land = () => { val.textContent = result || "✓"; to.classList.add("got"); fly.hidden = true; sfx(); };
-      if (!result) { timers.push(setTimeout(land, 900)); return; }
-      fly.hidden = false; fly.textContent = result;
-      const fw = fly.offsetWidth, fh = fly.offsetHeight, pts = [];
-      for (let i = 0; i <= 14; i++) { const s = i / 14, x = (1 - s) * (1 - s) * x1 + 2 * (1 - s) * s * cx + s * s * x2, y = (1 - s) * (1 - s) * y1 + 2 * (1 - s) * s * cy + s * s * y2; pts.push({ transform: `translate(${x - fw / 2}px, ${y - fh / 2}px) scale(${1 + Math.sin(s * Math.PI) * 0.25})` }); }
-      try { const an = fly.animate(pts, { duration: 1100, easing: "ease-in-out", fill: "forwards" }); anims.push(an); an.onfinish = land; } catch (e) { land(); }
+        lhsVal.textContent = "?"; sumEl.hidden = true; line.setAttribute("d", ""); fly.hidden = true; geo = null; landed = false; applied = 0;
+      }
+      function measure() {            // where the arrow starts and ends (after the sum line has appeared)
+        const R = mvEl.getBoundingClientRect(), a = (sumEl.hidden ? body.querySelector(".mv-rhs") : sumEl).getBoundingClientRect(), b = lhsEl.getBoundingClientRect();
+        const x1 = a.left + a.width / 2 - R.left, y1 = a.top - R.top + 2, x2 = b.left + b.width / 2 - R.left, y2 = b.bottom - R.top + 4;
+        const cx = (x1 + x2) / 2 + (x2 < x1 ? -40 : 40), cy = Math.min(y1, y2) + (y1 - y2) * 0.15 - 10;
+        const svg = body.querySelector(".mv-arrow"); svg.setAttribute("viewBox", `0 0 ${R.width} ${R.height}`);
+        line.setAttribute("d", `M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}`); line.setAttribute("marker-end", "url(#mvHead)");
+        const len = line.getTotalLength ? line.getTotalLength() : 200; line.style.strokeDasharray = len;
+        fly.textContent = result; fly.hidden = false;
+        return { x1, y1, x2, y2, cx, cy, len, fw: fly.offsetWidth, fh: fly.offsetHeight };
+      }
+      function paint() {
+        let k = 0; while (k < beats.length && beats[k].start <= t) k++;
+        if (k < applied) reset();
+        for (; applied < k; applied++) beats[applied].do();
+        cap.innerHTML = k ? esc(beats[k - 1].cap) : "&nbsp;";
+        const lastB = beats[beats.length - 1];
+        if (k === beats.length) {                                 // the arrow and the flying answer follow the clock, so they can be scrubbed too
+          if (!geo) geo = measure();
+          const p = Math.min(1, (t - lastB.start) / FLY), e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          line.style.strokeDashoffset = geo.len * (1 - Math.min(1, e * 1.25));
+          if (result && p < 1) { const q = e, x = (1 - q) * (1 - q) * geo.x1 + 2 * (1 - q) * q * geo.cx + q * q * geo.x2, y = (1 - q) * (1 - q) * geo.y1 + 2 * (1 - q) * q * geo.cy + q * q * geo.y2; fly.hidden = false; fly.style.transform = `translate(${x - geo.fw / 2}px, ${y - geo.fh / 2}px) scale(${1 + Math.sin(q * Math.PI) * 0.25})`; }
+          else fly.hidden = true;
+          if (p >= 1 && !landed) { landed = true; lhsVal.textContent = result || "✓"; lhsEl.classList.add("got"); if (playing) sfx(); }
+          if (p < 1 && landed) { landed = false; lhsVal.textContent = "?"; lhsEl.classList.remove("got"); }
+        }
+        seek.value = Math.round(t / total * 1000);
+        seek.style.setProperty("--p", (t / total * 100) + "%");
+        pp.textContent = playing ? "❚❚" : "▶"; pp.setAttribute("aria-label", playing ? "עצירה" : "המשך");
+      }
+      function loop(now) {
+        const dt = Math.min(100, now - (last || now)); last = now;
+        if (resumeAt && now >= resumeAt) { resumeAt = 0; hold.hidden = true; if (t < total) playing = true; }
+        else if (resumeAt) { hold.hidden = false; hold.textContent = `⏸ עצרנו לחשוב · ממשיך בעוד ${Math.ceil((resumeAt - now) / 1000)}`; }
+        if (playing) { t = Math.min(total, t + dt * speed); if (t >= total) playing = false; }
+        paint();
+        raf = requestAnimationFrame(loop);
+      }
+      // the seek bar: dragging stops the video; letting go, it carries on by itself after a few seconds
+      const grab = () => { playing = false; resumeAt = 0; hold.hidden = true; mvEl.classList.add("scrub"); };
+      const drag = () => { grab(); t = +seek.value / 1000 * total; paint(); };
+      const letGo = () => { mvEl.classList.remove("scrub"); if (t < total) resumeAt = performance.now() + 3000; };
+      seek.addEventListener("pointerdown", grab); seek.addEventListener("touchstart", grab, { passive: true });
+      seek.addEventListener("input", drag);
+      seek.addEventListener("change", letGo); seek.addEventListener("pointerup", letGo); seek.addEventListener("touchend", letGo);
+      pp.addEventListener("click", () => {
+        resumeAt = 0; hold.hidden = true;
+        if (playing) playing = false; else { if (t >= total) { t = 0; reset(); } playing = true; }
+        paint();
+      });
+      // the round speed button, under the right thumb: 1 → ¾ → ½ → ¼ → 1
+      const SPEEDS = [[1, "1×"], [0.75, "3/4"], [0.5, "2/4"], [0.25, "1/4"]];
+      sp.addEventListener("click", () => {
+        const i = (SPEEDS.findIndex((x) => x[0] === speed) + 1) % SPEEDS.length; speed = SPEEDS[i][0];
+        sp.querySelector("span").textContent = SPEEDS[i][1]; sp.style.setProperty("--f", speed * 100 + "%");
+        sp.classList.toggle("slow", speed < 1); sfx();
+      });
+      sp.style.setProperty("--f", "100%");
+      if (reduceMotion) t = total;
+      stopMovie = () => { cancelAnimationFrame(raf); };
+      raf = requestAnimationFrame((now) => { last = now; loop(now); });
     }
     function tokText(t, numeric) {
       if (t.t === "num") return t.s;
@@ -3874,7 +3937,7 @@ const EggExplain = (() => {
       }
       if (t.t === "sym") {
         const v = valueOf(t.k, L), u = SYM[t.k] && SYM[t.k].u && SYM[t.k].u !== "—" ? SYM[t.k].u : "";
-        return `<span class="mv-tok mv-card" data-i="${i}"><b class="mv-letter">${symHtml(t.k)}</b><small dir="rtl">${esc(shortName(t.k) || t.k)}</small>${v !== undefined ? `<span class="mv-val">${esc(t.k === "π" ? "3.14" : fmtNum(v))}${u ? ` <i>${esc(u)}</i>` : ""}</span>` : ""}</span>`;
+        return `<span class="mv-tok mv-card${t.k === "m" || t.k === "m1" || t.k === "m2" ? " mv-mass" : ""}" data-i="${i}"><b class="mv-letter">${symHtml(t.k)}</b><small dir="rtl">${esc(shortName(t.k) || t.k)}</small>${v !== undefined ? `<span class="mv-val">${esc(t.k === "π" ? "3.14" : fmtNum(v))}${u ? ` <i class="unit${/^c?m$/.test(u) ? " metre" : ""}">${esc(u)}</i>` : ""}</span>` : ""}</span>`;
       }
       if (t.t === "num") return `<span class="mv-tok mv-card mv-num" data-i="${i}"><b class="mv-letter">${esc(t.s)}</b><small dir="rtl">${t.s === "½" ? "חצי" : "מספר"}</small></span>`;
       if (t.t === "fn") return `<span class="mv-tok mv-card mv-fn" data-i="${i}"><b class="mv-letter">${t.v}</b><small dir="rtl">${FN_WORD[t.v]}</small></span>`;
@@ -4041,7 +4104,6 @@ const EggExplain = (() => {
         const a = ex.dataset.ex;
         if (a === "close") closeAll(); else if (a === "back") back(); else if (a === "timeline") openTimeline();
         else if (a === "pick") openPick(ex.dataset.laws.split(","));
-        else if (a === "replay") { const b = layer.querySelector(".ex-body"); b && b._replay && b._replay(); }
         return true;
       }
       const law = t.closest("[data-law]"); if (law) { e.preventDefault(); e.stopPropagation(); openLaw(law.dataset.law); return true; }

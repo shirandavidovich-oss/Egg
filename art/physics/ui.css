@@ -501,3 +501,24 @@
   .formula .eq > span:first-child { flex: 1; min-width: 0; }
   .formula .eq .m { white-space: nowrap; }
   .formula .eq .mv-play { width: 30px; height: 30px; font-size: 11px; }
+
+  /* movie controls: seek bar (drag = pause, let go = carries on after 3 s), play/pause, round speed button for the right thumb */
+  .mv-ctl { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; }
+  .mv-pp { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid #3a3a40; background: #fff; font: 700 15px var(--ui-font); color: var(--ink); cursor: pointer; box-shadow: 0 2px 0 rgba(30,30,34,0.2); }
+  .mv-track { position: relative; flex: 1; min-width: 0; }
+  .mv-hold { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; white-space: nowrap; font: 600 12.5px var(--ui-font); color: #6B4A00; background: #FFF1C4; border-radius: 999px; padding: 3px 10px; direction: rtl; }
+  input[type=range].mv-seek { direction: ltr; -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; margin: 0; cursor: pointer; touch-action: none; }
+  input[type=range].mv-seek::-webkit-slider-runnable-track { height: 10px; border-radius: 10px; background: linear-gradient(90deg, var(--violet) var(--p, 0%), #E7E9EC var(--p, 0%)); }
+  input[type=range].mv-seek::-moz-range-track { height: 10px; border-radius: 10px; background: linear-gradient(90deg, var(--violet) var(--p, 0%), #E7E9EC var(--p, 0%)); }
+  input[type=range].mv-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -10px; border-radius: 50%; background: #fff; border: 3px solid var(--violet); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  input[type=range].mv-seek::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 3px solid var(--violet); }
+  .mv-speed { flex: none; position: relative; width: 60px; height: 60px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+    background: conic-gradient(var(--violet) var(--f, 100%), #E7E9EC 0); box-shadow: 0 3px 8px rgba(138,96,232,0.35); }
+  .mv-speed span { position: absolute; inset: 6px; border-radius: 50%; background: #fff; display: grid; place-items: center; font: 800 16px var(--ui-font); color: #4F33A8; direction: ltr; }
+  .mv-speed.slow span { background: #F4F1FD; }
+  .mv-speed:active { transform: scale(0.94); }
+  .mv.scrub .mv-tok, .mv.scrub .mv-sum, .mv.scrub .mv-lhs { animation: none !important; transition: none !important; }
+
+  /* mass m and metre m look different: mass is an orange slanted letter, metres a teal upright unit */
+  .sym[data-sym="m"], .sym[data-sym="m1"], .sym[data-sym="m2"], .mv-mass .mv-letter { color: #D0612F; }
+  .mv-card .mv-val i.unit.metre { color: #17876A; font-weight: 700; font-family: var(--ui-font); font-style: normal; }

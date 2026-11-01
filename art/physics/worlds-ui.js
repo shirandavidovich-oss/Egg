@@ -9,10 +9,6 @@
   const K = window.eggPhysics && window.eggPhysics.kit;
   if (!K) return;
   const { G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, setTitle, sheet, isSheetOpen, reward, forceArrow, activeSpecies, phys, nameOf, artOf } = K;
-  const S = WorldScenes, WP = WorldPhys, D = S.DATA;
-  const st = () => K.worldsState();
-  const isDone = (id) => st().done.includes(id);
-  const sceneN = (sc) => sc.missions.filter((m) => isDone(m.id)).length;
   const num = (s) => { const t = String(s).trim().replace(/[−–]/g, "-").replace(",", "."); return t === "" ? NaN : Number(t); };
   const SUP = { "-": "⁻", 0: "⁰", 1: "¹", 2: "²", 3: "³", 4: "⁴", 5: "⁵", 6: "⁶", 7: "⁷", 8: "⁸", 9: "⁹" };
   const nice = (x, d = 2) => {
@@ -23,12 +19,12 @@
     if (a !== 0 && (a >= 1e5 || a < 1e-3)) { const e = Math.floor(Math.log10(a)), m = x / Math.pow(10, e); return fmt(m, 2) + "×10" + String(e).split("").map((c) => SUP[c]).join(""); }
     return fmt(x, d);
   };
-  const UNIT = { baseSI: "", Rx: "", Ry: "", magnitude: "", angle: "°", x: "m", displacement: "m", distance: "m", tMeeting: "s", xMeeting: "m", v: "m/s", dx: "m", stoppingTime: "s", y: "m", tPeak: "s", maxY: "m", tLand: "s",
+  const MECH_UNIT = { baseSI: "", Rx: "", Ry: "", magnitude: "", angle: "°", x: "m", displacement: "m", distance: "m", tMeeting: "s", xMeeting: "m", v: "m/s", dx: "m", stoppingTime: "s", y: "m", tPeak: "s", maxY: "m", tLand: "s",
     range: "m", N: "N", friction: "N", a: "m/s²", staticLimit: "N", T: "N", F: "N", E: "J", initialE: "J", heat: "J", endV: "m/s", remainingE: "J", aC: "m/s²", Fc: "N", period: "s", safeSpeed: "m/s",
     idealV: "m/s", idealKmh: "km/h", NTop: "N", minV: "m/s", J: "N·s", Favg: "N", deltaP: "kg·m/s", v1: "m/s", v2: "m/s", pBefore: "kg·m/s", pAfter: "kg·m/s", lostK: "J", pTotal: "kg·m/s", g: "m/s²",
     vOrbit: "m/s", vEscape: "m/s", energyAtBottom: "J", compression: "m" };
-  const WORLD_LINK = { W05: { screen: "ramps", title: "הרפתקאות על המדרון", sub: "הפרק המלא: 18 מצבים ו-90 משימות" }, W06: { screen: "lab", title: "קפיץ־קפוץ", sub: "מעבדת הקפיץ המלאה" } };
-  const WORLD_ICON = { W01: "ruler", W02: "arrows", W03: "belt", W04: "arc", W05: "ramp", W06: "spring", W07: "energy", W08: "carousel", W09: "carts", W10: "orbit", W11: "wave", W12: "tower" };
+  const MECH_LINK = { W05: { screen: "ramps", title: "הרפתקאות על המדרון", sub: "הפרק המלא: 18 מצבים ו-90 משימות" }, W06: { screen: "lab", title: "קפיץ־קפוץ", sub: "מעבדת הקפיץ המלאה" } };
+  const MECH_ICON = { W01: "ruler", W02: "arrows", W03: "belt", W04: "arc", W05: "ramp", W06: "spring", W07: "energy", W08: "carousel", W09: "carts", W10: "orbit", W11: "wave", W12: "tower" };
 
   // ---------------- pictograms ----------------
   const ICONS = (() => {
@@ -60,10 +56,15 @@
   const pict = (k) => `<svg viewBox="0 0 52 52" aria-hidden="true">${ICONS[k] || ICONS.ramp}</svg>`;
 
   // ======================================================================
-  //  THE WORLDS MAP
+  //  one domain of worlds (mechanics, electricity): map, world, situation
   // ======================================================================
-  SCREENS.worlds = () => {
-    setTitle("עולמות המכניקה", "12 עולמות · 84 מכונות ניסוי");
+  function register(cfg) {
+  const { S, WP, WORLD_LINK, WORLD_ICON, UNIT, names } = cfg, D = S.DATA;
+  const st = cfg.state;
+  const isDone = (id) => st().done.includes(id);
+  const sceneN = (sc) => sc.missions.filter((m) => isDone(m.id)).length;
+  SCREENS[names.map] = () => {
+    setTitle(cfg.title, "12 עולמות · 84 מכונות ניסוי");
     const done = st().done;
     K.$("#screen").innerHTML = `
       <div class="stack wmap">
@@ -81,10 +82,10 @@
         <p class="fine">המצבים והמשימות מקוריים, בנויים לפי סדר נושאי המכניקה. "גן התנודות" הוא העשרה.</p>
       </div>`;
     requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of document.querySelectorAll("#screen [data-w] .meter i, #screen .card > .meter i")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
-    for (const b of document.querySelectorAll("#screen [data-w].wtile")) b.addEventListener("click", () => { G.sfx.pop(); show("world", { id: b.dataset.w }); });
+    for (const b of document.querySelectorAll("#screen [data-w].wtile")) b.addEventListener("click", () => { G.sfx.pop(); show(names.world, { id: b.dataset.w }); });
   };
 
-  SCREENS.world = ({ id }) => {
+  SCREENS[names.world] = ({ id }) => {
     const w = D.worlds.find((x) => x.id === id) || D.worlds[0];
     setTitle(w.title, `${w.id} · ${w.subtitle}`);
     const scenes = S.SCENES.filter((s) => s.w === w.id), link = WORLD_LINK[w.id];
@@ -105,13 +106,13 @@
       </div>`;
     requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of document.querySelectorAll("#screen [data-w]")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
     $("#wlink")?.addEventListener("click", () => { G.sfx.pop(); show(link.screen, { topic: link.screen === "lab" ? "springs" : "newton" }); });
-    for (const b of document.querySelectorAll("#screen [data-sc]")) b.addEventListener("click", () => { G.sfx.pop(); show("wscene", { id: b.dataset.sc }); });
+    for (const b of document.querySelectorAll("#screen [data-sc]")) b.addEventListener("click", () => { G.sfx.pop(); show(names.scene, { id: b.dataset.sc }); });
   };
 
   // ======================================================================
   //  ONE SITUATION
   // ======================================================================
-  SCREENS.wscene = ({ id }) => {
+  SCREENS[names.scene] = ({ id }) => {
     const sc = S.byId(id) || S.SCENES[0], world = D.worlds.find((w) => w.id === sc.w);
     setTitle(sc.title, `${world.title} · ${sc.label}`);
     let sp = activeSpecies();
@@ -186,7 +187,7 @@
     });
     function paintExplain() {
       $("#explain").innerHTML = `<h3 style="margin:0 0 6px">${esc(sc.title)}</h3><p style="margin:0 0 8px">${esc(sc.story)}</p>
-        <p class="fine">המודל: ${esc(sc.label)}. ${esc(MODEL_NOTE[sc.family] || "")}</p>`;
+        <p class="fine">המודל: ${esc(sc.label)}. ${esc((cfg.NOTE || MODEL_NOTE)[sc.family] || "")}</p>`;
     }
 
     // ---------------- missions ----------------
@@ -225,8 +226,8 @@
       const el = $("#task");
       el.querySelector("#again")?.addEventListener("click", () => { ui.replay = true; delete L.pred[m.id]; delete L.xfer[m.id]; ui.xtask = null; L.since[m.id] = undefined; S.activate(L, m); paintMission(); });
       el.querySelector("#nextM")?.addEventListener("click", () => select(sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id))));
-      el.querySelector("#nextS")?.addEventListener("click", () => { const nx = S.SCENES.filter((s) => s.w === sc.w).find((s) => sceneN(s) < 4 && s.id !== sc.id); show("wscene", { id: nx.id }, false); });
-      el.querySelector("#toWorld")?.addEventListener("click", () => show("world", { id: sc.w }, false));
+      el.querySelector("#nextS")?.addEventListener("click", () => { const nx = S.SCENES.filter((s) => s.w === sc.w).find((s) => sceneN(s) < 4 && s.id !== sc.id); show(names.scene, { id: nx.id }, false); });
+      el.querySelector("#toWorld")?.addEventListener("click", () => show(names.world, { id: sc.w }, false));
       for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { S.lockPrediction(L, m, +b.dataset.pr); ui.predShown = false; G.sfx.pop(); say("נעול. עכשיו ▶", 1.4); paintMission(); });
       el.querySelector("#unlockP")?.addEventListener("click", () => { delete L.pred[m.id]; paintMission(); });
       for (const b of el.querySelectorAll("[data-ch]")) b.addEventListener("click", () => {
@@ -256,10 +257,10 @@
       const first = !isDone(m.id); ui.replay = false;
       if (first) { st().done.push(m.id); P.save(); }
       const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
-      if (first) reward("world:" + m.id, m.coins, from);
+      if (first) reward(cfg.coin + ":" + m.id, m.coins, from);
       G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
       toast(m, first); paintBar();
-      if (first && sceneN(sc) === 4) later(() => reward("worldscene:" + sc.id, 10, from), 900);
+      if (first && sceneN(sc) === 4) later(() => reward(cfg.coin + "scene:" + sc.id, 10, from), 900);
       const n = sc.missions.findIndex((x) => !isDone(x.id));
       if (first && n >= 0) later(() => select(n), 1300); else paintMission();
     }
@@ -269,19 +270,19 @@
         <div class="tmeters"><span>הנושא</span><span class="meter thin violet"><i style="width:${Math.max(2, K.familyCoverage(sc.topic) * 100)}%"></i></span><span>כללי</span><span class="meter thin teal"><i style="width:${Math.max(2, K.overallCoverage() * 100)}%"></i></span></div>`;
       t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 6000); t.onclick = () => { t.hidden = true; };
     }
-    const LEARN = (m) => m.kind === "choice" ? m.opts[m.right] : (LEARN_FAMILY[sc.family] || sc.objective);
+    const LEARN = (m) => m.kind === "choice" ? m.opts[m.right] : ((cfg.NOTE || MODEL_NOTE)[sc.family] || sc.objective);
 
     // ---------------- readouts ----------------
     function paintReadouts() {
       const e = S.evalP(sc, L.P);
       if (e.invalid) { $("#readouts").innerHTML = `<div class="readout"><small>המודל</small><b>מחוץ לתחום</b></div>`; return; }
-      $("#readouts").innerHTML = Object.entries(sc.readouts).map(([k, he]) => `<div class="readout"><small>${esc(he)}</small><b>${esc(nice(e[k]))}${typeof e[k] === "number" && UNIT[k] ? " " + UNIT[k] : ""}</b></div>`).join("");
-      const t = Object.entries(sc.readouts).map(([k, he]) => `${he}: ${nice(e[k])} ${UNIT[k] || ""}`).join(". ");
+      $("#readouts").innerHTML = Object.entries(sc.readouts).map(([k, he]) => `<div class="readout"><small>${esc(he)}</small><b>${esc(nice(e[k]))}${typeof e[k] === "number" && (UNIT || {})[k] ? " " + UNIT[k] : ""}</b></div>`).join("");
+      const t = Object.entries(sc.readouts).map(([k, he]) => `${he}: ${nice(e[k])} ${(UNIT || {})[k] || ""}`).join(". ");
       if ($("#srText").textContent !== t) $("#srText").textContent = t;
     }
 
     // ---------------- graphs from the simulator's own samples ----------------
-    const GLABEL = { x: "x (m)", y: "y (m)", v: "v (m/s)", a: "a (m/s²)", F: "F (N)", s: "s (m)", r: "r (m)", K: "K (J)", U: "U (J)", E: "E (J)", x1: "x₁ (m)", x2: "x₂ (m)", v1: "v₁ (m/s)", v2: "v₂ (m/s)", p: "p (kg·m/s)", vy: "v_y (m/s)", gap: "מרחק (m)" };
+    const GLABEL = { x: "x (m)", y: "y (m)", v: "v (m/s)", a: "a (m/s²)", F: "F (N)", s: "s (m)", r: "r (m)", K: "K (J)", U: "U (J)", E: "E (J)", x1: "x₁ (m)", x2: "x₂ (m)", v1: "v₁ (m/s)", v2: "v₂ (m/s)", p: "p (kg·m/s)", vy: "v_y (m/s)", gap: "מרחק (m)", d: "d (m)", Vc: "Vc (V)", Ima: "I (mA)", B: "B (T)", flux: "Φ (Wb)", emf: "כא״מ (V)", I: "I (A)", V1: "V₁ (V)", V2: "V₂ (V)", heat: "חום (J)", Q: "Q (μC)", W: "W (J)", phi: "φ (rad)", handWork: "עבודת היד (J)", V: "V (V)" };
     function sample() { if (!L.sim) return; const s = L.sim.st, row = { t: L.sim.t }; for (const k in GLABEL) if (typeof s[k] === "number" && Number.isFinite(s[k])) row[k] = s[k]; hist.push(row); if (hist.length > 2500) hist.splice(0, hist.length - 2500); }
     function keysAvail() { const ks = new Set(); for (const r of hist.slice(-5)) for (const k in r) if (k !== "t") ks.add(k); return [...ks]; }
     function paintGseg() {
@@ -319,7 +320,9 @@
     const line = (x0, y0, x1, y1, w = 2, c = "#2e2e33") => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
     const label = (x, y, t, c = "#606671", al = "center", f = "600 12px ") => { ctx.save(); ctx.font = f + FONT; ctx.fillStyle = c; ctx.textAlign = al; ctx.textBaseline = "middle"; ctx.direction = "ltr"; ctx.fillText(t, x, y); ctx.restore(); };
     const ground = (y = 0) => { line(0, sy(y), W, sy(y), 2.2); };
-    const arrowS = (x, y, vx, vy, c, lab, val) => forceArrow(ctx, x, y, vx, vy, c, lab, val !== undefined ? { value: val } : {});
+    // small or huge values (μN, N/C, T) keep their real size in the label instead of rounding to "0.0 N"
+    const arrowS = (x, y, vx, vy, c, lab, val) => (val !== undefined && (Math.abs(val) < 0.05 || Math.abs(val) >= 1e4 || sc.id[0] === "E"))
+      ? forceArrow(ctx, x, y, vx, vy, c, `${lab} ${nice(Math.abs(val))}`, {}) : forceArrow(ctx, x, y, vx, vy, c, lab, val !== undefined ? { value: val } : {});
     // the creature as the body: feet at (px, py) in screen pixels, height hpx, rotated
     function critter(px, py, hpx, rot = 0, flip = false) {
       if (!(img.complete && img.naturalWidth)) { ctx.fillStyle = "#F7D9B5"; ctx.beginPath(); ctx.arc(px, py - hpx / 2, hpx / 2, 0, Math.PI * 2); ctx.fill(); return; }
@@ -333,9 +336,53 @@
     function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, y = H - 102; ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
     const has = (t) => L.sim && L.sim.events.some((e) => e.type === t);
     const P_ = () => (L.sim && L.cur ? L.cur.P : L.P);
-    const SIM = () => L.sim || (L._preview && L._previewP === JSON.stringify(L.P) ? L._preview : (L._previewP = JSON.stringify(L.P), L._preview = (() => { const e = S.evalP(sc, L.P); if (e.invalid) return null; const s = WP.makeSim(sc.family, { ...L.P }, { brake: !!sc.setup.brake, gap: sc.setup.gap, v: L.P.v, vf: L.P.vf }); return s; })()));
+    const SIM = () => L.sim || (L._preview && L._previewP === JSON.stringify(L.P) ? L._preview : (L._previewP = JSON.stringify(L.P), L._preview = (() => { const e = S.evalP(sc, L.P); if (e.invalid) return null; const s = WP.makeSim(sc.family, { ...L.P }, { brake: !!sc.setup.brake, gap: sc.setup.gap, v: L.P.v, vf: L.P.vf }); s.step(0); return s; })()));
     const forces = () => view !== "none";
 
+
+    // ---------- helpers for the electricity machines ----------
+    function charge(x, y, q, R = 10) { ctx.fillStyle = q > 0 ? "#F06292" : q < 0 ? "#42A5F5" : "#B0BEC5"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(sx(x), sy(y), R, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); label(sx(x), sy(y), q > 0 ? "+" : q < 0 ? "−" : "0", "#fff", "center", "800 " + Math.round(R * 1.2) + "px "); }
+    function fieldMap(p, x1, y1, x2, y2, q1, q2) { fit(-1.25, 1.25, -1.0, 1.0);
+      ctx.strokeStyle = "#EEF0F3"; ctx.lineWidth = 1; for (let i = -12; i <= 12; i++) { line(sx(i / 10), sy(-1), sx(i / 10), sy(1), 1, "#F3F4F6"); }
+      for (let gx = -1.1; gx <= 1.11; gx += 0.275) for (let gy = -0.9; gy <= 0.91; gy += 0.3) { const e = WP.evaluate("field2D", { q1, q2, x1, y1, x2, y2, x: gx, y: gy }); if (!e.valid || e.E === 0) continue; const a = Math.atan2(e.Ey, e.Ex); ctx.save(); ctx.globalAlpha = 0.18; arrowS(sx(gx), sy(gy), Math.cos(a) * 16, -Math.sin(a) * 16, "#25B58B"); ctx.restore(); }
+      if (q1) charge(x1, y1, q1, 15); if (q2) charge(x2, y2, q2, 15); label(sx(x1), sy(y1) + 26, nice(q1, 1) + " μC"); label(sx(x2), sy(y2) + 26, nice(q2, 1) + " μC"); }
+    function battery(x, y, V) { const X = sx(x), Y = sy(y); line(X - 12, Y - 8, X + 12, Y - 8, 3); line(X - 7, Y + 8, X + 7, Y + 8, 5); label(X + 22, Y, (V >= 0 ? "" : "") + nice(V, 0) + " V", "#20232A", "left"); }
+    function resistor(x, y, lab, vertical) { const X = sx(x), Y = sy(y); ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; if (vertical) { ctx.fillRect(X - 8, Y - 20, 16, 40); ctx.strokeRect(X - 8, Y - 20, 16, 40); label(X + 14, Y, lab, "#20232A", "left"); } else { ctx.fillRect(X - 24, Y - 8, 48, 16); ctx.strokeRect(X - 24, Y - 8, 48, 16); label(X, Y - 18, lab, "#20232A"); } }
+    // wires as polylines; dots travel with the conventional current (speed ∝ |I|, a marker, not electron speed)
+    function wireDots(pts, I, t, on) { ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.8; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)))); ctx.stroke();
+      if (!on || !I) return; const segs = []; let tot = 0; for (let i = 1; i < pts.length; i++) { const l = Math.hypot((pts[i][0] - pts[i - 1][0]) * cam.S, (pts[i][1] - pts[i - 1][1]) * cam.S); segs.push(l); tot += l; }
+      const sp = Math.sign(I) * Math.min(160, 25 * Math.sqrt(Math.abs(I)) + 10), gapD = 26; ctx.fillStyle = "#E39B28";
+      for (let d0 = ((t * sp) % gapD + gapD) % gapD; d0 < tot; d0 += gapD) { let d = d0, i = 0; while (i < segs.length && d > segs[i]) { d -= segs[i]; i++; } if (i >= segs.length) break; const f = d / segs[i], X = sx(pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f), Y = sy(pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f); ctx.beginPath(); ctx.arc(X, Y, 3, 0, Math.PI * 2); ctx.fill(); } }
+    function loopCircuit(s, V, I, parts) { fit(-1.1, 1.1, -0.8, 0.8); const on = L.sim && s.st.on, fl = on ? s.st.flow : 0;
+      battery(-0.9, 0, V); wireDots([[-0.9, 0.15], [-0.9, 0.5], [0.9, 0.5], [0.9, -0.5], [-0.9, -0.5], [-0.9, -0.15]], I, fl, on);
+      parts.forEach(([kind, lab, Pw, area], i) => { const x = parts.length === 1 ? 0 : -0.35 + i * 0.7;
+        if (kind === "wire") { ctx.strokeStyle = "#B8741A"; ctx.lineWidth = Math.max(2, Math.min(10, area * 2.5)); ctx.beginPath(); for (let k = 0; k <= 30; k++) { const X = sx(-0.6 + 1.2 * k / 30), Y = sy(0.5) + Math.sin(k * 1.3) * 6; k ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke(); label(sx(0), sy(0.68), lab, "#20232A"); }
+        else if (kind === "r") resistor(-0.9, -0.3, lab, true);
+        else { const glow = on ? Math.min(1, Pw / 60) : 0; ctx.fillStyle = `rgba(255,213,79,${0.15 + 0.85 * glow})`; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(x), sy(0.5), 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); label(sx(x), sy(0.5) - 30, lab, "#20232A"); } });
+      label(sx(0.3), sy(-0.65), `I = ${nice(I)} A`, "#8A60E8"); critter(sx(0.1), sy(-0.5), 40);
+      label(14, 20, "נקודות: זרם מוסכם (גודל), לא מהירות האלקטרונים", "#606671", "left"); }
+    function rcDraw(s, p, charge_) { fit(-1.1, 1.1, -0.8, 0.8); const e = WP.evaluate(charge_ ? "rcCharge" : "rcDischarge", p), tau = e.tauMs, Vmax = charge_ ? p.E : p.V0;
+      const Vc = L.sim ? s.st.Vc : (charge_ ? 0 : p.V0), tms = L.sim ? s.st.tms : 0;
+      if (charge_) battery(-0.9, 0, p.E); resistor(-0.1, 0.5, `R = ${p.R} kΩ`);
+      ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.8; ctx.strokeRect(sx(-0.9), sy(0.5), 1.8 * cam.S, 1.0 * cam.S);
+      const h = 0.5 * Math.max(0, Math.min(1, Vc / Vmax)); ctx.fillStyle = "rgba(138,96,232,0.35)"; ctx.fillRect(sx(0.75), sy(-0.25 + h), 0.3 * cam.S, h * cam.S); ctx.strokeRect(sx(0.75), sy(0.25), 0.3 * cam.S, 0.5 * cam.S); label(sx(0.9), sy(0.35), `${nice(Vc)} V`, "#5B37B8");
+      const cx = sx(-0.3), cy = sy(-0.2), R = 40; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); const a = (tms / (5 * tau)) * Math.PI * 2 - Math.PI / 2; line(cx, cy, cx + Math.cos(a) * R * 0.8, cy + Math.sin(a) * R * 0.8, 3, "#E0702F");
+      for (let k = 1; k <= 5; k++) { const b = (k / 5) * Math.PI * 2 - Math.PI / 2; label(cx + Math.cos(b) * (R + 12), cy + Math.sin(b) * (R + 12), k + "τ", "#606671"); }
+      label(cx, cy + R + 26, `${nice(tms, 0)} ms · τ = ${nice(tau, 0)} ms · סימון: ${p.tms} ms`, "#20232A"); critter(sx(0.5), sy(-0.5), 40);
+      if (L.sim && s.scale) label(14, 20, `שעון אמיתי מואט: 1 שנייה במסך = ${nice(s.scale, 0)} ms`, "#606671", "left"); }
+    // a charged particle in the screen plane: B ⊙/⊗, an optional E along y, the path from the simulator
+    function particleDraw(s, B, Ey, q, info, xExit) { const tr = (L.ptrail && L.ptrailRun === (L.cur && L.cur.id)) ? L.ptrail : (L.ptrail = [], L.ptrailRun = L.cur && L.cur.id, L.ptrail);
+      if (L.sim) { tr.push([s.st.x, s.st.y]); if (tr.length > 800) tr.shift(); }
+      let m = 1; for (const [x, y] of tr) m = Math.max(m, Math.abs(x) * 1.2, Math.abs(y) * 1.4); if (xExit) m = Math.max(m, xExit * 1.1);
+      fit(-m * 0.3, m, -m * 0.6, m * 0.6);
+      for (let i = 0; i < 30; i++) { const X = -m * 0.25 + (i % 6) * m * 0.24, Y = -m * 0.5 + Math.floor(i / 6) * m * 0.24; label(sx(X), sy(Y), B > 0 ? "⊙" : B < 0 ? "⊗" : "", "rgba(37,181,139,0.45)", "center", "700 13px "); }
+      if (Ey) for (let i = 0; i < 5; i++) arrowS(sx(i * m * 0.2), sy(-m * 0.5), 0, -Math.sign(Ey) * 30, "rgba(226,87,76,0.45)");
+      if (xExit) { line(sx(0), sy(m * 0.45), sx(xExit), sy(m * 0.45), 4, "#B9BCC2"); line(sx(0), sy(-m * 0.45), sx(xExit), sy(-m * 0.45), 4, "#B9BCC2"); ctx.fillStyle = "#E39B28"; ctx.fillRect(sx(xExit) - 3, sy(0.02 * m) , 6, 0.04 * m * cam.S); }
+      ctx.strokeStyle = "#8A60E8"; ctx.lineWidth = 2.4; ctx.beginPath(); tr.forEach(([x, y], i) => (i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)))); ctx.stroke();
+      const x = L.sim ? s.st.x : 0, y = L.sim ? s.st.y : 0; charge(x, y, q, 9);
+      if (forces() && L.sim && Math.hypot(s.st.vx, s.st.vy) > 0) { const v = Math.hypot(s.st.vx, s.st.vy); arrowS(sx(x), sy(y), s.st.vx / v * 40, -s.st.vy / v * 40, "#20232A", "v"); }
+      critter(sx(-m * 0.22), sy(-m * 0.45), 40); label(14, 20, info, "#20232A", "left"); label(14, 38, "⊙ B החוצה מהמסך · ⊗ פנימה · הכוח המגנטי לא עושה עבודה", "#606671", "left");
+      if (L.sim && s.scale) label(14, 56, `זמן מואט: 1 שנייה במסך = ${nice(s.scale)} s`, "#606671", "left"); }
     const DRAW = {
       units(s, p) {
         const gap = sc.setup.gap, Lm = p.value * p.factor, span = Math.max(gap, Math.min(Lm, gap * 2.2));
@@ -545,7 +592,129 @@
         critter(sx(fx), sy(fy), Math.min(56, cam.S * 0.6), rot);
         label(14, 20, `μ על המדרון = ${nice(p.mu)} · k = ${nice(p.k, 0)} N/m`, "#20232A", "left");
         if (has("stays") || has("stopped_on_ramp")) banner("נעצר על המדרון", "#B8741A"); else if (s.st.xMax > 0) banner("כיווץ מרבי: " + nice(s.st.xMax * 100, 1) + " cm", "#137556");
-      }
+      },
+      // ================= ELECTRICITY =================
+      coulomb(s, p) {
+        const span = Math.max(1.2, Math.abs(s.st.x2 - s.st.x1) + 0.8); fit(-span, span, -0.4, 1.4); ground(0);
+        const ball = (x, q, who) => { const cx = sx(x), cy = sy(0.55), R = Math.max(14, Math.min(34, cam.S * 0.16));
+          line(cx, cy + R, cx, sy(0), 1.2, "#9A9AA0"); ctx.fillStyle = q > 0 ? "#FCE4EC" : q < 0 ? "#E3F2FD" : "#F1F2F4"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          label(cx, cy, (q > 0 ? "+" : q < 0 ? "−" : "") + nice(Math.abs(q), 1), "#20232A", "center", "800 13px "); label(cx, cy + R + 12, who, "#606671"); };
+        ball(s.st.x1, p.q1, "א׳"); ball(s.st.x2, p.q2, "ב׳"); critter(sx(s.st.x1) - 34, sy(0), Math.min(56, cam.S * 0.5));
+        if (forces()) { const F = s.st.F, d = Math.sign(F) || 0, len = Math.min(110, 30 + 20 * Math.log10(1 + Math.abs(F) * 1e3)); arrowS(sx(s.st.x2), sy(0.55), d * len, 0, "#8A60E8", "F", Math.abs(F)); arrowS(sx(s.st.x1), sy(0.55), -d * len, 0, "#8A60E8", "F"); }
+        label(14, 20, `d = ${nice(s.st.d)} m · מסת בלון ${nice(WP.BALLOON_M * 1000, 0)} g`, "#20232A", "left");
+        if (has("touch")) banner("נגעו! (מגע אוסר על המודל להמשיך)", "#B8741A"); else if (has("apart")) banner("התרחקו עד הקיר", "#606671");
+      },
+      forcePair2D(s, p) { fieldMap(p, p.x1, p.y1, p.x2, p.y2, p.q1, p.q2);
+        const x = L.sim ? s.st.x : p.xProbe, y = L.sim ? s.st.y : p.yProbe, e = WP.evaluate("forcePair2D", { ...p, xProbe: x, yProbe: y });
+        charge(x, y, p.qProbe, 10); critter(sx(x) + 22, sy(y) + 26, 36);
+        if (forces() && e.valid) { const a = Math.atan2(e.Fy, e.Fx), L_ = 70; arrowS(sx(x), sy(y), Math.cos(a) * L_, -Math.sin(a) * L_, "#8A60E8", "F", e.F);
+          ctx.save(); ctx.globalAlpha = 0.6; arrowS(sx(x), sy(y), Math.sign(e.Fx) * Math.abs(Math.cos(a)) * L_, 0, "#2785C7", "Fₓ"); arrowS(sx(x), sy(y), 0, -Math.sign(e.Fy) * Math.abs(Math.sin(a)) * L_, "#E0702F", "Fᵧ"); ctx.restore(); }
+        if (sc.id === "EW01-S04") { line(sx(1.0), sy(-0.15), sx(1.0), sy(0.15), 6, "#E39B28"); label(sx(1.0), sy(0.25), "שער", "#B8741A"); }
+        if (has("hit_source")) banner("פגע במקור"); else if (has("left_map")) banner("יצא מהמפה");
+      },
+      field2D(s, p) { fieldMap(p, p.x1, p.y1, p.x2, p.y2, p.q1, p.q2);
+        // only measured points are painted: every finished run leaves its arrow
+        for (const r of L.runs.slice(-12)) { const e = r.ev; if (!e || !e.valid) continue; const a = Math.atan2(e.Ey, e.Ex); ctx.save(); ctx.globalAlpha = 0.35; arrowS(sx(r.P.x), sy(r.P.y), Math.cos(a) * 34, -Math.sin(a) * 34, "#25B58B"); ctx.restore(); }
+        const e = WP.evaluate("field2D", p); ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (e.valid && e.E > 0) { const k = L.sim ? s.st.needle : 0.25, a = Math.atan2(e.Ey, e.Ex) * k; arrowS(sx(p.x), sy(p.y), Math.cos(a) * 46, -Math.sin(a) * 46, "#25B58B", "E", e.E); }
+        critter(sx(p.x) - 30, sy(p.y) + 30, 34); label(14, 20, "חיישן שדה: מודד E, לא כוח (כוח = q·E)", "#20232A", "left");
+      },
+      plate(s, p) { const d = p.d; fit(-0.6, 0.6, -d / 2 - 0.15, d / 2 + 0.25);
+        const top = sy(d / 2), bot = sy(-d / 2); ctx.fillStyle = p.V >= 0 ? "#FCE4EC" : "#E3F2FD"; ctx.fillRect(sx(-0.45), top - 8, 0.9 * cam.S, 8); ctx.fillStyle = p.V >= 0 ? "#E3F2FD" : "#FCE4EC"; ctx.fillRect(sx(-0.45), bot, 0.9 * cam.S, 8);
+        line(sx(-0.45), top, sx(0.45), top, 2); line(sx(-0.45), bot, sx(0.45), bot, 2);
+        label(sx(0.5), top - 4, p.V >= 0 ? "−" : "+", "#20232A", "left", "800 16px "); label(sx(0.5), bot + 4, p.V >= 0 ? "+" : "−", "#20232A", "left", "800 16px ");
+        // E points from + to −: with V > 0 the lower plate is + (field upward)
+        for (let i = -3; i <= 3; i++) if (p.V) arrowS(sx(i * 0.12), (top + bot) / 2 + Math.sign(p.V) * 15, 0, -Math.sign(p.V) * 30, "rgba(37,181,139,0.45)");
+        const y = s.st.y || 0; charge(0, y, p.q, 8); critter(sx(-0.3), bot, 40);
+        if (forces()) { const e = WP.evaluate("plate", p); if (e.valid && e.forceN) arrowS(sx(0) + 14, sy(y), 0, -Math.sign(e.forceN) * 50, "#8A60E8", "F", Math.abs(e.forceN)); }
+        label(14, 20, `E = V/d = ${nice(p.V / p.d)} V/m · בלי כובד (לוחות אופקיים)`, "#20232A", "left");
+        if (has("hit_top")) banner("פגע בלוח העליון"); else if (has("hit_bottom")) banner("פגע בלוח התחתון");
+      },
+      potential(s, p) { fit(-0.2, 2.5, -0.6, 0.8); line(sx(0), sy(0), sx(2.5), sy(0), 1.4, "#B9BCC2");
+        for (let r = 0.5; r <= 2.4; r += 0.5) { line(sx(r), sy(0) - 4, sx(r), sy(0) + 4, 1.2); label(sx(r), sy(0) + 16, nice(r, 1) + " m"); }
+        charge(0, 0, p.qSource, 18); const r = L.sim ? s.st.r : p.r; charge(r, 0, p.qTest, 9); critter(sx(r), sy(0) - 14, 36);
+        const V = WP.evaluate("potential", { ...p, r }); if (V.valid) label(sx(r), sy(0.5), `V = ${nice(V.potentialV)} V · U = ${nice(V.energyJ)} J`, "#20232A");
+        label(14, 20, "פוטנציאל: מספר בכל מקום (סקלר). לא גובה אמיתי.", "#606671", "left");
+        if (has("hit_source")) banner("נמשך אל המקור"); else if (has("far")) banner("נדחף הרחק");
+      },
+      workElectric(s, p) { fit(-1.4, 1.4, -0.2, 1.4); const f = L.sim ? s.st.f : 0, y0 = 0.15, y1 = 1.15;
+        line(sx(-0.5), sy(y0 - 0.05), sx(-0.5), sy(y1 + 0.1), 2); line(sx(0.5), sy(y0 - 0.05), sx(0.5), sy(y1 + 0.1), 2);
+        label(sx(-0.7), sy(y0), `${p.Vstart} V`, "#2785C7", "right"); label(sx(-0.7), sy(y1), `${p.Vend} V`, "#2785C7", "right");
+        const y = y0 + (y1 - y0) * f; ctx.fillStyle = "#F5F1E8"; ctx.fillRect(sx(-0.45), sy(y) - 6, 0.9 * cam.S, 8); charge(0.2, y + 0.08, p.q, 9); critter(sx(-0.15), sy(y) - 2, 40);
+        const W_ = L.sim ? s.st.W : 0; label(sx(1.0), sy(0.7), `W שדה = ${nice(W_)} J`, W_ >= 0 ? "#137556" : "#E2574C");
+        label(14, 20, "הקומות הן פוטנציאל חשמלי, לא גובה", "#606671", "left");
+      },
+      capacitor(s, p) { fit(-1, 1, -0.7, 0.8); const gap = 0.08 + p.dmm * 0.05, h = 0.3 + p.A * 3; const xl = -gap / 2, xr = gap / 2;
+        ctx.fillStyle = `rgba(138,96,232,${Math.min(0.35, (p.kappa - 1) * 0.05)})`; ctx.fillRect(sx(xl), sy(h / 2), gap * cam.S, h * cam.S);
+        line(sx(xl), sy(h / 2), sx(xl), sy(-h / 2), 6); line(sx(xr), sy(h / 2), sx(xr), sy(-h / 2), 6);
+        const Q = L.sim ? s.st.Q : 0, e = WP.evaluate("capacitor", p), n = e.valid && e.QmicroC ? Math.round(8 * Q / e.QmicroC) : 0;
+        for (let i = 0; i < n; i++) { const yy = -h / 2 + (i + 0.5) * h / 8; label(sx(xl) - 10, sy(yy), "+", "#C2185B", "center", "800 13px "); label(sx(xr) + 10, sy(yy), "−", "#1565C0", "center", "800 13px "); }
+        battery(-0.7, -0.5, p.V); line(sx(-0.7), sy(-0.5) - 14, sx(-0.7), sy(0), 1.6); line(sx(-0.7), sy(0), sx(xl), sy(0), 1.6); line(sx(xr), sy(0), sx(0.7), sy(0), 1.6); line(sx(0.7), sy(0), sx(0.7), sy(-0.5), 1.6); line(sx(0.7), sy(-0.5), sx(-0.7) + 14, sy(-0.5), 1.6);
+        critter(sx(0.75), sy(-0.6), 40); label(14, 20, `מחובר לסוללה: V קבוע · Q = ${nice(Q)} μC`, "#20232A", "left");
+      },
+      capacitorPair(s, p) { fit(-1.1, 1.1, -0.7, 0.8); battery(-0.9, 0, p.V);
+        const cap = (x, y, lab, q) => { line(sx(x - 0.04), sy(y + 0.15), sx(x - 0.04), sy(y - 0.15), 5); line(sx(x + 0.04), sy(y + 0.15), sx(x + 0.04), sy(y - 0.15), 5); label(sx(x), sy(y + 0.24), lab, "#20232A"); label(sx(x), sy(y - 0.25), `Q = ${nice(q)} μC`, "#8A60E8"); };
+        const st_ = L.sim ? s.st : { Q1: 0, Q2: 0 };
+        if (p.parallel) { cap(0, 0.3, `C₁ = ${p.C1} μF`, st_.Q1); cap(0, -0.3, `C₂ = ${p.C2} μF`, st_.Q2); line(sx(-0.6), sy(0.3), sx(0.6), sy(0.3), 1.4); line(sx(-0.6), sy(-0.3), sx(0.6), sy(-0.3), 1.4); line(sx(-0.6), sy(0.3), sx(-0.6), sy(-0.3), 1.4); line(sx(0.6), sy(0.3), sx(0.6), sy(-0.3), 1.4); }
+        else { cap(-0.25, 0, `C₁ = ${p.C1} μF`, st_.Q1); cap(0.35, 0, `C₂ = ${p.C2} μF`, st_.Q2); line(sx(-0.6), sy(0), sx(0.7), sy(0), 1.4); }
+        label(14, 20, p.parallel ? "במקביל: אותו מתח" : "בטור: אותו מטען", "#20232A", "left"); critter(sx(0.9), sy(-0.6), 40);
+      },
+      capacitorShare(s, p) { fit(-1.1, 1.1, -0.7, 0.9); const V1 = L.sim ? s.st.V1 : p.V1, V2 = L.sim ? s.st.V2 : p.V2;
+        const bar = (x, V, lab) => { const h = Math.min(0.6, Math.abs(V) / 60 * 0.6); ctx.fillStyle = V >= 0 ? "#F48FB1" : "#90CAF9"; ctx.fillRect(sx(x - 0.12), V >= 0 ? sy(h) : sy(0), 0.24 * cam.S, h * cam.S); line(sx(x - 0.15), sy(0), sx(x + 0.15), sy(0), 1.4); label(sx(x), sy(0.75), `${lab}: ${nice(V, 1)} V`, "#20232A"); };
+        bar(-0.6, V1, "C₁"); bar(0.6, V2, "C₂");
+        const on = has("switch_on"); line(sx(-0.3), sy(-0.4), sx(on ? 0.3 : 0.2), sy(on ? -0.4 : -0.25), 3, on ? "#25B58B" : "#606671"); label(sx(0), sy(-0.55), on ? "מחובר דרך נגד" : "מתג פתוח", "#606671");
+        if (L.sim) label(sx(0), sy(-0.7), `חום בנגד: ${nice(s.st.heat * 1000, 2)} mJ`, "#E2574C"); critter(sx(0.95), sy(-0.65), 36);
+      },
+      ohm(s, p) { const e = WP.evaluate("ohm", p); loopCircuit(s, p.V, e.I, [["R", p.R + " Ω", e.P]]); },
+      resistivity(s, p) { const e = WP.evaluate("resistivity", p); loopCircuit(s, p.V, e.I, [["wire", `${p.length} m · ${p.areaMM2} mm²`, e.P, p.areaMM2]]); label(14, 40, `R = ρL/A = ${nice(e.R)} Ω`, "#20232A", "left"); },
+      battery(s, p) { const e = WP.evaluate("battery", p); loopCircuit(s, p.E, e.I, [["r", `r = ${p.r} Ω (בתוך הסוללה)`, e.Ploss], ["R", `R = ${p.R} Ω`, e.Pload]]); label(14, 40, `מתח הדקים = ${nice(e.Vterminal)} V מתוך ${p.E} V`, "#20232A", "left"); },
+      divider(s, p) { const e = WP.evaluate("divider", p); loopCircuit(s, p.V, e.I, [["R", `R עליון ${p.Rtop} Ω`, e.I * e.I * p.Rtop], ["R", `R תחתון ${p.Rbottom} Ω`, e.Pbottom]]); label(14, 40, `V יציאה = ${nice(e.Vout)} V`, "#8A60E8", "left"); },
+      network(s, p) { const e = WP.evaluate("network", p); fit(-1.2, 1.2, -0.8, 0.8); const on = L.sim && s.st.on, fl = on ? s.st.flow : 0;
+        battery(-1.0, 0, p.V); wireDots([[-1.0, 0.5], [-0.3, 0.5]], e.Itotal, fl, on); resistor(-0.65, 0.5, `R₁ ${p.R1} Ω`);
+        wireDots([[-0.3, 0.5], [-0.3, 0.6], [0.8, 0.6]], e.I2, fl, on); resistor(0.25, 0.6, `R₂ ${p.R2} Ω`); wireDots([[-0.3, 0.5], [-0.3, 0.2], [0.8, 0.2]], e.I3, fl, on); resistor(0.25, 0.2, `R₃ ${p.R3} Ω`);
+        wireDots([[0.8, 0.6], [0.8, -0.5], [-1.0, -0.5], [-1.0, -0.15]], e.Itotal, fl, on);
+        label(sx(0.25), sy(0.75), `I₂ = ${nice(e.I2)} A`, "#8A60E8"); label(sx(0.25), sy(0.05), `I₃ = ${nice(e.I3)} A`, "#8A60E8"); label(sx(-0.65), sy(0.7), `I = ${nice(e.Itotal)} A`, "#8A60E8"); critter(sx(0.2), sy(-0.5), 40);
+        label(14, 20, "נקודות: זרם מוסכם (גודל), לא מהירות האלקטרונים", "#606671", "left"); },
+      kirchhoff(s, p) { const e = WP.evaluate("kirchhoff", p); fit(-1.3, 1.3, -0.8, 0.8); const on = L.sim && s.st.on, fl = on ? s.st.flow : 0;
+        battery(-1.1, 0, p.E1); battery(1.1, 0, p.E2); resistor(-0.55, 0.5, `R₁ ${p.R1} Ω`); resistor(0.55, 0.5, `R₂ ${p.R2} Ω`); resistor(0, 0, `R גשר ${p.Rshared} Ω`, true);
+        wireDots([[-1.1, 0.15], [-1.1, 0.5], [0, 0.5], [0, 0.15]], e.Iloop1, fl, on); wireDots([[1.1, 0.15], [1.1, 0.5], [0, 0.5]], -e.Iloop2, fl, on);
+        wireDots([[0, -0.15], [0, -0.5], [-1.1, -0.5], [-1.1, -0.15]], e.Iloop1, fl, on); wireDots([[0, -0.5], [1.1, -0.5], [1.1, -0.15]], e.Iloop2, fl, on);
+        if (Math.abs(e.Ishared) > 1e-9) arrowS(sx(0) + 30, sy(0.05), 0, e.Ishared > 0 ? 40 : -40, "#E0702F", "I גשר", Math.abs(e.Ishared)); else label(sx(0) + 40, sy(0), "I גשר = 0", "#137556", "left");
+        label(14, 20, `I₁ = ${nice(e.Iloop1)} A · I₂ = ${nice(e.Iloop2)} A (חץ ⇢ = כיוון ייחוס)`, "#20232A", "left"); critter(sx(0.5), sy(-0.65), 36); },
+      rcCharge(s, p) { rcDraw(s, p, true); }, rcDischarge(s, p) { rcDraw(s, p, false); },
+      lorentz(s, p) { particleDraw(s, p.B, null, p.q, `|F| = ${nice(WP.evaluate("lorentz", p).forceN)} N · זווית v–B: ${p.angle}°`); if (p.angle % 180 === 0 && L.sim) banner("v מקביל ל-B: אין כוח מגנטי"); },
+      gyroradius(s, p) { particleDraw(s, p.B, null, p.qMicroC, `r = ${nice(WP.evaluate("gyroradius", p).radiusM)} m · T = ${nice(WP.evaluate("gyroradius", p).periodSec)} s`); },
+      selector(s, p) { particleDraw(s, p.B, p.E, p.q, `v ישר = E/B = ${nice(WP.evaluate("selector", p).vStraight)} m/s`, 1.0); },
+      wireForce(s, p) { fit(-1, 1, -0.9, 0.7); const phi = L.sim ? s.st.phi : 0, len = 0.6;
+        ctx.fillStyle = "#FFEBEE"; ctx.fillRect(sx(-0.95), sy(0.2), 0.25 * cam.S, 0.6 * cam.S); ctx.fillStyle = "#E3F2FD"; ctx.fillRect(sx(0.7), sy(0.2), 0.25 * cam.S, 0.6 * cam.S); label(sx(-0.82), sy(-0.1), p.B >= 0 ? "N" : "S", "#20232A", "center", "800 16px "); label(sx(0.82), sy(-0.1), p.B >= 0 ? "S" : "N", "#20232A", "center", "800 16px ");
+        const tx = Math.sin(phi) * len; line(sx(-0.2), sy(0.6), sx(-0.2 + tx), sy(0.6 - Math.cos(phi) * len), 1.4); line(sx(0.2), sy(0.6), sx(0.2 + tx), sy(0.6 - Math.cos(phi) * len), 1.4);
+        const wy = 0.6 - Math.cos(phi) * len; line(sx(-0.2 + tx), sy(wy), sx(0.2 + tx), sy(wy), 5, "#B8741A"); if (p.I) arrowS(sx(tx) - 10, sy(wy) - 12, Math.sign(p.I) * 30, 0, "#20232A", "I");
+        const e = WP.evaluate("wireForce", p); if (forces() && e.forceN) arrowS(sx(tx), sy(wy) + 12, Math.sign((s.st && s.st.F) || e.signedForce || 1) * Math.min(100, 30 + e.forceN * 8), 0, "#8A60E8", "F", e.forceN);
+        critter(sx(0), sy(-0.75), 44); label(14, 20, `F = I·L·B·sinθ · θ = ${p.angle}°`, "#20232A", "left"); },
+      wireField(s, p) { fit(-1, 1, -0.8, 0.8); line(sx(0), sy(-0.75), sx(0), sy(0.75), 4, "#B8741A"); if (p.I) arrowS(sx(0) - 14, sy(0), 0, -Math.sign(p.I) * 40, "#20232A", "I");
+        for (const rr of [0.15, 0.3, 0.45]) { ctx.save(); ctx.setLineDash([3, 5]); ctx.strokeStyle = "rgba(37,181,139,0.5)"; ctx.beginPath(); ctx.ellipse(sx(0), sy(0), rr * cam.S, rr * cam.S * 0.35, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+        const dx = Math.min(0.9, 0.05 + p.rCm / 30 * 0.85), e = WP.evaluate("wireField", p); ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(dx), sy(0), 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        label(sx(dx), sy(0), e.signedBz < 0 ? "⊗" : e.signedBz > 0 ? "⊙" : "·", "#25B58B", "center", "800 18px "); label(sx(dx), sy(-0.2), `${nice(e.BmicroT)} μT`, "#25B58B");
+        critter(sx(dx) + 30, sy(-0.5), 40); label(14, 20, "⊗ אל תוך המסך · ⊙ החוצה (יד ימין)", "#606671", "left"); },
+      solenoid(s, p) { fit(-1.1, 1.1, -0.7, 0.7); const n = Math.min(40, Math.max(6, Math.round(p.N / p.L / 100))), w = Math.min(1.8, p.L * 1.2);
+        for (let i = 0; i < n; i++) { const x = -w / 2 + w * (i + 0.5) / n; ctx.strokeStyle = "#B8741A"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(sx(x), sy(0), 4, 0.25 * cam.S, 0, 0, Math.PI * 2); ctx.stroke(); }
+        const e = WP.evaluate("solenoid", p); if (e.Btesla) arrowS(sx(-0.3), sy(0), Math.sign(e.Btesla) * Math.min(160, 40 + Math.abs(e.Btesla) * 4000), 0, "#25B58B", "B", Math.abs(e.Btesla));
+        critter(sx(0.9), sy(-0.6), 40); label(14, 20, `${p.N} ליפופים על ${p.L} m: ${nice(p.N / p.L, 0)} למטר`, "#20232A", "left"); },
+      parallelWires(s, p) { fit(-1, 1, -0.8, 0.8); const bow = (L.sim ? s.st.bow : 0) * 0.12, d = Math.min(0.8, p.dCm / 25 * 0.7 + 0.1);
+        for (const [x0, I, side] of [[-d / 2, p.I1, -1], [d / 2, p.I2, 1]]) { ctx.strokeStyle = "#B8741A"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx(x0), sy(0.7)); ctx.quadraticCurveTo(sx(x0 + side * bow * 2), sy(0), sx(x0), sy(-0.7)); ctx.stroke(); if (I) arrowS(sx(x0) + side * 16, sy(0.3), 0, -Math.sign(I) * 36, "#20232A", "I"); }
+        const e = WP.evaluate("parallelWires", p); if (forces() && e.forceN) { const dir = e.interaction === "משיכה" ? 1 : -1; arrowS(sx(-d / 2), sy(0), dir * 40, 0, "#8A60E8", "F"); arrowS(sx(d / 2), sy(0), -dir * 40, 0, "#8A60E8", "F", e.forceN); }
+        critter(sx(0), sy(-0.75), 40); label(14, 20, `${e.interaction} · d = ${p.dCm} cm`, "#20232A", "left"); },
+      faraday(s, p) { fit(-1, 1, -0.8, 0.8); const B = L.sim ? s.st.B : p.Bstart, n = Math.min(7, Math.round(Math.abs(B) * 4));
+        for (let i = 0; i < n * n; i++) { const x = -0.6 + 1.2 * ((i % n) + 0.5) / n, y = -0.6 + 1.2 * (Math.floor(i / n) + 0.5) / n; label(sx(x), sy(y), B > 0 ? "⊙" : "⊗", "rgba(37,181,139,0.7)", "center", "700 14px "); }
+        ctx.save(); ctx.translate(sx(0), sy(0)); ctx.scale(Math.max(0.05, Math.cos((p.angle || 0) * Math.PI / 180)), 1); ctx.strokeStyle = "#B8741A"; ctx.lineWidth = 5; ctx.strokeRect(-0.4 * cam.S, -0.4 * cam.S, 0.8 * cam.S, 0.8 * cam.S); ctx.restore();
+        const I = L.sim ? s.st.I : 0; if (Math.abs(I) > 1e-9) { arrowS(sx(0.4) + 6, sy(0), 0, I > 0 ? -40 : 40, "#E0702F", "I"); label(sx(0), sy(0.55), I > 0 ? "זרם נגד כיוון השעון" : "זרם עם כיוון השעון", "#E0702F"); }
+        label(14, 20, `B = ${nice(B)} T · כא״מ = ${nice(L.sim ? s.st.emf : 0)} V`, "#20232A", "left"); critter(sx(0.75), sy(-0.65), 38); },
+      motionalEMF(s, p) { fit(-1.1, 1.1, -0.7, 0.7); line(sx(-1), sy(0.4), sx(1), sy(0.4), 3); line(sx(-1), sy(-0.4), sx(1), sy(-0.4), 3); resistor(-1.0, 0, `R ${p.R} Ω`, true);
+        for (let i = 0; i < 16; i++) label(sx(-0.8 + (i % 8) * 0.24), sy(i < 8 ? 0.2 : -0.2), p.B > 0 ? "⊙" : p.B < 0 ? "⊗" : "", "rgba(37,181,139,0.6)", "center", "700 13px ");
+        const x = (((L.sim ? s.st.x : 0) * 0.15 + 1.6) % 1.6) - 0.6; line(sx(x), sy(0.45), sx(x), sy(-0.45), 6, "#B8741A");
+        if (forces()) { arrowS(sx(x), sy(0.55), Math.sign(p.v) * 40, 0, "#20232A", "v"); const e = WP.evaluate("motionalEMF", p); if (e.dragN) arrowS(sx(x), sy(-0.55), -Math.sign(p.v) * 50, 0, "#8A60E8", "בלימה", e.dragN); }
+        critter(sx(x) - Math.sign(p.v || 1) * 34, sy(-0.4), 40);
+        if (L.sim) label(14, 20, `עבודת היד ${nice(s.st.handWork)} J = חום בנגד ${nice(s.st.heat)} J`, "#20232A", "left"); }
     };
     function draw() {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
@@ -570,6 +739,7 @@
     window.__wscene = () => ({ L, ui, sc, hist });
     K.onCleanup(() => { alive = false; cancelAnimationFrame(raf); ro.disconnect(); K.closeInfo(); document.querySelector(".sheet-back")?.remove(); R0.params[sc.id] = { ...L.P }; P.save(); clearTimeout(toast.t); });
   };
+  }
 
   const MODEL_NOTE = {
     units: "ערך × מקדם יחידה = ערך ב-SI.", vectors: "מחברים רכיבים: Rx = Ax + Bx, Ry = Ay + By; |R| = √(Rx² + Ry²).", uniform: "x = x₀ + v·t. העתק עם סימן, דרך תמיד חיובית.",
@@ -580,5 +750,48 @@
     collision: "תנע נשמר; אנרגיה קינטית רק ב-e = 1.", recoil: "מתחילים במנוחה: m₁v₁ + m₂v₂ = 0.", gravity: "g = GM/r², v מסלול = √(GM/r), v בריחה = √2·v מסלול. r ממרכז הכוכב.",
     oscillator: "x = A·cos(ωt + φ), ω = √(k/m). בלי דעיכה (העשרה).", capstone: "חיכוך רק על המדרון, קפיץ על רצפה חלקה: ½kx² = האנרגיה בתחתית."
   };
-  const LEARN_FAMILY = MODEL_NOTE;
+  register({ S: WorldScenes, WP: WorldPhys, WORLD_LINK: MECH_LINK, WORLD_ICON: MECH_ICON, UNIT: MECH_UNIT, names: { map: "worlds", world: "world", scene: "wscene" }, coin: "world", title: "עולמות המכניקה", state: () => K.worldsState() });
+  // the electricity worlds plug in the same way (elec-ui.js adds their drawings first)
+  const ELEC_ICON = { EW01: "balloons", EW02: "compass", EW03: "hill", EW04: "cap", EW05: "bulb", EW06: "branch", EW07: "loops", EW08: "clock", EW09: "curve", EW10: "twins", EW11: "flux", EW12: "tower" };
+  const ELEC_NOTE = {
+    coulomb: "F = k·|q₁q₂|/r²; אותם סימנים דוחים, הפוכים מושכים. בלונים על רצפה חלקה.", forcePair2D: "F = q·E, כש-E הוא סכום וקטורי של השדות משני המקורות.", field2D: "E = Σ kq·r̂/r²; השדה לא תלוי במטען הבדיקה.",
+    plate: "E = V/d בין לוחות אידאליים; a = qE/m. בלי כובד.", potential: "V = kQ/r (סקלר), U = qV.", workElectric: "W שדה = −ΔU = −q·ΔV.", capacitor: "C = κε₀A/d, Q = CV, U = ½CV². מחובר לסוללה: V קבוע.",
+    capacitorPair: "במקביל: C = C₁ + C₂, אותו V. בטור: 1/C = 1/C₁ + 1/C₂, אותו Q.", capacitorShare: "המטען נשמר: V = (C₁V₁ + C₂V₂)/(C₁ + C₂). האנרגיה החסרה = חום בהתנגדות החיבור.",
+    ohm: "I = V/R, P = V·I.", resistivity: "R = ρL/A.", network: "R שקול = R₁ + R₂R₃/(R₂ + R₃); בצומת: I = I₂ + I₃.", divider: "V_out = V·R_bottom/(R_top + R_bottom).", kirchhoff: "חוקי קירכהוף: סכום מתחים בלולאה = 0, סכום זרמים בצומת = 0. זרם שלילי = הפוך לחץ.",
+    battery: "V הדקים = E − I·r; P עומס + P איבוד = E·I.", rcCharge: "Vc = E(1 − e^(−t/RC)), τ = RC (kΩ·μF = ms).", rcDischarge: "Vc = V₀·e^(−t/RC); בכל τ נשאר 37%.",
+    lorentz: "F = q·v×B; |F| = |q|vB·sinθ. ניצב למהירות: בלי עבודה.", gyroradius: "r = mv/(|q|B), T = 2πm/(|q|B) (לא תלוי ב-v).", selector: "ישר כש-qE = qvB: v = E/B, לכל מטען.",
+    wireForce: "F = I·L·B·sinθ.", wireField: "B = μ₀I/(2πr), בכיוון יד ימין.", solenoid: "B = μ₀(N/L)·I בתוך סליל ארוך.", parallelWires: "F/L = μ₀I₁I₂/(2πd); אותו כיוון מושך.",
+    faraday: "ε = −N·ΔΦ/Δt, Φ = BA·cosθ. זרם רק במעגל סגור.", motionalEMF: "ε = BLv, I = ε/R, כוח בלימה ILB, הספק F·v = I²R."
+  };
+  Object.assign(ICONS, (() => {
+    const s = `fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`, a = `fill="none" stroke="#8A60E8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"`;
+    return {
+      balloons: `<circle ${s} cx="16" cy="20" r="9"/><circle ${a} cx="36" cy="20" r="9"/><path ${s} d="M16 29v15M36 29v15M13 20h6M33 20h6M36 17v6"/>`,
+      probe: `<circle ${s} cx="12" cy="26" r="6"/><circle ${s} cx="40" cy="26" r="6"/><circle ${a} cx="26" cy="14" r="4"/><path ${a} d="M26 14l8-8"/>`,
+      compass: `<circle ${s} cx="26" cy="26" r="16"/><path ${a} d="M26 26l10-8"/><circle ${s} cx="26" cy="26" r="2"/>`,
+      plates: `<path ${s} d="M8 12h36M8 40h36"/><circle ${a} cx="26" cy="26" r="4"/><path ${a} d="M26 22v-6"/>`,
+      hill: `<path ${s} d="M4 44q22-44 44 0"/><circle ${a} cx="26" cy="14" r="4"/>`,
+      lift: `<rect ${s} x="14" y="6" width="24" height="40" rx="2"/><path ${a} d="M20 30h12M26 30V18"/>`,
+      cap: `<path ${s} d="M4 26h16M32 26h16"/><path ${a} stroke-width="4" d="M20 12v28M32 12v28"/>`,
+      caps: `<path ${s} d="M4 16h12M22 16h8M36 16h12"/><path ${a} stroke-width="3" d="M16 8v16M22 8v16M30 8v16M36 8v16"/><path ${s} d="M4 16v24h44V16"/>`,
+      bulb: `<path ${s} d="M18 30a12 12 0 1 1 16 0c-2 2-3 4-3 7H21c0-3-1-5-3-7z"/><path ${a} d="M24 30l2-6 2 6"/>`,
+      wire: `<path ${a} d="M4 30q6-12 12 0t12 0 12 0 12 0"/><path ${s} d="M4 42h44"/>`,
+      branch: `<path ${s} d="M4 26h12M16 26l8-10h12l8 10M16 26l8 10h12l8-10M44 26h4"/><rect ${a} x="24" y="12" width="12" height="8"/>`,
+      stairs: `<path ${s} d="M6 44V8"/><rect ${s} x="2" y="12" width="8" height="12"/><rect ${a} x="2" y="28" width="8" height="12"/><path ${a} d="M10 34h30"/>`,
+      loops: `<rect ${s} x="4" y="12" width="22" height="28"/><rect ${s} x="26" y="12" width="22" height="28"/><path ${a} d="M26 20v12"/>`,
+      battery: `<rect ${s} x="8" y="16" width="32" height="20" rx="3"/><path ${s} d="M40 22h4v8h-4"/><path ${a} d="M14 26h6M17 23v6M28 26h6"/>`,
+      clock: `<circle ${s} cx="26" cy="26" r="18"/><path ${a} d="M26 26V12M26 26l8 6"/>`,
+      curve: `<path ${a} d="M4 40q20 0 28-16t16-16"/><circle ${s} cx="48" cy="8" r="3"/>`,
+      ring: `<circle ${a} cx="26" cy="26" r="16"/><circle ${s} cx="42" cy="26" r="3"/>`,
+      sieve: `<path ${s} d="M4 14h44M4 38h44"/><path ${a} d="M4 26h44"/><path ${s} d="M40 22l6 4-6 4"/>`,
+      wireB: `<path ${s} d="M14 8v36M38 8v36"/><path ${a} stroke-width="4" d="M14 30h24"/>`,
+      halo: `<path ${a} stroke-width="3" d="M26 4v44"/><ellipse ${s} cx="26" cy="26" rx="16" ry="6"/><ellipse ${s} cx="26" cy="26" rx="10" ry="4"/>`,
+      coil: `<path ${a} d="M8 26c0-10 6-10 6 0s6 10 6 0 6-10 6 0 6 10 6 0 6-10 6 0"/><path ${s} d="M4 26h4M44 26h4"/>`,
+      twins: `<path ${a} stroke-width="3" d="M18 6v40M34 6v40"/><path ${s} d="M22 26h8"/>`,
+      flux: `<rect ${a} x="10" y="10" width="32" height="32"/><path ${s} d="M18 18h0M26 18h0M34 18h0M18 26h0M26 26h0M34 26h0M18 34h0M26 34h0M34 34h0" stroke-width="4"/>`,
+      rod: `<path ${s} d="M4 14h44M4 38h44"/><path ${a} stroke-width="4" d="M30 10v32"/><path ${s} d="M36 26h8M40 22l4 4-4 4"/>`
+    };
+  })());
+  window.eggWorlds = { register };
+  if (typeof ElecScenes !== "undefined") register({ S: ElecScenes, WP: ElecPhys, WORLD_LINK: {}, WORLD_ICON: ELEC_ICON, UNIT: null, NOTE: ELEC_NOTE, names: { map: "eworlds", world: "eworld", scene: "escene" }, coin: "elec", title: "עולמות החשמל", state: () => K.elecState() });
 })();

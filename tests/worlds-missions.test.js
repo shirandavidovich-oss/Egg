@@ -4,6 +4,7 @@
 // locks predictions before running, answers explanations, and computes then runs each transfer task.
 global.RampPhys = require("../art/physics/ramp-engine.js");
 global.WorldPhys = require("../art/physics/worlds-engine.js");
+global.WorldsCore = require("../art/physics/worlds-core.js");
 const S = require("../art/physics/worlds-scenes.js");
 let n = 0, fails = 0;
 const ok = (name, c, d = "") => { n++; if (c) { if (process.env.V) console.log("PASS", name, d); } else { fails++; console.log("FAIL", name, d); } };
@@ -17,7 +18,8 @@ function solveGoal(L, m) {
   if (g.kind === "one") {
     // one knob over its whole slider, then pairs of knobs on a grid
     for (const k of keys) for (const v of fine(sc, k)) { run(L, { ...sc.start, [k]: v }); if (S.goalReached(L, m)) return true; }
-    for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) for (const a of grid(sc, keys[i], 30)) for (const b of grid(sc, keys[j], 30)) {
+    const g2 = (k, o) => (fine(sc, k).length * fine(sc, o).length <= 12000 ? fine(sc, k) : grid(sc, k, 30));
+    for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) for (const a of g2(keys[i], keys[j])) for (const b of g2(keys[j], keys[i])) {
       run(L, { ...sc.start, [keys[i]]: a, [keys[j]]: b }); if (S.goalReached(L, m)) return true; }
     return false;
   }
@@ -29,6 +31,8 @@ function solveGoal(L, m) {
       const Q = { ...B, [k]: v }; if (k === "muK" && Q.muS < v) Q.muS = v; if (k === "muS" && Q.muK > v) Q.muK = v;
       run(L, Q); if (S.goalReached(L, m)) return true; L.runs.pop();
     }
+    // goals that need several knobs moved together (e.g. both coordinates of a sensor)
+    if (vary.length > 1) for (const a of grid(sc, vary[0], 12)) for (const b of grid(sc, vary[1], 12)) { run(L, { ...B, [vary[0]]: a, [vary[1]]: b }); if (S.goalReached(L, m)) return true; L.runs.pop(); }
   }
   return false;
 }

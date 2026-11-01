@@ -667,6 +667,70 @@
   .wtile b { font-size: 15.5px; }
   .wtile small { font-size: 12px; color: var(--ink-2); }
 
+  /* ================= FIT-TO-SCREEN: every game screen fits without scrolling =================
+     The canvas takes whatever height is left; everything else is compact.
+     On the open Fold (wide screen) the canvas goes left and the panel goes right. */
+  #ui:has(.lab-screen) .top { padding-top: calc(env(safe-area-inset-top, 0px) + 4px); padding-bottom: 2px; }
+  #ui:has(.lab-screen) .top h1 { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #ui:has(.lab-screen) .top p { display: none; }
+  #ui:has(.lab-screen) .icon-btn { width: 40px; height: 40px; }
+  #ui:has(.lab-screen) .tabs { padding-top: 2px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px); }
+  #ui:has(.lab-screen) .tabs button { min-height: 40px; flex-direction: row; gap: 6px; font-size: 12px; }
+  #ui:has(.lab-screen) .tabs button svg { width: 22px; height: 22px; }
+  #screen:has(> .lab-screen) { padding: 2px 8px 6px; container-type: size; }
+
+  #screen .lab-screen { gap: 6px; height: 100%; min-height: 0; }
+  #screen .lab-screen > * { flex: none; }
+  #screen .lab-screen > .lab { flex: 1 1 0; height: auto; min-height: 170px; border-radius: 16px; position: sticky; top: 0; z-index: 3; }
+  #screen .lab-tools { bottom: 6px; right: 6px; left: 6px; }
+  #screen .lab-screen .tbtn { width: 40px; height: 40px; font-size: 16px; }
+  #screen .lab-screen .chip { min-height: 36px; font-size: 13px; }
+  #screen .lab-screen .chip img { width: 28px; height: 28px; }
+  #screen .lab-screen .card { padding: 8px 10px; border-radius: 14px; }
+  #screen .lab-screen .seg { padding: 2px; }
+  #screen .lab-screen .seg button { min-height: 34px; font-size: 13px; }
+  #screen .rscene .mbar button { height: 32px; font-size: 13px; }
+  #screen .lab-screen .readouts { gap: 4px; }
+  #screen .lab-screen .readout { padding: 3px 4px; border-radius: 10px; }
+  #screen .lab-screen .readout small { font-size: 11px; }
+  #screen .lab-screen .readout b { font-size: 14px; }
+  #screen .lab-screen .controls { gap: 4px; padding: 6px 10px; }
+  #screen .lab-screen .controls > .fine:empty { display: none; }
+  /* slider: label and slider on the same line */
+  #screen .lab-screen .slider-row { display: grid; grid-template-columns: minmax(84px, 34%) 1fr; align-items: center; gap: 6px; }
+  #screen .lab-screen .slider-row label { margin: 0; font-size: 13.5px; flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.2; }
+  #screen .lab-screen .slider-row .note { grid-column: 1 / -1; }
+  #screen .lab-screen input[type=range] { height: 28px; }
+  #screen .lab-screen .srow { gap: 4px; }
+  #screen .lab-screen .srow .step, #screen .lab-screen .step { width: 34px; height: 34px; font-size: 18px; border-radius: 10px; }
+  #screen .lab-screen .graphcard canvas { height: 120px; }
+  #screen .lab-screen .task { padding: 6px 10px; }
+  #screen .lab-screen .task p { font-size: 14.5px; }
+  #screen .lab-screen .btn { min-height: 38px; padding: 0 12px; font-size: 14.5px; border-radius: 12px; }
+  #screen .mission .mhead p { margin: 2px 0; font-size: 15px; line-height: 1.3; }
+  #screen .mission .mhead small { font-size: 11.5px; }
+  #screen .mission .fine { font-size: 12px; margin: 0; }
+  #screen .mission .mrow { margin-top: 4px; }
+  /* question on the right, answers on the left — no extra lines */
+  #screen .mission:has(> .options), #screen .task:has(> .options) { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+  #screen .mission:has(> .options) > *, #screen .task:has(> .options) > * { grid-column: 1; }
+  #screen .mission:has(> .options) > .options, #screen .task:has(> .options) > .options {
+    grid-column: 2; grid-row: 1 / span 4; margin: 0; display: flex; flex-direction: column; gap: 4px; max-width: 46vw; }
+  #screen .lab-screen .options button { min-height: 36px; padding: 4px 12px; font-size: 14px; border-radius: 10px; white-space: nowrap; }
+  #screen .lab-screen .options:has(> button:nth-child(3)) { display: grid; grid-template-columns: 1fr 1fr; }
+
+  /* open Fold / tablet: canvas on the left, all the panel on the right */
+  @media (min-width: 700px) and (min-height: 480px) {
+    /* the canvas always fills the full height and stays put; only a very long panel (formulas) scrolls beside it */
+    #screen .lab-screen { display: grid; grid-template-columns: minmax(300px, 38%) 1fr; grid-template-rows: repeat(12, auto) 1fr; align-content: start; gap: 6px 10px; height: auto; min-height: 100%; }
+    #screen .lab-screen > * { grid-column: 1; }
+    #screen .lab-screen > .lab { grid-column: 2; grid-row: 1 / -1; align-self: start; height: calc(100cqh - 8px); min-height: 0; }
+    #screen .lab-screen .readouts { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
+    #screen .mission:has(> .options) > .options, #screen .task:has(> .options) > .options { max-width: 52%; }
+  }
+  /* very short screens (cover screen landscape etc.): the page may still scroll as a last resort */
+  @media (max-height: 520px) { #screen .lab-screen > .lab { min-height: 140px; } }
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
@@ -11761,7 +11825,12 @@ const EggExplain = (() => {
     // ======================================================================
     let cam = null;
     const sx = (x) => cam.ox + x * cam.S, sy = (y) => cam.oy - y * cam.S;
-    function fit(x0, x1, y0, y1) { const S_ = Math.min((W - 24) / (x1 - x0), (H - 70) / (y1 - y0)); cam = { S: S_, ox: W / 2 - S_ * (x0 + x1) / 2, oy: (H - 56) / 2 + S_ * (y0 + y1) / 2 + 6 }; }
+    function fit(x0, x1, y0, y1, bottom) {
+      const S_ = Math.min((W - 24) / (x1 - x0), (H - 70) / (y1 - y0)); let oy = (H - 56) / 2 + S_ * (y0 + y1) / 2 + 6;
+      // FIT-BOTTOM: scenes with a floor sit low, just above the ▶ buttons, instead of floating mid-canvas
+      if (bottom) oy = Math.max(oy, Math.min(H - 50 + y0 * S_, H - 78));
+      cam = { S: S_, ox: W / 2 - S_ * (x0 + x1) / 2, oy };
+    }
     const line = (x0, y0, x1, y1, w = 2, c = "#2e2e33") => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
     const label = (x, y, t, c = "#606671", al = "center", f = "600 12px ") => { ctx.save(); ctx.font = f + FONT; ctx.fillStyle = c; ctx.textAlign = al; ctx.textBaseline = "middle"; ctx.direction = "ltr"; ctx.fillText(t, x, y); ctx.restore(); };
     const ground = (y = 0) => { line(0, sy(y), W, sy(y), 2.2); };
@@ -11778,7 +11847,7 @@ const EggExplain = (() => {
       for (const d of [-0.3, 0.3]) { ctx.beginPath(); ctx.arc(px + d * wpx, py, 5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); }
       if (txt) label(px, py - hpx / 2, txt, "#20232A", "center", "700 12px ");
     }
-    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, y = H - 102; ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
+    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, y = 54; /* FIT-BOTTOM: banner moved to the top so it never covers the floor */ ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
     const has = (t) => L.sim && L.sim.events.some((e) => e.type === t);
     const P_ = () => (L.sim && L.cur ? L.cur.P : L.P);
     const SIM = () => L.sim || (L._preview && L._previewP === JSON.stringify(L.P) ? L._preview : (L._previewP = JSON.stringify(L.P), L._preview = (() => { const e = S.evalP(sc, L.P); if (e.invalid) return null; const s = WP.makeSim(sc.family, { ...L.P }, { brake: !!sc.setup.brake, gap: sc.setup.gap, v: L.P.v, vf: L.P.vf }); s.step(0); return s; })()));
@@ -11857,7 +11926,7 @@ const EggExplain = (() => {
       },
       uniform(s, p) {
         const xs = [p.x0, p.x0 + p.v * p.t, 0, sc.setup.target || 0]; const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 3;
-        fit(lo, hi, -2, 3); ground(0);
+        fit(lo, hi, -1, 3, 1); ground(0);
         ctx.fillStyle = "#ECEEF1"; ctx.fillRect(sx(lo), sy(0), (hi - lo) * cam.S, 10);
         for (let i = Math.ceil(lo); i <= hi; i++) { line(sx(i), sy(0), sx(i), sy(0) + (i % 5 ? 5 : 10), 1.2); if (i % 5 === 0) label(sx(i), sy(0) + 20, String(i)); }
         line(sx(0), sy(0) - 40, sx(0), sy(0) + 8, 2, "#20232A"); label(sx(0), sy(0) - 48, "0", "#20232A");
@@ -11868,7 +11937,7 @@ const EggExplain = (() => {
       },
       meeting(s, p) {
         const xs = [p.x1, p.x2, s.st.x1, s.st.x2]; const lo = Math.min(...xs, 0) - 3, hi = Math.max(...xs, 16) + 3;
-        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        fit(lo, hi, -1, 3, 1); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
         if (sc.id === "W03-S05") { ctx.fillStyle = "rgba(226,87,76,0.35)"; ctx.fillRect(sx(14), sy(0) - 4, 2 * cam.S, 8); }
         if (sc.id === "W03-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 4 * cam.S, 8); label(sx(12), sy(0) - 14, "תחנה", "#137556"); }
         critter(sx(s.st.x1), sy(0), Math.min(64, cam.S * 2), 0, false);
@@ -11879,7 +11948,7 @@ const EggExplain = (() => {
       },
       acceleration(s, p) {
         const xs = [0, s.st.x, WP.evaluate("acceleration", p).dx, sc.id === "W12-S01" ? 12 : 0]; const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 4;
-        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        fit(lo, hi, -1, 3, 1); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
         if (sc.id === "W12-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 2 * cam.S, 8); line(sx(12.4), sy(0) - 50, sx(12.4), sy(0), 6, "#E2574C"); label(sx(12.4), sy(0) - 58, "מחסום", "#E2574C"); }
         const x = s.st.x; cart(sx(x), sy(0) - 4, 56, 30, ""); critter(sx(x), sy(0) - 30, 40);
         if (sc.setup.brake && L.sim && L.sim.stopped) banner("עצרה ונשארה: בלם לא דוחף אחורה");
@@ -11887,7 +11956,7 @@ const EggExplain = (() => {
       },
       vertical(s, p) {
         const e = WP.evaluate("vertical", { ...p, t: 0 }), top = Math.max(e.maxY, p.h) + 1.5;
-        fit(-top * 0.6, top * 0.6, -0.5, top); ground(0);
+        fit(-top * 0.6, top * 0.6, -0.5, top, 1); ground(0);
         if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-top * 0.5), sy(p.h), (top * 0.35) * cam.S, p.h * cam.S); line(sx(-top * 0.5), sy(p.h), sx(-top * 0.15), sy(p.h), 2); }
         for (let y = 0; y <= top; y += top > 20 ? 5 : top > 8 ? 2 : 1) { line(sx(top * 0.45), sy(y), sx(top * 0.45) + 6, sy(y), 1.2); label(sx(top * 0.45) + 18, sy(y), String(y)); }
         if (has("peak") || s.st.landed) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(-top * 0.3), sy(e.maxY), sx(top * 0.3), sy(e.maxY), 1.4, "#20232A"); ctx.restore(); label(sx(top * 0.3) + 4, sy(e.maxY) - 10, "שיא " + nice(e.maxY) + " m", "#20232A", "left"); }
@@ -11898,7 +11967,7 @@ const EggExplain = (() => {
       },
       projectile(s, p) {
         const e = WP.evaluate("projectile", { ...p, t: 0 }), tgt = sc.setup.goal && sc.id === "W04-S04" ? [18, 19] : sc.id === "W12-S06" ? [25, 26] : null;
-        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35)); ground(0);
+        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35), 1); ground(0);
         if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-2), sy(p.h), 2 * cam.S, p.h * cam.S); line(sx(-2), sy(p.h), sx(0), sy(p.h), 2); }
         if (tgt) { ctx.fillStyle = "rgba(226,87,76,0.3)"; ctx.fillRect(sx(tgt[0]), sy(0) - 5, (tgt[1] - tgt[0]) * cam.S, 10); label(sx((tgt[0] + tgt[1]) / 2), sy(0) - 16, "🎯", "#E2574C"); }
         for (let x = 0; x <= xm; x += xm > 30 ? 10 : 5) label(sx(x), sy(0) + 16, String(x));
@@ -11911,7 +11980,7 @@ const EggExplain = (() => {
       },
       incline(s, p) {
         const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lr = 6, tr = s.tr || null, pos = tr ? tr.s : 3;
-        fit(-0.6, Lr * c + 0.6, -0.3, Lr * sn + 1.2); ground(0);
+        fit(-0.6, Lr * c + 0.6, -0.3, Lr * sn + 1.2, 1); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lr * c), sy(0)); ctx.lineTo(sx(Lr * c), sy(Lr * sn)); ctx.closePath(); ctx.fill();
         line(sx(0), sy(0), sx(Lr * c), sy(Lr * sn), 6, "#B58A55"); line(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * sn), 2);
         const fx = pos * c, fy = pos * sn, hpx = Math.min(70, cam.S * 0.75); critter(sx(fx), sy(fy), hpx, -th);
@@ -11923,7 +11992,7 @@ const EggExplain = (() => {
       },
       pulley(s, p) {
         const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lh = 2.6, base = 1.5, tr = s.tr, d = 1.3 + (tr ? tr.s : 0);
-        const pt = (q) => [q * c, base + q * sn], top = pt(Lh); fit(-0.4, top[0] + 0.9, -0.1, top[1] + 0.7); ground(0);
+        const pt = (q) => [q * c, base + q * sn], top = pt(Lh); fit(-0.4, top[0] + 0.9, -0.1, top[1] + 0.7, 1); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.fillRect(sx(-0.2), sy(base), (top[0] + 0.2) * cam.S, base * cam.S);
         line(sx(0), sy(base), sx(top[0]), sy(top[1]), 6, "#B58A55");
         const pul = [top[0] + 0.12, top[1] + 0.1]; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(sx(pul[0]), sy(pul[1]), 0.1 * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -11934,7 +12003,7 @@ const EggExplain = (() => {
           arrowS(C.x, C.y, c * T * k, -sn * T * k, "#3A9E6E", "T", T); if (Math.abs(R.f) > 1e-3) arrowS(C.x, C.y, c * R.f * k, -sn * R.f * k, "#CC5794", "f", Math.abs(R.f)); }
       },
       spring(s, p) {
-        const xm = Math.max(0.9, Math.abs(p.x) + 0.3); fit(-1.2, xm + 0.4, -0.3, 0.9); ground(0);
+        const xm = Math.max(0.9, Math.abs(p.x) + 0.3); fit(-1.2, xm + 0.4, -0.3, 0.9, 1); ground(0);
         line(sx(-1.1), sy(0), sx(-1.1), sy(0.8), 6, "#2e2e33");
         const x = s.st.x !== undefined ? s.st.x : p.x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
         for (let i = 0; i <= 20; i++) { const X = -1.1 + (end + 1.1) * i / 20, Y = 0.25 + (i % 2 ? 0.08 : -0.08) * (i && i < 20 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
@@ -11945,7 +12014,7 @@ const EggExplain = (() => {
       },
       energy(s, p) {
         const tr = s.tr; if (!tr) return; const segs = s.segs, pts = [[0, p.h]]; for (const g_ of segs) { const a = g_.angleDeg * Math.PI / 180, q = pts[pts.length - 1]; pts.push([q[0] + g_.length * Math.cos(a), q[1] - g_.length * Math.sin(a)]); }
-        fit(-0.5, pts[pts.length - 1][0] + 0.5, -0.4, Math.max(p.h, 1.5) + 1.2); ground(0);
+        fit(-0.5, pts[pts.length - 1][0] + 0.5, -0.4, Math.max(p.h, 1.5) + 1.2, 1); ground(0);
         for (let i = 0; i < segs.length; i++) line(sx(pts[i][0]), sy(pts[i][1]), sx(pts[i + 1][0]), sy(pts[i + 1][1]), segs[i].muK > 0 ? 9 : 5, segs[i].muK > 0 ? "#E39B28" : "#B58A55");
         const si = s.stripStart, sEnd = s.stripEnd; label(sx((pts[segs.length - 2][0] + pts[segs.length - 1][0]) / 2), sy(0) + 18, `רצועה: μ = ${nice(p.mu)}, ${nice(p.d)} m`, "#B8741A");
         let d = tr.s, i = 0; while (i < segs.length - 1 && d > segs[i].length) { d -= segs[i].length; i++; }
@@ -11966,7 +12035,7 @@ const EggExplain = (() => {
         label(14, 20, `v²/r = ${nice(p.v * p.v / p.r)}  ·  μg = ${nice(p.mu * p.g)}`, "#20232A", "left");
       },
       bank(s, p) {
-        const th = p.angle * Math.PI / 180, Lb = 4; fit(-0.6, Lb * Math.cos(th) + 1.2, -0.4, Lb * Math.sin(th) + 1.2); ground(0);
+        const th = p.angle * Math.PI / 180, Lb = 4; fit(-0.6, Lb * Math.cos(th) + 1.2, -0.4, Lb * Math.sin(th) + 1.2, 1); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lb * Math.cos(th)), sy(0)); ctx.lineTo(sx(Lb * Math.cos(th)), sy(Lb * Math.sin(th))); ctx.closePath(); ctx.fill();
         line(sx(0), sy(0), sx(Lb * Math.cos(th)), sy(Lb * Math.sin(th)), 6, "#7D7F86");
         const q = 2 + (s.st.up || 0) * 1.6, fx = q * Math.cos(th), fy = q * Math.sin(th); critter(sx(fx), sy(fy), Math.min(64, cam.S * 0.7), -th);
@@ -11975,7 +12044,7 @@ const EggExplain = (() => {
         if (Math.abs(s.st.drift) > 1e-6 && L.sim) banner(s.st.drift > 0 ? "מהר מדי: נסחף למעלה בעיקול" : "לאט מדי: מחליק פנימה ולמטה", "#B8741A");
       },
       loop(s, p) {
-        const r = p.r; fit(-r * 1.6, r * 2.8, -0.3, 2 * r + 0.6); ground(0);
+        const r = p.r; fit(-r * 1.6, r * 2.8, -0.3, 2 * r + 0.6, 1); ground(0);
         ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx(0), sy(r), r * cam.S, 0, Math.PI * 2); ctx.stroke();
         const x = s.st.x, y = s.st.y, hpx = Math.min(44, cam.S * 0.5); critter(sx(x), sy(y), hpx, s.st.onTrack ? -(s.st.th || 0) : 0);
         if (forces() && s.st.onTrack && s.st.N > 1e-6) { const N = s.st.N, k = Math.min(60 / (p.m * p.g), 110 / N); arrowS(sx(x), sy(y), (-x / r) * N * k, -((r - y) / r) * N * k, "#8969C6", "N", N); }
@@ -11983,7 +12052,7 @@ const EggExplain = (() => {
         if (has("lost_contact")) banner("איבד מגע: עף בקשת חופשית", "#E2574C"); else if (has("full_loop")) banner("הקפה שלמה!", "#137556");
       },
       impulse(s, p) {
-        fit(-6, 2.5, -0.5, 2); ground(0);
+        fit(-6, 2.5, -0.5, 2, 1); ground(0);
         ctx.fillStyle = "#F5E6CC"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; const cx = sx(1.0); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S, 10) : ctx.rect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S); ctx.fill(); ctx.stroke();
         line(sx(1.4), sy(0), sx(1.4), sy(1.6), 6); label(sx(1.2), sy(1.45), "כרית", "#606671");
         const x = Math.min(0.6, s.st.x); cart(sx(x), sy(0) - 4, 60, 32, ""); critter(sx(x), sy(0) - 32, 40);
@@ -11991,7 +12060,7 @@ const EggExplain = (() => {
         label(14, 20, `Δt = ${nice(p.dt)} s · J = ${nice(p.m * (p.v1 - p.v0))} N·s`, "#20232A", "left");
       },
       collision(s, p) {
-        fit(-5, 5, -0.5, 2); ground(0);
+        fit(-5, 5, -0.5, 2, 1); ground(0);
         const w = 0.4 * cam.S; cart(sx(s.st.x1), sy(0) - 4, w, 30, nice(p.m1, 1) + " kg"); critter(sx(s.st.x1), sy(0) - 34, 36);
         cart(sx(s.st.x2), sy(0) - 4, w, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
         if (forces()) { arrowS(sx(s.st.x1), sy(0) - 84, s.st.v1 * 8, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 52, s.st.v2 * 8, 0, "#20232A", "v₂"); }
@@ -11999,7 +12068,7 @@ const EggExplain = (() => {
         if (has("hit")) { const e = L.sim.events.find((q) => q.type === "hit"); if (L.sim.t - e.t < 0.3) banner("בום!", "#E39B28"); }
       },
       recoil(s, p) {
-        fit(-6, 6, -0.5, 2); ground(0);
+        fit(-6, 6, -0.5, 2, 1); ground(0);
         cart(sx(s.st.x1), sy(0) - 4, 0.45 * cam.S, 30, nice(p.m1, 1) + " kg"); critter(sx(s.st.x1), sy(0) - 34, 36);
         cart(sx(s.st.x2), sy(0) - 4, 0.45 * cam.S, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
         if (!has("push")) { ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.4; ctx.beginPath(); for (let i = 0; i <= 8; i++) { const X = sx(s.st.x1) + 0.22 * cam.S + i * (sx(s.st.x2) - sx(s.st.x1) - 0.44 * cam.S) / 8; const Y = sy(0) - 18 + (i % 2 ? -6 : 6); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke(); }
@@ -12019,7 +12088,7 @@ const EggExplain = (() => {
         if (has("crash")) banner("נפל אל הכוכב", "#E2574C"); else if (has("escape")) banner("ברח מהשדה!", "#8A60E8");
       },
       oscillator(s, p) {
-        fit(-1.4, 1.4, -0.4, 1); ground(0); line(sx(-1.35), sy(0), sx(-1.35), sy(0.8), 6);
+        fit(-1.4, 1.4, -0.4, 1, 1); ground(0); line(sx(-1.35), sy(0), sx(-1.35), sy(0.8), 6);
         const x = s.st.x !== undefined ? s.st.x : WP.evaluate("oscillator", p).x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
         for (let i = 0; i <= 22; i++) { const X = -1.35 + (end + 1.35) * i / 22, Y = 0.25 + (i % 2 ? 0.07 : -0.07) * (i && i < 22 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
         for (const d of [-p.A, p.A]) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(d), sy(0) + 4, sx(d), sy(0.7), 1.2, "#9A9AA0"); ctx.restore(); }
@@ -12040,7 +12109,7 @@ const EggExplain = (() => {
       },
       // ================= ELECTRICITY =================
       coulomb(s, p) {
-        const span = Math.max(1.2, Math.abs(s.st.x2 - s.st.x1) + 0.8); fit(-span, span, -0.4, 1.4); ground(0);
+        const span = Math.max(1.2, Math.abs(s.st.x2 - s.st.x1) + 0.8); fit(-span, span, -0.4, 1.4, 1); ground(0);
         const ball = (x, q, who) => { const cx = sx(x), cy = sy(0.55), R = Math.max(14, Math.min(34, cam.S * 0.16));
           line(cx, cy + R, cx, sy(0), 1.2, "#9A9AA0"); ctx.fillStyle = q > 0 ? "#FCE4EC" : q < 0 ? "#E3F2FD" : "#F1F2F4"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
           label(cx, cy, (q > 0 ? "+" : q < 0 ? "−" : "") + nice(Math.abs(q), 1), "#20232A", "center", "800 13px "); label(cx, cy + R + 12, who, "#606671"); };

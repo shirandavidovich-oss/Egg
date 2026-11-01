@@ -155,6 +155,51 @@
     const img = new Image(); img.src = artOf(sp);
     const say = (t, s = 2.4) => { const el = $("#say"); el.textContent = t; el.hidden = false; sayT = s; };
 
+    // ---------------- the egg in falls (egg-actor.js), shake, confetti ----------------
+    let shakeT = 0; const party = [];
+    const egg = typeof EggActor !== "undefined" ? EggActor.create({ reduceMotion, onImpact(sev, line) {
+      const sf = G.sfx;
+      if (sev === "soft") { sf.thudSoft && sf.thudSoft(); G.buzz && G.buzz(15); }
+      else if (sev === "squash") { sf.thud && sf.thud(); G.buzz && G.buzz(40); later(() => sf.dizzy && sf.dizzy(), 600); later(() => sf.boing && sf.boing(0.6), 1600); }
+      else if (sev === "fold") { sf.slap && sf.slap(); later(() => sf.boof && sf.boof(), 250); G.buzz && G.buzz(30); }
+      else { sf.crack && sf.crack(); later(() => sf.crash && sf.crash(), 60); G.buzz && G.buzz([40, 30, 60]); if (!reduceMotion) shakeT = 0.45; later(() => sf.boing && sf.boing(1), 2000); later(() => sf.phew && sf.phew(), 2700); }
+      if (line) later(() => say(line, 2.4), sev === "crash" ? 2600 : sev === "squash" ? 1500 : 500);
+    } }) : null;
+    // the body in falls: the egg; everywhere else the creature. info = { impact, vImpact, sev, vy, g, standing, nervous }
+    function eggBody(px, py, hpx, info = {}, rot = 0) {
+      if (!egg) return critter(px, py, hpx, rot);
+      const now = performance.now(); egg.update(now, { runId: L.sim || null, ...info }); egg.draw(ctx, px, py, hpx * 1.15, now, info, rot);
+    }
+    function confetti(x, y, n = 40) {
+      if (reduceMotion) return; const C = ["#8A60E8", "#25B58B", "#E39B28", "#2785C7", "#E2574C", "#F2C94C"];
+      for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, v = 160 + Math.random() * 260; party.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: Math.random() * 6, w: (Math.random() - 0.5) * 12, c: C[i % C.length], life: 1.4 + Math.random() * 0.6, t: 0, s: 4 + Math.random() * 4 }); }
+    }
+    function drawParty(dt) {
+      for (let i = party.length - 1; i >= 0; i--) { const q = party[i]; q.t += dt; if (q.t > q.life) { party.splice(i, 1); continue; } q.vy += 520 * dt; q.vx *= 0.99; q.x += q.vx * dt; q.y += q.vy * dt; q.r += q.w * dt;
+        ctx.save(); ctx.globalAlpha = Math.min(1, (q.life - q.t) * 2); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 4, q.s, q.s / 2); ctx.restore(); }
+    }
+    // little stars flying out of a button (a right answer, a correct number)
+    function sparkleAt(el, n = 10) {
+      if (reduceMotion || !el) return; const r = el.getBoundingClientRect();
+      for (let i = 0; i < n; i++) { const d = document.createElement("i"); d.className = "spark"; const a = Math.random() * Math.PI * 2, dist = 30 + Math.random() * 40;
+        d.style.left = (r.left + r.width / 2) + "px"; d.style.top = (r.top + r.height / 2) + "px"; d.style.setProperty("--dx", Math.cos(a) * dist + "px"); d.style.setProperty("--dy", Math.sin(a) * dist + "px");
+        d.textContent = ["✦", "★", "✧"][i % 3]; document.body.appendChild(d); setTimeout(() => d.remove(), 800); }
+    }
+    // how close the last run came to a goal window ("hot / cold")
+    function paintHotCold() {
+      const el = $("#hotcold"), m = curM(); if (!el) return;
+      const g = m.goal; if (!g || g.key === undefined || isDone(m.id) && !ui.replay) { el.hidden = true; return; }
+      const rs = S.runsOf(L).filter((r) => r.done && r.id >= (L.since[m.id] || 1)); const r = rs[rs.length - 1];
+      if (!r || typeof r.ev[g.key] !== "number") { el.hidden = true; return; }
+      const v = r.ev[g.key], d = v < g.lo ? g.lo - v : v > g.hi ? v - g.hi : 0, span = Math.max(Math.abs(g.hi - g.lo) * 6, Math.abs((g.lo + g.hi) / 2) * 0.6, 1e-6);
+      const heat = Math.max(0, 1 - d / span), lvl = d === 0 ? 4 : heat > 0.85 ? 3 : heat > 0.55 ? 2 : heat > 0.25 ? 1 : 0;
+      const words = ["🥶 קר מאוד", "🌬 קר", "🌤 מתחמם", "🔥 חם! ממש קרוב", "🎯 בול!"];
+      const dir = d === 0 ? "" : v < g.lo ? "צריך יותר ↑" : "צריך פחות ↓";
+      el.hidden = false; el.dataset.lvl = lvl;
+      el.innerHTML = `<span class="hc-word">${words[lvl]}</span><span class="hc-bar"><i style="width:${Math.max(4, heat * 100)}%"></i></span><span class="hc-dir">${dir}</span><small class="ltr">${esc(nice(v))} ${(UNIT || {})[g.key] || ""}</small>`;
+      el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+    }
+
     // ---------------- controls ----------------
     function paintControls() {
       $("#controls").innerHTML = Object.entries(sc.knobs).map(([k, [he, lo, hi, step]]) => `
@@ -170,14 +215,18 @@
       const e = S.evalP(sc, L.P); $("#pnote").textContent = e.invalid ? "הערכים מחוץ לתחום של המודל. שנה ערך." : "";
     }
     function setK(k, v) { S.setParam(L, k, v); hist.length = 0; paused = false; paintValues(); paintReadouts(); paintTransport(); evaluate(true); }
+    function glide(k, a, b) { const inp = $("#k_" + k); if (!inp || reduceMotion) return; const t0 = performance.now(); const tick = (now) => { const q = Math.min(1, (now - t0) / 650), e = 1 - Math.pow(1 - q, 3); inp.value = a + (b - a) * e; if (q < 1 && alive) requestAnimationFrame(tick); else inp.value = b; }; requestAnimationFrame(tick); }
     let saveT = 0; function save() { clearTimeout(saveT); saveT = setTimeout(() => { R0.params[sc.id] = { ...L.P }; P.save(); }, 300); }
 
     // ---------------- transport ----------------
-    function paintTransport() { $("#tPlay").textContent = L.running && !paused ? "⏸" : "▶"; $("#tSlow").setAttribute("aria-pressed", slow); }
+    function paintTransport() { $("#tPlay").textContent = L.running && !paused ? "⏸" : "▶"; $("#tSlow").setAttribute("aria-pressed", slow); if (L.running) $("#tPlay").classList.remove("nudge"); }
     function start() { if (!S.startRun(L)) { say("הערכים מחוץ לתחום של המודל.", 2); return false; } hist.length = 0; paused = false; G.sfx.whoosh && G.sfx.whoosh(); return true; }
     $("#tPlay").addEventListener("click", () => { G.audio.unlock(); if (L.running) paused = !paused; else start(); paintTransport(); });
+    // tap the machine itself: run / pause (a swipe still scrolls the page)
+    cv.addEventListener("click", (e) => { G.audio.unlock(); if (L.running) paused = !paused; else if (!start()) return; paintTransport(); ripple(e.offsetX, e.offsetY); });
+    const ripples = []; const ripple = (x, y) => { if (!reduceMotion) ripples.push({ x, y, t: 0 }); };
     $("#tStep").addEventListener("click", () => { if (!L.running) { if (!start()) return; } paused = true; S.stepRun(L, 1 / 30); sample(); paintTransport(); });
-    $("#tReset").addEventListener("click", () => { S.idle(L); hist.length = 0; paused = false; paintTransport(); G.sfx.pop(); });
+    $("#tReset").addEventListener("click", () => { S.idle(L); hist.length = 0; paused = false; egg && egg.reset(); paintTransport(); G.sfx.pop(); });
     $("#tSlow").addEventListener("click", () => { slow = !slow; paintTransport(); G.sfx.pop(); if (slow) say("הילוך איטי: רק השעון של המסך מאט.", 2); });
     for (const b of document.querySelectorAll(".viewseg [data-v]")) b.addEventListener("click", () => {
       const v = b.dataset.v; G.sfx.pop();
@@ -193,30 +242,32 @@
     // ---------------- missions ----------------
     function paintBar() { for (const b of document.querySelectorAll("#mbar [data-i]")) { const i = +b.dataset.i; b.classList.toggle("done", isDone(sc.missions[i].id)); if (i === ui.mi) b.setAttribute("aria-selected", "true"); else b.removeAttribute("aria-selected"); } }
     for (const b of document.querySelectorAll("#mbar [data-i]")) b.addEventListener("click", () => { select(+b.dataset.i); G.sfx.pop(); });
-    function select(i) { ui.mi = i; ui.replay = false; ui.xtask = null; ui.predShown = false; S.activate(L, curM()); paintBar(); paintMission(); }
+    function select(i) { ui.mi = i; ui.replay = false; ui.xtask = null; ui.predShown = false; S.activate(L, curM()); paintBar(); paintMission(); const t = $("#task"); t.classList.remove("swap"); void t.offsetWidth; t.classList.add("swap"); }
     const head = (m, extra = "") => `<div class="mhead"><small>${["תחזית", "ניסוי", "הסבר", "העברה"][ui.mi]}${isDone(m.id) ? " · ✓ הושלמה" : ""}</small><p>${esc(extra || m.text)}</p></div>`;
     function paintMission() {
       const m = curM(), el = $("#task"); let h = "";
       if (isDone(m.id) && !ui.replay) h = head(m, m.kind === "goal" ? sc.objective : m.kind === "choice" ? m.q : m.text) + `<p class="learn">✓ ${esc(LEARN(m))}</p><div class="mrow"><button class="btn quiet" type="button" id="again">שוב (בלי מטבעות)</button>${nextBtn()}</div>`;
       else if (m.kind === "predict") h = predictHtml(m);
-      else if (m.kind === "goal") h = head(m, sc.objective) + `<p class="target">🎯 ${esc(m.goal.text)}</p><details class="mhint"><summary class="linkish">איך?</summary><p>${esc(m.goal.kind === "pair" ? "שתי הרצות: אחת לפני השינוי ואחת אחריו. נספרות רק הרצות שאחריהן כל השאר נשאר זהה." : "שנה ערכים בבקרים ואז ▶. נספרת רק הרצה שבה שינית לפחות ערך אחד מההתחלה.")}</p></details>`;
-      else if (m.kind === "choice") h = head(m, m.q) + (S.explainOpen(L) ? `<div class="options">${m.opts.map((o, i) => `<button type="button" data-ch="${i}">${esc(o)}</button>`).join("")}</div><p class="why" id="why" hidden></p>` : `<p class="gate">👉 קודם הרץ את המכונה פעם אחת (▶).</p>`);
+      else if (m.kind === "goal") h = head(m, sc.objective) + `<p class="target">🎯 ${esc(m.goal.text)}</p><div class="hotcold" id="hotcold" hidden></div><details class="mhint"><summary class="linkish">איך?</summary><p>${esc(m.goal.kind === "pair" ? "שתי הרצות: אחת לפני השינוי ואחת אחריו. נספרות רק הרצות שאחריהן כל השאר נשאר זהה." : "שנה ערכים בבקרים ואז ▶. נספרת רק הרצה שבה שינית לפחות ערך אחד מההתחלה.")}</p></details>`;
+      else if (m.kind === "choice") h = head(m, m.q) + (S.explainOpen(L) ? `<div class="options">${m.opts.map((o, i) => `<button type="button" data-ch="${i}" style="--i:${i}">${esc(o)}</button>`).join("")}</div><p class="why" id="why" hidden></p>` : GATE1);
       else if (m.kind === "transfer") h = transferHtml(m);
-      el.innerHTML = h; bind(m);
+      el.innerHTML = h; bind(m); paintHotCold();
+      $("#tPlay").classList.toggle("nudge", !!el.querySelector("[data-go]") && !L.running);
     }
+    const GATE1 = `<button class="gate go" type="button" data-go>👉 קודם הרץ את המכונה פעם אחת (▶)</button>`;
     const nextBtn = () => { const n = sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id)); if (n >= 0) return `<button class="btn primary" type="button" id="nextM">ל${["תחזית", "ניסוי", "הסבר", "העברה"][n]}</button>`; const ws = S.SCENES.filter((s) => s.w === sc.w), nx = ws.find((s) => sceneN(s) < 4 && s.id !== sc.id); return nx ? `<button class="btn primary" type="button" id="nextS">למכונה הבאה</button>` : `<button class="btn primary" type="button" id="toWorld">לעולם</button>`; };
     function predictHtml(m) {
       const pr = L.pred[m.id];
-      if (!pr) { const q = S.predQuestion(L, m); return head(m, q.q) + `<p class="fine">בחר לפני שאתה מריץ. אחר כך ▶ באותם ערכים.</p><div class="options">${q.opts.map((o, i) => `<button type="button" data-pr="${i}">${esc(o)}</button>`).join("")}</div>`; }
+      if (!pr) { const q = S.predQuestion(L, m); return head(m, q.q) + `<p class="fine">בחר לפני שאתה מריץ. אחר כך ▶ באותם ערכים.</p><div class="options">${q.opts.map((o, i) => `<button type="button" data-pr="${i}" style="--i:${i}">${esc(o)}</button>`).join("")}</div>`; }
       const r = S.predictionResult(L, m);
       if (r && !r.ready && r.changed) return head(m, pr.q.q) + `<p class="locked">🔒 ${esc(pr.q.opts[pr.pick])}</p><p class="bad">שינית ערכים: הניבוי היה על הערכים הקודמים.</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">ניבוי חדש</button></div>`;
       if (r && r.ready && !r.ok) return head(m, pr.q.q) + `<p class="locked">🔒 ${esc(pr.q.opts[pr.pick])}</p><p class="bad">הניסוי הראה: ${esc(pr.q.opts[r.truth])}.</p><p class="why">${esc(LEARN(m))}</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">ניבוי חדש</button></div>`;
-      return head(m, pr.q.q) + `<p class="locked">🔒 התחזית שלך: ${esc(pr.q.opts[pr.pick])}</p><p class="gate">👉 עכשיו ▶ (בלי לשנות ערכים).</p>`;
+      return head(m, pr.q.q) + `<p class="locked stamp">🔒 התחזית שלך: ${esc(pr.q.opts[pr.pick])}</p><button class="gate go" type="button" data-go>👉 עכשיו ▶ (בלי לשנות ערכים)</button>`;
     }
     function transferHtml(m) {
       const x = L.xfer[m.id];
-      if (x) return head(m) + `<p class="ok">✓ החישוב נכון. הערכים החדשים כבר בבקרים.</p><p class="gate">👉 ▶ כדי לבדוק בניסוי.</p>`;
-      if (!S.explainOpen(L)) return head(m) + `<p class="gate">👉 קודם הרץ את המכונה פעם אחת (▶).</p>`;
+      if (x) return head(m) + `<p class="ok">✓ החישוב נכון. הערכים החדשים כבר בבקרים.</p><button class="gate go" type="button" data-go>👉 ▶ כדי לבדוק בניסוי</button>`;
+      if (!S.explainOpen(L)) return head(m) + GATE1;
       ui.xtask = ui.xtask || S.transferTask(L, m);
       const t = ui.xtask;
       return head(m, t.text) + `<div class="numgrid"><label><span>${esc(t.field.he)}</span><span class="inp"><input data-f="x" inputmode="decimal" dir="ltr" autocomplete="off"><em class="ltr">${esc(t.field.unit)}</em></span></label></div>
@@ -228,20 +279,25 @@
       el.querySelector("#nextM")?.addEventListener("click", () => select(sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id))));
       el.querySelector("#nextS")?.addEventListener("click", () => { const nx = S.SCENES.filter((s) => s.w === sc.w).find((s) => sceneN(s) < 4 && s.id !== sc.id); show(names.scene, { id: nx.id }, false); });
       el.querySelector("#toWorld")?.addEventListener("click", () => show(names.world, { id: sc.w }, false));
-      for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { S.lockPrediction(L, m, +b.dataset.pr); ui.predShown = false; G.sfx.pop(); say("נעול. עכשיו ▶", 1.4); paintMission(); });
+      for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { b.classList.add("pick"); G.sfx.pop(); later(() => { S.lockPrediction(L, m, +b.dataset.pr); ui.predShown = false; G.sfx.woodTap && G.sfx.woodTap(); say("נעול. עכשיו ▶", 1.4); paintMission(); }, reduceMotion ? 0 : 260); });
+      // "👉 ▶" is a button too: it brings the machine into view and runs it
+      el.querySelector("[data-go]")?.addEventListener("click", () => { G.audio.unlock(); const r = box.getBoundingClientRect(), sc_ = $("#screen"); if (r.top < 0 || r.bottom > innerHeight) sc_.scrollTo({ top: sc_.scrollTop + r.top - sc_.getBoundingClientRect().top - 8, behavior: reduceMotion ? "auto" : "smooth" }); if (!L.running && start()) paintTransport(); else if (L.running && paused) { paused = false; paintTransport(); } });
       el.querySelector("#unlockP")?.addEventListener("click", () => { delete L.pred[m.id]; paintMission(); });
       for (const b of el.querySelectorAll("[data-ch]")) b.addEventListener("click", () => {
         if (el.dataset.answered) return; const ok = +b.dataset.ch === m.right; b.classList.add(ok ? "right" : "wrong"); const why = el.querySelector("#why"); why.hidden = false;
-        if (ok) { el.dataset.answered = "1"; why.textContent = "נכון!"; later(() => complete(m), 700); }
-        else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; why.textContent = ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "לא בדיוק. חזור לניסוי ונסה שוב."; G.sfx.hmph && G.sfx.hmph(0.4); later(() => b.classList.remove("wrong"), 900); }
+        if (ok) { el.dataset.answered = "1"; why.textContent = "נכון!"; sparkleAt(b, 14); G.sfx.sparkle && G.sfx.sparkle(1); for (const o of el.querySelectorAll("[data-ch]")) if (o !== b) o.classList.add("fade"); later(() => complete(m), 900); }
+        else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; why.textContent = ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "לא בדיוק. חזור לניסוי ונסה שוב."; G.sfx.hmph && G.sfx.hmph(0.4); say(["הממ… לא זה.", "כמעט. אולי.", "אני לא בטוח שזה נכון."][ui.attempts[m.id] % 3], 1.4); later(() => b.classList.remove("wrong"), 900); }
       });
       el.querySelector("#checkX")?.addEventListener("click", () => {
         const v = num(el.querySelector("[data-f]").value), why = el.querySelector("#why"); why.hidden = false;
         if (!Number.isFinite(v)) { why.textContent = "כתוב מספר (אפשר עם מינוס)."; return; }
         const r = S.checkTransfer(L, m, v, ui.xtask);
-        if (r.ok) { S.armTransfer(L, m, ui.xtask); hist.length = 0; paintControls(); paintReadouts(); G.sfx.sparkle && G.sfx.sparkle(1); paintMission(); }
+        if (r.ok) { const before = { ...L.P }; sparkleAt(el.querySelector("#checkX"), 12); S.armTransfer(L, m, ui.xtask); hist.length = 0; paintControls(); paintReadouts(); G.sfx.sparkle && G.sfx.sparkle(1); paintMission();
+          // the new values fly into the controls: changed rows glow and the sliders glide to them
+          for (const k in sc.knobs) if (Math.abs((before[k] || 0) - (L.P[k] || 0)) > 1e-9) { const row = $("#k_" + k)?.closest(".slider-row"); if (row) { row.classList.remove("glow"); void row.offsetWidth; row.classList.add("glow"); } glide(k, before[k], L.P[k]); } }
         else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; el.querySelector("[data-f]").classList.add("bad"); G.sfx.hmph && G.sfx.hmph(0.4);
           const sign = Math.abs(Math.abs(v) - Math.abs(r.truth)) <= Math.max(0.02, 0.02 * Math.abs(r.truth));
+          el.querySelector("[data-f]").classList.remove("shake"); void el.offsetWidth; el.querySelector("[data-f]").classList.add("shake");
           why.textContent = sign ? "הגודל נכון, הסימן לא." : ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "עוד לא. נסה להציב בנוסחה של המודל (בכפתור 'הסבר')."; }
       });
       el.querySelector("[data-f]")?.addEventListener("keydown", (e) => { if (e.key === "Enter") el.querySelector("#checkX")?.click(); });
@@ -259,7 +315,9 @@
       const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
       if (first) reward(cfg.coin + ":" + m.id, m.coins, from);
       G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
+      confetti(W / 2, H * 0.45, first ? 48 : 20);
       toast(m, first); paintBar();
+      const mb = document.querySelector(`#mbar [data-i="${ui.mi}"]`); if (mb) { mb.classList.remove("popdone"); void mb.offsetWidth; mb.classList.add("popdone"); }
       if (first && sceneN(sc) === 4) later(() => reward(cfg.coin + "scene:" + sc.id, 10, from), 900);
       const n = sc.missions.findIndex((x) => !isDone(x.id));
       if (first && n >= 0) later(() => select(n), 1300); else paintMission();
@@ -328,12 +386,18 @@
       if (!(img.complete && img.naturalWidth)) { ctx.fillStyle = "#F7D9B5"; ctx.beginPath(); ctx.arc(px, py - hpx / 2, hpx / 2, 0, Math.PI * 2); ctx.fill(); return; }
       const w = hpx * img.naturalWidth / img.naturalHeight; ctx.save(); ctx.translate(px, py); ctx.rotate(rot); if (flip) ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -hpx, w, hpx); ctx.restore();
     }
+    // gravity of real places, for a label and a background tint (approximate surface values)
+    const PLANETS = [["הירח", 1.62, "#E6E8F0"], ["מאדים", 3.71, "#F6E1D6"], ["כוכב חמה", 3.7, "#EAE5DF"], ["אורנוס", 8.69, "#DDF2F2"], ["נוגה", 8.87, "#F5EBD6"], ["כדור הארץ", 9.81, null], ["שבתאי", 10.44, "#F3ECD8"], ["נפטון", 11.15, "#DDE6F8"]];
+    const nearPlanet = (g) => { let b = null; for (const q of PLANETS) if (Math.abs(q[1] - g) <= 0.35 && (!b || Math.abs(q[1] - g) < Math.abs(b[1] - g))) b = q; return b; };
+    const planetName = (g) => { const q = nearPlanet(g); return q && q[0] !== "כדור הארץ" ? ` · כמו ב${q[0]}` : g >= 13 ? " · כבד מאוד!" : ""; };
+    function planetTint(g) { const q = nearPlanet(g); const c = q ? q[2] : g >= 13 ? "#F1E3D3" : null; if (!c) return; ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = c; ctx.fillRect(0, 0, W, sy(0)); ctx.restore(); }
+    const impactColor = (v, g) => { const k = typeof EggActor !== "undefined" ? EggActor.severity(v, g) : "soft"; return k === "crash" ? "#E2574C" : k === "soft" ? "#137556" : "#B8741A"; };
     function cart(px, py, wpx, hpx, txt, fill = "#F5F1E8") {
       ctx.fillStyle = fill; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px - wpx / 2, py - hpx, wpx, hpx, 6) : ctx.rect(px - wpx / 2, py - hpx, wpx, hpx); ctx.fill(); ctx.stroke();
       for (const d of [-0.3, 0.3]) { ctx.beginPath(); ctx.arc(px + d * wpx, py, 5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); }
       if (txt) label(px, py - hpx / 2, txt, "#20232A", "center", "700 12px ");
     }
-    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, y = H - 102; ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
+    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, sayEl = $("#say"), y = sayEl && !sayEl.hidden ? Math.min(H - 140, sayEl.offsetTop + sayEl.offsetHeight + 8) : 34; /* top of the machine: never on the floor where the body lands */ ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
     const has = (t) => L.sim && L.sim.events.some((e) => e.type === t);
     const P_ = () => (L.sim && L.cur ? L.cur.P : L.P);
     const SIM = () => L.sim || (L._preview && L._previewP === JSON.stringify(L.P) ? L._preview : (L._previewP = JSON.stringify(L.P), L._preview = (() => { const e = S.evalP(sc, L.P); if (e.invalid) return null; const s = WP.makeSim(sc.family, { ...L.P }, { brake: !!sc.setup.brake, gap: sc.setup.gap, v: L.P.v, vf: L.P.vf }); s.step(0); return s; })()));
@@ -393,7 +457,8 @@
         ctx.save(); ctx.translate(sx(0), sy(top)); ctx.rotate(tilt); ctx.fillStyle = "#B58A55"; ctx.fillRect(0, -6, Math.min(Lm, span + gap) * cam.S, 8); ctx.restore();
         label((sx(0) + sx(gap)) / 2, sy(top) + 26, `${sc.setup.unitText}: ${nice(gap)} ${sc.setup.unitSI}`, "#20232A");
         label(sx(0) + Math.min(Lm, span) * cam.S / 2, sy(top) - 18, `${p.value} × ${p.factor} = ${nice(Lm, 3)} ${sc.setup.unitSI}`, Math.abs(Lm - gap) <= 0.01 * gap ? "#137556" : "#B8741A");
-        const x = s.st.x, fall = s.st.fell; critter(sx(Math.min(x, gap + 0.2 * gap)), sy(top) + (fall ? Math.min(H, (x - Lm) * 6 * cam.S) : -6), 0.45 * Math.min(cam.S * gap, 120));
+        const x = s.st.x, fall = s.st.fell, floor = H - 10 - sy(top), drop = fall ? Math.min(floor, (x - Lm) * 6 * cam.S) : 0;
+        eggBody(sx(Math.min(x, gap + 0.2 * gap)), sy(top) + (fall ? drop : -6), 0.45 * Math.min(cam.S * gap, 120), { impact: fall && drop >= floor - 0.5, sev: "squash", vy: fall ? -12 : 0, standing: !fall });
         if (fall) banner("הקרש קצר מדי!", "#E2574C"); else if (L.cur && L.cur.done !== undefined && s.done && Lm > gap * 1.01) banner("ארוך מדי: לא נכנס בין הקצוות", "#B8741A");
       },
       vectors(s, p) {
@@ -442,27 +507,29 @@
       },
       vertical(s, p) {
         const e = WP.evaluate("vertical", { ...p, t: 0 }), top = Math.max(e.maxY, p.h) + 1.5;
-        fit(-top * 0.6, top * 0.6, -0.5, top); ground(0);
+        fit(-top * 0.6, top * 0.6, -0.5, top); planetTint(p.g); ground(0);
         if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-top * 0.5), sy(p.h), (top * 0.35) * cam.S, p.h * cam.S); line(sx(-top * 0.5), sy(p.h), sx(-top * 0.15), sy(p.h), 2); }
         for (let y = 0; y <= top; y += top > 20 ? 5 : top > 8 ? 2 : 1) { line(sx(top * 0.45), sy(y), sx(top * 0.45) + 6, sy(y), 1.2); label(sx(top * 0.45) + 18, sy(y), String(y)); }
         if (has("peak") || s.st.landed) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(-top * 0.3), sy(e.maxY), sx(top * 0.3), sy(e.maxY), 1.4, "#20232A"); ctx.restore(); label(sx(top * 0.3) + 4, sy(e.maxY) - 10, "שיא " + nice(e.maxY) + " m", "#20232A", "left"); }
-        critter(sx(0), sy(s.st.y), Math.min(60, cam.S * 1.5));
-        if (forces()) { arrowS(sx(0) + 40, sy(s.st.y) - 20, 0, -s.st.v * 5, "#20232A", "v"); arrowS(sx(0) - 40, sy(s.st.y) - 20, 0, p.g * 5, "#2785C7", "g"); }
-        label(14, 20, "g = " + nice(p.g) + " m/s²", "#2785C7", "left");
-        if (s.st.landed) banner("נחת אחרי " + nice(e.tLand) + " s");
+        eggBody(sx(0), sy(s.st.y), clamp(cam.S * 2, 46, 72), { impact: !!s.st.landed, vImpact: s.st.v, vy: s.st.v, g: p.g, nervous: p.h > 6 });
+        if (forces() && !s.st.landed) { arrowS(sx(0) + 40, sy(s.st.y) - 20, 0, -s.st.v * 5, "#20232A", "v"); arrowS(sx(0) - 40, sy(s.st.y) - 20, 0, p.g * 5, "#2785C7", "g"); }
+        label(14, 20, "g = " + nice(p.g) + " m/s²" + planetName(p.g), "#2785C7", "left");
+        if (s.st.landed) banner("נחת אחרי " + nice(e.tLand) + " s · " + nice(Math.abs(s.st.v)) + " m/s בפגיעה", impactColor(Math.abs(s.st.v), p.g));
       },
       projectile(s, p) {
         const e = WP.evaluate("projectile", { ...p, t: 0 }), tgt = sc.setup.goal && sc.id === "W04-S04" ? [18, 19] : sc.id === "W12-S06" ? [25, 26] : null;
-        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35)); ground(0);
+        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35)); planetTint(p.g); ground(0);
         if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-2), sy(p.h), 2 * cam.S, p.h * cam.S); line(sx(-2), sy(p.h), sx(0), sy(p.h), 2); }
         if (tgt) { ctx.fillStyle = "rgba(226,87,76,0.3)"; ctx.fillRect(sx(tgt[0]), sy(0) - 5, (tgt[1] - tgt[0]) * cam.S, 10); label(sx((tgt[0] + tgt[1]) / 2), sy(0) - 16, "🎯", "#E2574C"); }
         for (let x = 0; x <= xm; x += xm > 30 ? 10 : 5) label(sx(x), sy(0) + 16, String(x));
         // the path so far (from the same formulas the simulator steps)
         ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath();
         const tt = L.sim ? L.sim.t : 0, vy0 = p.v0 * Math.sin(p.angle * Math.PI / 180); for (let i = 0; i <= 60; i++) { const t = tt * i / 60; const X = e.vx * t, Y = p.h + vy0 * t - 0.5 * p.g * t * t; i ? ctx.lineTo(sx(X), sy(Math.max(0, Y))) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke(); ctx.restore();
-        critter(sx(s.st.x), sy(s.st.y), Math.min(46, cam.S * 1.4));
+        const vImp = Math.hypot(s.st.vx || 0, s.st.vy || 0);
+        eggBody(sx(s.st.x), sy(s.st.y), clamp(cam.S * 1.6, 40, 60), { impact: !!s.st.landed, vImpact: vImp, vy: s.st.vy, g: p.g, nervous: p.h > 6 });
         if (forces() && !s.st.landed) { arrowS(sx(s.st.x), sy(s.st.y) - 24, s.st.vx * 5, 0, "#2785C7", "vx"); arrowS(sx(s.st.x), sy(s.st.y) - 24, 0, -s.st.vy * 5, "#E0702F", "vy"); }
-        if (s.st.landed) banner(`נחת: ${nice(e.range)} m אחרי ${nice(e.tLand)} s`);
+        if (s.st.landed) banner(`נחת: ${nice(e.range)} m אחרי ${nice(e.tLand)} s · ${nice(vImp)} m/s`, impactColor(vImp, p.g));
+        if (p.g !== 10) label(14, 20, "g = " + nice(p.g) + " m/s²" + planetName(p.g), "#2785C7", "left");
       },
       incline(s, p) {
         const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lr = 6, tr = s.tr || null, pos = tr ? tr.s : 3;
@@ -532,7 +599,8 @@
       loop(s, p) {
         const r = p.r; fit(-r * 1.6, r * 2.8, -0.3, 2 * r + 0.6); ground(0);
         ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx(0), sy(r), r * cam.S, 0, Math.PI * 2); ctx.stroke();
-        const x = s.st.x, y = s.st.y, hpx = Math.min(44, cam.S * 0.5); critter(sx(x), sy(y), hpx, s.st.onTrack ? -(s.st.th || 0) : 0);
+        const x = s.st.x, y = s.st.y, hpx = clamp(cam.S * 0.5, 34, 50), landed = has("land");
+        eggBody(sx(x), sy(y), hpx, { impact: landed, vImpact: s.st.v, vy: s.st.onTrack ? 0 : -(s.st.v || 0), g: p.g, standing: s.st.onTrack }, s.st.onTrack ? -(s.st.th || 0) : 0);
         if (forces() && s.st.onTrack && s.st.N > 1e-6) { const N = s.st.N, k = Math.min(60 / (p.m * p.g), 110 / N); arrowS(sx(x), sy(y), (-x / r) * N * k, -((r - y) / r) * N * k, "#8969C6", "N", N); }
         label(14, 20, `v בפסגה (אם נשאר במגע) = ${nice(p.vTop)} · מינימום √(gr) = ${nice(Math.sqrt(p.g * r))}`, "#20232A", "left");
         if (has("lost_contact")) banner("איבד מגע: עף בקשת חופשית", "#E2574C"); else if (has("full_loop")) banner("הקפה שלמה!", "#137556");
@@ -541,7 +609,9 @@
         fit(-6, 2.5, -0.5, 2); ground(0);
         ctx.fillStyle = "#F5E6CC"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; const cx = sx(1.0); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S, 10) : ctx.rect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S); ctx.fill(); ctx.stroke();
         line(sx(1.4), sy(0), sx(1.4), sy(1.6), 6); label(sx(1.2), sy(1.45), "כרית", "#606671");
-        const x = Math.min(0.6, s.st.x); cart(sx(x), sy(0) - 4, 60, 32, ""); critter(sx(x), sy(0) - 32, 40);
+        const x = Math.min(0.6, s.st.x), decel = Math.abs(p.v1 - p.v0) / p.dt; cart(sx(x), sy(0) - 4, 60, 32, "");
+        eggBody(sx(x), sy(0) - 32, 40, { impact: !!(L.sim && s.st.F), sev: EggActor.severityStop(decel), standing: true });
+        if (L.sim && L.sim.done) banner(`בלימה של ${nice(decel)} m/s² ≈ ${nice(decel / 9.81, 1)}g`, decel >= EggActor.A_CRASH ? "#E2574C" : decel >= EggActor.A_SOFT ? "#B8741A" : "#137556");
         if (forces()) { arrowS(sx(x), sy(0) - 96, s.st.v * 8, 0, "#20232A", "v"); if (s.st.F) arrowS(sx(x) + 30, sy(0) - 20, Math.sign(s.st.F) * Math.min(120, 30 + Math.abs(s.st.F)), 0, "#E0702F", "F", Math.abs(s.st.F)); }
         label(14, 20, `Δt = ${nice(p.dt)} s · J = ${nice(p.m * (p.v1 - p.v0))} N·s`, "#20232A", "left");
       },
@@ -568,7 +638,7 @@
         if (!L.trail || L.trailRun !== (L.cur && L.cur.id)) { L.trail = []; L.trailRun = L.cur && L.cur.id; }
         if (L.sim && s.st.x !== undefined) { L.trail.push([s.st.x, s.st.y]); if (L.trail.length > 600) L.trail.shift(); }
         ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath(); L.trail.forEach(([x, y], i) => (i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)))); ctx.stroke();
-        const x = s.st.x !== undefined ? s.st.x : p.r, y = s.st.y || 0; critter(sx(x), sy(y) + 14, 32);
+        const x = s.st.x !== undefined ? s.st.x : p.r, y = s.st.y || 0; eggBody(sx(x), sy(y) + 14, 32, { impact: has("crash"), sev: "crash", vy: 0, g: 1 });
         if (forces()) { const d = Math.hypot(x, y); arrowS(sx(x), sy(y), -x / d * 50, y / d * 50, "#2785C7", "g", undefined); }
         label(14, 20, `r = ${nice(p.r / 1000, 0)} km · g = ${nice(WP.evaluate("gravity", p).g)} m/s²`, "#20232A", "left");
         if (has("crash")) banner("נפל אל הכוכב", "#E2574C"); else if (has("escape")) banner("ברח מהשדה!", "#8A60E8");
@@ -716,18 +786,22 @@
         critter(sx(x) - Math.sign(p.v || 1) * 34, sy(-0.4), 40);
         if (L.sim) label(14, 20, `עבודת היד ${nice(s.st.handWork)} J = חום בנגד ${nice(s.st.heat)} J`, "#20232A", "left"); }
     };
-    function draw() {
+    function draw(dt = 0) {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const s = SIM(); if (!s) { label(W / 2, H / 2, "הערכים מחוץ לתחום של המודל", "#E2574C"); return; }
+      if (shakeT > 0) { shakeT -= dt; const k = 7 * Math.max(0, shakeT / 0.45); ctx.translate((Math.random() - 0.5) * k, (Math.random() - 0.5) * k); }
       try { DRAW[sc.family](s, P_()); } catch (e) { label(W / 2, H / 2, "…", "#606671"); }
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       if (L.sim) label(W - 12, H - 66, "t = " + fmt(L.sim.t, 2) + " s", "#606671", "right");
+      for (let i = ripples.length - 1; i >= 0; i--) { const q = ripples[i]; q.t += dt; if (q.t > 0.5) { ripples.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = 1 - q.t / 0.5; ctx.strokeStyle = "#8A60E8"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, 10 + q.t * 70, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+      drawParty(dt);
     }
 
     // ---------------- loop ----------------
     function frame(now) {
       const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
-      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); } }
-      draw();
+      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); paintHotCold(); } }
+      draw(dt);
       if ((frameN++ & 3) === 0) paintGraph();
       if ((evalT += dt) > 0.3) { evalT = 0; evaluate(false); }
       if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }

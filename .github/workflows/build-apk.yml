@@ -43,6 +43,7 @@ jobs:
           node tests/worlds-missions.test.js
           node tests/elec-engine.test.js
           node tests/elec-missions.test.js
+          node tests/egg-actor.test.js
 
       - name: Build
         run: |

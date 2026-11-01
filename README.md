@@ -76,6 +76,18 @@ surface can change, the creature's body is fixed).
   From there: a timeline chart (year across, scientists down in א-ב order); tap a name to learn who they were.
 - Tests: `tests/explain.test.js`.
 
+**The egg in falls** (`art/physics/egg-actor.js`, test `tests/egg-actor.test.js`): in the worlds machines where something falls,
+lands or hits hard (drop, throw, plank too short, vertical loop, cushion, crashing into a planet) the egg from the drawings is the
+body instead of the creature. The landing speed picks the gag: under 9 m/s a wince, 9–19 m/s pancake then lying dizzy with
+stars, heavy g (≥ 13) accordion folds, 19 m/s and up (or 60 m/s² into the cushion) the shell bursts ("קְרַאש!" … "סתם!") and
+it stands again with a band-aid. Drawing only: positions and numbers still come from the simulator.
+
+**Missions:** answers pop in, a wrong one shakes, a right one sparkles; "👉 ▶" is a button that brings the machine into view
+and runs it; tapping the machine runs/pauses it (a swipe scrolls); goals with a target window show hot/cold after each run;
+a correct transfer answer glides the sliders to the new values; confetti on every finished mission.
+**Scrolling:** a violet thumb on the left edge can be dragged; while scrolling a game screen, 🎯 🔬 🎚 jump to the mission,
+the machine and the controls.
+
 These files are pulled into `index.html` by `art/build.py`, so they update phones without a reinstall.
 
 ## Live wallpaper

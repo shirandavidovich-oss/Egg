@@ -667,69 +667,112 @@
   .wtile b { font-size: 15.5px; }
   .wtile small { font-size: 12px; color: var(--ink-2); }
 
-  /* ================= FIT-TO-SCREEN: every game screen fits without scrolling =================
-     The canvas takes whatever height is left; everything else is compact.
-     On the open Fold (wide screen) the canvas goes left and the panel goes right. */
-  #ui:has(.lab-screen) .top { padding-top: calc(env(safe-area-inset-top, 0px) + 4px); padding-bottom: 2px; }
-  #ui:has(.lab-screen) .top h1 { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #ui:has(.lab-screen) .top p { display: none; }
+  /* ================= COMPACT: same content, less empty space on the game screens =================
+     Nothing is hidden: only paddings, gaps and a few sizes shrink. The page still scrolls (see #qs). */
+  #ui:has(.lab-screen) .top { gap: 6px; padding: calc(env(safe-area-inset-top, 0px) + 4px) 8px 2px; }
+  #ui:has(.lab-screen) .top h1 { font-size: 19px; line-height: 1.15; }
+  #ui:has(.lab-screen) .top p { font-size: 12.5px; margin-top: 1px; line-height: 1.25; }
   #ui:has(.lab-screen) .icon-btn { width: 40px; height: 40px; }
-  #ui:has(.lab-screen) .tabs { padding-top: 2px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px); }
-  #ui:has(.lab-screen) .tabs button { min-height: 40px; flex-direction: row; gap: 6px; font-size: 12px; }
-  #ui:has(.lab-screen) .tabs button svg { width: 22px; height: 22px; }
-  #screen:has(> .lab-screen) { padding: 2px 8px 6px; container-type: size; }
+  #ui:has(.lab-screen) .icon-btn svg { width: 23px; height: 23px; }
+  #ui:has(.lab-screen) .tabs { padding-top: 3px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3px); }
+  #ui:has(.lab-screen) .tabs button { min-height: 46px; gap: 1px; font-size: 12px; }
+  #ui:has(.lab-screen) .tabs button svg { width: 23px; height: 23px; }
+  #ui #screen:has(> .lab-screen) { padding: 2px 10px 14px 16px; }
+  #ui .lab-screen { gap: 7px; }
+  #ui .lab-screen .card { padding: 10px 12px; border-radius: 16px; }
+  #ui .lab-screen .lab { height: 46vh; min-height: 260px; border-radius: 18px; }
+  #ui .lab-screen .lab-tools { bottom: 8px; }
+  #ui .lab-screen .tbtn { width: 42px; height: 42px; font-size: 17px; }
+  #ui .rscene .mbar { gap: 5px; }
+  #ui .rscene .mbar button { height: 34px; font-size: 14px; border-radius: 11px; }
+  #ui .lab-screen .mission { padding: 9px 12px; }
+  #ui .lab-screen .mission .mhead small { font-size: 12px; }
+  #ui .lab-screen .mission .mhead p { margin: 2px 0 4px; font-size: 15.5px; line-height: 1.35; }
+  #ui .lab-screen .mission .fine { margin: 2px 0; font-size: 12.5px; }
+  #ui .lab-screen .mission .options, #ui .lab-screen .task .options { grid-template-columns: repeat(auto-fit, minmax(136px, 1fr)); gap: 6px; margin: 6px 0 2px; }
+  #ui .lab-screen .options button { min-height: 40px; padding: 6px 12px; font-size: 14.5px; border-radius: 12px; line-height: 1.25; }
+  #ui .lab-screen .mrow { margin-top: 6px; gap: 6px; }
+  #ui .lab-screen .mrow .btn, #ui .lab-screen .task .btn { min-height: 40px; font-size: 15px; border-radius: 13px; }
+  #ui .lab-screen .seg button { min-height: 36px; }
+  #ui .lab-screen .readouts { gap: 5px; }
+  #ui .lab-screen .readout { padding: 5px 4px; border-radius: 12px; }
+  #ui .lab-screen .controls { gap: 8px; padding: 8px 12px; }
+  #ui .lab-screen .controls > .fine:empty { display: none; }
+  #ui .lab-screen .slider-row label { margin-bottom: 1px; font-size: 14.5px; }
+  #ui .lab-screen .srow { gap: 6px; }
+  #ui .lab-screen .srow .step { width: 38px; height: 38px; font-size: 19px; }
+  #ui .lab-screen .graphcard { padding: 8px; }
+  #ui .lab-screen .graphcard canvas { height: 150px; }
+  #ui .lab-screen .numgrid input { min-height: 40px; }
+  @media (max-height: 700px) { #ui .lab-screen .lab { height: 42vh; min-height: 230px; } }
+  @media (min-width: 700px) { #ui .lab-screen .lab { height: 50vh; } }
 
-  #screen .lab-screen { gap: 6px; height: 100%; min-height: 0; }
-  #screen .lab-screen > * { flex: none; }
-  #screen .lab-screen > .lab { flex: 1 1 0; height: auto; min-height: 170px; border-radius: 16px; position: sticky; top: 0; z-index: 3; }
-  #screen .lab-tools { bottom: 6px; right: 6px; left: 6px; }
-  #screen .lab-screen .tbtn { width: 40px; height: 40px; font-size: 16px; }
-  #screen .lab-screen .chip { min-height: 36px; font-size: 13px; }
-  #screen .lab-screen .chip img { width: 28px; height: 28px; }
-  #screen .lab-screen .card { padding: 8px 10px; border-radius: 14px; }
-  #screen .lab-screen .seg { padding: 2px; }
-  #screen .lab-screen .seg button { min-height: 34px; font-size: 13px; }
-  #screen .rscene .mbar button { height: 32px; font-size: 13px; }
-  #screen .lab-screen .readouts { gap: 4px; }
-  #screen .lab-screen .readout { padding: 3px 4px; border-radius: 10px; }
-  #screen .lab-screen .readout small { font-size: 11px; }
-  #screen .lab-screen .readout b { font-size: 14px; }
-  #screen .lab-screen .controls { gap: 4px; padding: 6px 10px; }
-  #screen .lab-screen .controls > .fine:empty { display: none; }
-  /* slider: label and slider on the same line */
-  #screen .lab-screen .slider-row { display: grid; grid-template-columns: minmax(84px, 34%) 1fr; align-items: center; gap: 6px; }
-  #screen .lab-screen .slider-row label { margin: 0; font-size: 13.5px; flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.2; }
-  #screen .lab-screen .slider-row .note { grid-column: 1 / -1; }
-  #screen .lab-screen input[type=range] { height: 28px; }
-  #screen .lab-screen .srow { gap: 4px; }
-  #screen .lab-screen .srow .step, #screen .lab-screen .step { width: 34px; height: 34px; font-size: 18px; border-radius: 10px; }
-  #screen .lab-screen .graphcard canvas { height: 120px; }
-  #screen .lab-screen .task { padding: 6px 10px; }
-  #screen .lab-screen .task p { font-size: 14.5px; }
-  #screen .lab-screen .btn { min-height: 38px; padding: 0 12px; font-size: 14.5px; border-radius: 12px; }
-  #screen .mission .mhead p { margin: 2px 0; font-size: 15px; line-height: 1.3; }
-  #screen .mission .mhead small { font-size: 11.5px; }
-  #screen .mission .fine { font-size: 12px; margin: 0; }
-  #screen .mission .mrow { margin-top: 4px; }
-  /* question on the right, answers on the left — no extra lines */
-  #screen .mission:has(> .options), #screen .task:has(> .options) { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
-  #screen .mission:has(> .options) > *, #screen .task:has(> .options) > * { grid-column: 1; }
-  #screen .mission:has(> .options) > .options, #screen .task:has(> .options) > .options {
-    grid-column: 2; grid-row: 1 / span 4; margin: 0; display: flex; flex-direction: column; gap: 4px; max-width: 46vw; }
-  #screen .lab-screen .options button { min-height: 36px; padding: 4px 12px; font-size: 14px; border-radius: 10px; white-space: nowrap; }
-  #screen .lab-screen .options:has(> button:nth-child(3)) { display: grid; grid-template-columns: 1fr 1fr; }
+  /* ================= QUICK SCROLL: a big thumb on the left edge you can drag, plus jumps on game screens ================= */
+  #qs { position: absolute; left: 0; width: 18px; z-index: 6; pointer-events: none; }
+  #qs[hidden] { display: none; }
+  #qs .qs-track { position: absolute; left: 5px; top: 6px; bottom: 6px; width: 4px; border-radius: 4px; background: rgba(138,96,232,0.12); opacity: 0; transition: opacity .25s; }
+  #qs .qs-thumb { position: absolute; left: 2px; width: 12px; height: 64px; pointer-events: auto; touch-action: none; border-radius: 10px; background: rgba(138,96,232,0.82); box-shadow: 0 2px 8px rgba(91,55,184,0.35);
+    display: grid; align-content: center; justify-items: center; gap: 4px; opacity: 0.32; transition: opacity .25s, transform .2s, width .2s; cursor: grab; }
+  #qs .qs-thumb::before { content: ""; position: absolute; inset: -6px -10px -6px -4px; }
+  #qs .qs-thumb i { display: block; width: 6px; height: 2px; border-radius: 2px; background: #fff; }
+  #qs.live .qs-thumb, #qs.drag .qs-thumb { opacity: 1; }
+  #qs.live .qs-track, #qs.drag .qs-track { opacity: 1; }
+  #qs.drag .qs-thumb { width: 16px; transform: scale(1.06); cursor: grabbing; }
+  #qjump { position: absolute; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.9); box-shadow: 0 3px 12px rgba(20,24,30,0.16); transition: opacity .25s, transform .25s; }
+  #qjump[hidden] { display: none; }
+  #qjump.away { opacity: 0; transform: translate(-50%, -10px); pointer-events: none; }
+  #qjump button { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid #D9CBF8; background: rgba(255,255,255,0.94); font-size: 17px; line-height: 1; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(20,24,30,0.12); display: grid; place-items: center; }
+  #qjump button[aria-current="true"] { border-color: var(--violet); background: #F5F0FF; }
+  #qjump button:active { transform: scale(0.92); }
+  .qs-flash { animation: qsFlash 0.9s ease-out; }
+  @keyframes qsFlash { 0% { box-shadow: 0 0 0 0 rgba(138,96,232,0.55); } 100% { box-shadow: 0 0 0 14px rgba(138,96,232,0); } }
+  @media (prefers-reduced-motion: reduce) { #qs .qs-thumb, #qjump { transition: none; } .qs-flash { animation: none; } }
 
-  /* open Fold / tablet: canvas on the left, all the panel on the right */
-  @media (min-width: 700px) and (min-height: 480px) {
-    /* the canvas always fills the full height and stays put; only a very long panel (formulas) scrolls beside it */
-    #screen .lab-screen { display: grid; grid-template-columns: minmax(300px, 38%) 1fr; grid-template-rows: repeat(12, auto) 1fr; align-content: start; gap: 6px 10px; height: auto; min-height: 100%; }
-    #screen .lab-screen > * { grid-column: 1; }
-    #screen .lab-screen > .lab { grid-column: 2; grid-row: 1 / -1; align-self: start; height: calc(100cqh - 8px); min-height: 0; }
-    #screen .lab-screen .readouts { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
-    #screen .mission:has(> .options) > .options, #screen .task:has(> .options) > .options { max-width: 52%; }
+  /* ================= LIVELY MISSIONS: answers pop in, wrong shakes, right sparkles, ▶ asks to be pressed ================= */
+  .lab-screen .options button { animation: optIn 0.38s cubic-bezier(.2,1.4,.4,1) both; animation-delay: calc(var(--i, 0) * 70ms); transition: transform .12s, background .2s, border-color .2s, opacity .3s; }
+  .lab-screen .options button:active { transform: scale(0.96); }
+  @keyframes optIn { from { opacity: 0; transform: translateY(10px) scale(0.92); } }
+  .lab-screen .options button.wrong { animation: wrongShake 0.42s; }
+  @keyframes wrongShake { 20% { transform: translateX(-7px) rotate(-1deg); } 40% { transform: translateX(6px) rotate(1deg); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+  .lab-screen .options button.right { animation: rightPop 0.5s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes rightPop { 40% { transform: scale(1.07); } }
+  .lab-screen .options button.fade { opacity: 0.4; }
+  .lab-screen .options button.pick { border-color: var(--violet); background: #F5F0FF; transform: scale(1.03); }
+  .mission .stamp { display: inline-block; animation: stamp 0.45s cubic-bezier(.2,1.5,.4,1); transform-origin: right center; }
+  @keyframes stamp { from { opacity: 0; transform: scale(1.8) rotate(-6deg); } 60% { opacity: 1; transform: scale(0.94) rotate(1deg); } }
+  .mission button.gate { display: block; width: 100%; text-align: right; margin: 6px 0 0; padding: 8px 12px; border-radius: 12px; border: 1.5px dashed #BFD8F7; background: #F3F8FF;
+    font: 600 14.5px var(--ui-font); color: #1F5FA8; cursor: pointer; animation: gateGlow 2s ease-in-out infinite; }
+  .mission button.gate:active { transform: scale(0.98); }
+  @keyframes gateGlow { 50% { border-color: var(--blue); background: #E8F2FF; } }
+  #tPlay.nudge { animation: nudge 1.4s ease-in-out infinite; }
+  @keyframes nudge { 0%, 100% { box-shadow: 0 0 0 0 rgba(37,142,246,0.55); transform: scale(1); } 50% { box-shadow: 0 0 0 12px rgba(37,142,246,0); transform: scale(1.08); } }
+  .mission.swap { animation: swapIn 0.3s cubic-bezier(.2,.8,.2,1); }
+  @keyframes swapIn { from { opacity: 0; transform: translateX(-16px); } }
+  .rscene .mbar button.popdone { animation: popDone 0.6s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes popDone { 30% { transform: scale(1.18) rotate(-3deg); background: #E3D6FB; } }
+  .rscene .mbar button.done::before { content: "✓ "; }
+  .slider-row.glow { animation: rowGlow 1.4s ease-out; border-radius: 12px; }
+  @keyframes rowGlow { 0%, 30% { background: #EFE8FC; box-shadow: 0 0 0 4px #EFE8FC; } 100% { background: transparent; box-shadow: 0 0 0 4px transparent; } }
+  .numgrid input.shake { animation: wrongShake 0.42s; }
+  .spark { position: fixed; z-index: 60; pointer-events: none; font-style: normal; font-size: 16px; color: #E39B28; transform: translate(-50%, -50%); animation: spark 0.8s ease-out forwards; text-shadow: 0 0 6px rgba(255,214,102,0.8); }
+  .spark:nth-child(3n) { color: #8A60E8; } .spark:nth-child(3n+1) { color: #25B58B; }
+  @keyframes spark { to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4) rotate(120deg); opacity: 0; } }
+  /* hot / cold after each run of a goal */
+  .hotcold { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 8px; margin: 6px 0 2px; padding: 6px 10px; border-radius: 12px; background: #F4F6F9; font: 700 13.5px var(--ui-font); }
+  .hotcold[hidden] { display: none; }
+  .hotcold small { grid-column: 1 / -1; font-weight: 600; color: var(--ink-2); font-size: 12px; text-align: right; }
+  .hotcold .hc-bar { height: 8px; border-radius: 8px; background: #E4E7EC; overflow: hidden; }
+  .hotcold .hc-bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #6FA8F5, #F2C94C, #E2574C); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .hotcold .hc-dir { color: #5B37B8; font-size: 12.5px; white-space: nowrap; }
+  .hotcold[data-lvl="0"], .hotcold[data-lvl="1"] { background: #EEF5FE; }
+  .hotcold[data-lvl="3"] { background: #FFF3E6; } .hotcold[data-lvl="4"] { background: #E9F8F2; }
+  .hotcold.pop { animation: rightPop 0.45s cubic-bezier(.2,1.6,.4,1); }
+  /* swipe on the machine scrolls the page; a tap runs it */
+  .wscene .lab { touch-action: pan-y; cursor: pointer; }
+  @media (prefers-reduced-motion: reduce) {
+    .lab-screen .options button, .mission .stamp, .mission button.gate, #tPlay.nudge, .mission.swap, .rscene .mbar button.popdone, .slider-row.glow, .hotcold.pop { animation: none; }
   }
-  /* very short screens (cover screen landscape etc.): the page may still scroll as a last resort */
-  @media (max-height: 520px) { #screen .lab-screen > .lab { min-height: 140px; } }
 
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -754,6 +797,8 @@
     <div class="coins" id="uiCoins" role="status" aria-label="מטבעות"><span class="coin" aria-hidden="true"></span><b class="num">0</b></div>
   </header>
   <main id="screen"></main>
+  <div id="qs" aria-hidden="true" hidden><div class="qs-track"></div><div class="qs-thumb"><i></i><i></i><i></i></div></div>
+  <div id="qjump" hidden><button type="button" data-j="task" aria-label="למשימה">🎯</button><button type="button" data-j="lab" aria-label="למכונה">🔬</button><button type="button" data-j="controls" aria-label="לבקרים">🎚</button></div>
   <nav class="tabs" id="tabs" aria-label="ניווט">
     <button type="button" data-tab="home"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4c5.5 0 9 7 9 13a9 9 0 0 1-18 0c0-6 3.5-13 9-13z"/><path d="M5 24c4 3 18 3 22 0"/></g></svg><span>הביצה</span></button>
     <button type="button" data-tab="physics"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="16" cy="16" rx="13" ry="5"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(-60 16 16)"/></g></svg><span>פיזיקה</span></button>
@@ -2753,7 +2798,8 @@ const WorldScenes = (() => {
   // goal kinds:  win(key, lo, hi, also)  one run whose result lies in a window
   //              cond(fn)                one run that satisfies fn(run)
   //              pair(keys, fn)          two runs that differ ONLY in these knobs, fn(a, b)
-  const win = (key, lo, hi, also, text) => ({ kind: "one", text, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
+  // key/lo/hi also let the screen show how close a run came ("hot / cold")
+  const win = (key, lo, hi, also, text) => ({ kind: "one", text, key, lo, hi, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
   const cond = (fn, text) => ({ kind: "one", text, check: fn });
   const pair = (keys, fn, text) => ({ kind: "pair", keys, text, check: fn });
   const ev = (r, k) => r.ev[k];
@@ -3211,7 +3257,8 @@ const ElecScenes = (() => {
     wireForce: "wireB", wireField: "halo", solenoid: "coil", parallelWires: "twins", faraday: "flux", motionalEMF: "rod" };
 
   // ---------------- per-situation goals (M2) ----------------
-  const win = (key, lo, hi, also, text) => ({ kind: "one", text, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
+  // key/lo/hi also let the screen show how close a run came ("hot / cold")
+  const win = (key, lo, hi, also, text) => ({ kind: "one", text, key, lo, hi, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
   const cond = (fn, text) => ({ kind: "one", text, check: fn });
   const pair = (keys, fn, text) => ({ kind: "pair", keys, text, check: fn });
   const has = (r, t) => r.events.includes(t);
@@ -3598,6 +3645,165 @@ const Kin = (() => {
 
 // generated from the Cookie Chase content package (levels, 16 formula cards, 30 original questions, narration)
 const KIN_DATA = {"units": [{"id": "motion.l1", "level": 1, "he": "איפה אני?", "concept": "מיקום, דרך והעתק", "insight": "העתק הוא מאיפה לאן (עם סימן). דרך היא כמה באמת הלכת. אפשר ללכת 8 מטר ולהגיע רק 2 מטר מההתחלה.", "eq": "Δx = x − x0"}, {"id": "motion.l2", "level": 2, "he": "מה פתאום ממשיכים?!", "concept": "מהירות קבועה והתמדה", "insight": "כשמפסיקים לדחוף ואין חיכוך, אין כוח שקול, ולכן אין תאוצה: המהירות נשארת קבועה. הנקודות במרחקים שווים.", "eq": "x = x0 + v·t"}, {"id": "motion.l3", "level": 3, "he": "תן גז!", "concept": "תאוצה", "insight": "כוח קבוע נותן תאוצה קבועה: המהירות גדלה באותה כמות בכל שנייה, והנקודות מתרחקות זו מזו.", "eq": "v = v0 + a·t"}, {"id": "motion.l4", "level": 4, "he": "מי כבד פה?", "concept": "השפעת מסה על תאוצה", "insight": "אותו כוח על מסה גדולה יותר נותן תאוצה קטנה יותר: a = F/m.", "eq": "a = ΣF / m"}, {"id": "motion.l5", "level": 5, "he": "הקיר מתקרב!", "concept": "בלימה ומרחק עצירה", "insight": "בתאוטה קבועה מרחק העצירה תלוי בריבוע המהירות: פי 2 מהירות, פי 4 מרחק.", "eq": "d_stop = v0² / (2|a|)"}, {"id": "motion.l6", "level": 6, "he": "העוגייה בורחת!", "concept": "תנועה יחסית ומפגש", "insight": "מה שחשוב למפגש הוא המהירות היחסית: הפער נסגר בקצב של v_creature − v_cookie.", "eq": "v_rel = v_cookie − v_creature"}, {"id": "motion.l7", "level": 7, "he": "עקבות וגרפים", "concept": "גרפי x-t, v-t, a-t", "insight": "שיפוע x–t הוא המהירות, שיפוע v–t הוא התאוצה, והשטח החתום מתחת ל-v–t הוא ההעתק.", "eq": "v = Δx/Δt ,  a = Δv/Δt"}, {"id": "motion.l8", "level": 8, "he": "בגרות בלי להיבהל", "concept": "שאלות חישוביות משולבות", "insight": "בגרות: מזהים את סוג התנועה, כותבים את הנתונים עם סימנים, ובוחרים נוסחה שמתאימה לתנאים.", "eq": "v² = v0² + 2aΔx"}], "formulas": [{"id": "F01", "t": "מהירות ממוצעת (עם כיוון)", "f": "v_avg = Δx / Δt", "u": "m/s", "sym": "Δx העתק במטרים; Δt זמן בשניות", "pit": "לא לבלבל עם דרך כוללת", "ex": "מכונית שהתקדמה 12 מטר ב־3 שניות: 4 m/s"}, {"id": "F02", "t": "מהירות ממוצעת בגודל", "f": "speed_avg = total_distance / Δt", "u": "m/s", "sym": "דרך כוללת חלקי הזמן", "pit": "במסלול הלוך וחזור יכולה להיות דרך חיובית והעתק אפס", "ex": "12 מטר הלוך ו־12 חזור ב־6 שניות: 4 m/s"}, {"id": "F03", "t": "תאוצה ממוצעת", "f": "a_avg = Δv / Δt", "u": "m/s²", "sym": "שינוי במהירות חלקי הזמן", "pit": "תאוצה שלילית לא תמיד פירושה האטה", "ex": "מ־2 ל־8 m/s ב־3 s: 2 m/s²"}, {"id": "F04", "t": "תנועה במהירות קבועה", "f": "x = x0 + v·t", "u": "m", "sym": "x0 מיקום התחלתי; v מהירות עם סימן; t זמן", "pit": "רק כאשר v קבועה", "ex": "x0=3, v=2, t=4 ⇒ x=11 m"}, {"id": "F05", "t": "מהירות בתאוצה קבועה", "f": "v = v0 + a·t", "u": "m/s", "sym": "v0 מהירות התחלתית; a תאוצה קבועה", "pit": "אינה תקפה כאשר a משתנה בלי אינטגרציה", "ex": "v0=2, a=3, t=2 ⇒ v=8 m/s"}, {"id": "F06", "t": "העתק בתאוצה קבועה", "f": "Δx = v0·t + ½·a·t²", "u": "m", "sym": "תאוצה קבועה בלבד", "pit": "המרחק אינו בהכרח ההעתק אם הכיוון מתהפך", "ex": "v0=0, a=2, t=3 ⇒ Δx=9 m"}, {"id": "F07", "t": "ללא זמן", "f": "v² = v0² + 2aΔx", "u": "m²/s²", "sym": "קשר בין מהירויות להעתק", "pit": "רק בתאוצה קבועה", "ex": "v0=4, v=0, a=−2 ⇒ Δx=4 m"}, {"id": "F08", "t": "העתק ממהירות ממוצעת בתאוצה קבועה", "f": "Δx = (v0 + v)·t / 2", "u": "m", "sym": "ממוצע של מהירות התחלה וסוף", "pit": "נכון בתאוצה קבועה", "ex": "v0=2, v=6, t=4 ⇒ 16 m"}, {"id": "F09", "t": "שיפוע גרף מקום-זמן", "f": "v = dx/dt", "u": "m/s", "sym": "שיפוע המשיק נותן מהירות רגעית", "pit": "שיפוע שלילי = תנועה בכיוון השלילי", "ex": "גרף עולה ב־2 m לכל s ⇒ v=2 m/s"}, {"id": "F10", "t": "שיפוע גרף מהירות-זמן", "f": "a = dv/dt", "u": "m/s²", "sym": "שיפוע המשיק נותן תאוצה", "pit": "שיפוע שלילי עשוי להיות דווקא האצה בכיוון השלילי", "ex": "מהירות מ־10 ל־0 בתוך 5s ⇒ −2 m/s²"}, {"id": "F11", "t": "שטח חתום בגרף מהירות-זמן", "f": "Δx = ∫ v dt", "u": "m", "sym": "שטח עם סימן: מתחת לציר מחסרים", "pit": "לדרך כוללת יש לחבר את הערכים המוחלטים של השטחים", "ex": "מלבן v=3 למשך 4 s ⇒ 12 m"}, {"id": "F12", "t": "שטח בגרף תאוצה-זמן", "f": "Δv = ∫ a dt", "u": "m/s", "sym": "השטח החתום הוא שינוי המהירות", "pit": "לא ההעתק", "ex": "a=2 במשך 5 s ⇒ Δv=10 m/s"}, {"id": "F13", "t": "זמן עצירה", "f": "t_stop = |v0 / a|", "u": "s", "sym": "לגודל תאוטה קבועה הפועלת כנגד התנועה", "pit": "רק אם התאוטה אינה משתנה", "ex": "v0=10, a=−2 ⇒ 5 s"}, {"id": "F14", "t": "מרחק עצירה", "f": "d_stop = v0²/(2|a|)", "u": "m", "sym": "מהירות התחלתית ותאוטה קבועה", "pit": "מכפילים מהירות פי 2 -> מרחק עצירה פי 4", "ex": "v0=10, |a|=2 ⇒ 25 m"}, {"id": "F15", "t": "חוק שני של ניוטון (גשר לדינמיקה)", "f": "ΣF = ma", "u": "N", "sym": "כוח שקול, מסה ותאוצה", "pit": "נכלל כתוספת להסבר על הדמות, לא לבחינת קינמטיקה בלבד", "ex": "F=6 N על m=2 kg ⇒ a=3 m/s²"}, {"id": "F16", "t": "תנועה יחסית בקו ישר", "f": "v_relative = v_cookie − v_creature", "u": "m/s", "sym": "יש להגדיר כיוון ומערכת ייחוס", "pit": "למפגש אפשר להשתמש ב־x0 + vt עבור שני הגופים", "ex": "מהירות עוגייה 2, יצור 4 ⇒ סוגר 2m בכל שנייה"}], "levelFormulas": {"1": ["F01", "F02"], "2": ["F04", "F01"], "3": ["F05", "F06", "F03", "F15"], "4": ["F15", "F03"], "5": ["F13", "F14", "F07"], "6": ["F16", "F04"], "7": ["F09", "F10", "F11", "F12"], "8": ["F05", "F06", "F07", "F08", "F13", "F14"]}, "questions": [{"id": "k.Q01", "unit": "motion.l1", "q": "יצור יצא מ־x=3 m ל־x=11 m. מה ההעתק?", "a": ["16 m", "8 m", "4 m"], "right": 1, "why": "11−3=8 m", "level": 1, "diff": "easy"}, {"id": "k.Q02", "unit": "motion.l1", "q": "יצור נע 5 m ימינה ואז 5 m שמאלה. מה ההעתק?", "a": ["0 m", "1 m", "5 m"], "right": 0, "why": "חזר לנקודת ההתחלה", "level": 1, "diff": "easy"}, {"id": "k.Q03", "unit": "motion.l1", "q": "באותו מצב, מה הדרך הכוללת?", "a": ["10 m", "20 m", "5 m"], "right": 0, "why": "5+5=10 m", "level": 1, "diff": "easy"}, {"id": "k.Q04", "unit": "motion.l2", "q": "היצור עבר 24 m ב־6 s במהירות קבועה. מה המהירות?", "a": ["4 m/s", "8 m/s", "2 m/s"], "right": 0, "why": "24/6=4", "level": 2, "diff": "easy"}, {"id": "k.Q05", "unit": "motion.l2", "q": "מיקום התחלתי 10 m ומהירות −3 m/s למשך 2 s. מה המיקום הסופי?", "a": ["8 m", "2 m", "4 m"], "right": 2, "why": "10+(−3)·2=4", "level": 2, "diff": "medium"}, {"id": "k.Q06", "unit": "motion.l3", "q": "מהירות משתנה מ־0 ל־12 m/s בתוך 4 s. מה התאוצה הממוצעת?", "a": ["6 m/s²", "3 m/s²", "1.5 m/s²"], "right": 1, "why": "12/4=3", "level": 3, "diff": "easy"}, {"id": "k.Q07", "unit": "motion.l3", "q": "מ־v0=4 m/s בתאוצה 2 m/s² במשך 3 s. מה המהירות הסופית?", "a": ["10 m/s", "20 m/s", "5 m/s"], "right": 0, "why": "4+2·3=10", "level": 3, "diff": "medium"}, {"id": "k.Q08", "unit": "motion.l3", "q": "תאוצה 2 m/s² ממנוחה במשך 3 s. מה ההעתק?", "a": ["18 m", "9 m", "4.5 m"], "right": 1, "why": "0.5·2·9=9", "level": 3, "diff": "medium"}, {"id": "k.Q09", "unit": "motion.l4", "q": "כוח שקול 12 N על יצור בעל מסה 3 kg. מה התאוצה?", "a": ["8 m/s²", "2 m/s²", "4 m/s²"], "right": 2, "why": "12/3=4", "level": 4, "diff": "easy"}, {"id": "k.Q10", "unit": "motion.l4", "q": "באותו כוח, מכפילים מסה פי 2. פי כמה משתנה התאוצה?", "a": ["פי 1", "פי 0.25", "פי 0.5 (חצי)"], "right": 2, "why": "התאוצה מחצית", "level": 4, "diff": "medium"}, {"id": "k.Q11", "unit": "motion.l5", "q": "היצור מתקדם ב־10 m/s ובולם בתאוטה קבועה 2 m/s². זמן עצירה?", "a": ["10 s", "5 s", "2.5 s"], "right": 1, "why": "10/2=5", "level": 5, "diff": "easy"}, {"id": "k.Q12", "unit": "motion.l5", "q": "אותם נתונים: מרחק עצירה?", "a": ["25 m", "50 m", "12.5 m"], "right": 0, "why": "100/(2·2)=25", "level": 5, "diff": "medium"}, {"id": "k.Q13", "unit": "motion.l5", "q": "מהירות התחלתית כפולה באותה תאוטה: פי כמה מרחק העצירה?", "a": ["פי 8", "פי 2", "פי 4"], "right": 2, "why": "המרחק פרופורציוני לריבוע המהירות", "level": 5, "diff": "medium"}, {"id": "k.Q14", "unit": "motion.l6", "q": "העוגייה ב־x=20 m ונעה ב־2 m/s. היצור ב־x=0 ונע קבוע ב־6 m/s. מתי ישיג?", "a": ["10 s", "2.5 s", "5 s"], "right": 2, "why": "20/(6−2)=5", "level": 6, "diff": "medium"}, {"id": "k.Q15", "unit": "motion.l6", "q": "במקרה הקודם, באיזה מיקום הם נפגשים?", "a": ["60 m", "30 m", "15 m"], "right": 1, "why": "x=6·5=30", "level": 6, "diff": "medium"}, {"id": "k.Q16", "unit": "motion.l7", "q": "גרף מקום־זמן עולה 20 m ב־4 s בקו ישר. מה שיפועו?", "a": ["10 m/s", "5 m/s", "2.5 m/s"], "right": 1, "why": "20/4=5", "level": 7, "diff": "easy"}, {"id": "k.Q17", "unit": "motion.l7", "q": "גרף מהירות־זמן עולה מ־2 ל־8 m/s בתוך 3 s. התאוצה?", "a": ["2 m/s²", "4 m/s²", "1 m/s²"], "right": 0, "why": "(8−2)/3=2", "level": 7, "diff": "easy"}, {"id": "k.Q18", "unit": "motion.l7", "q": "בגרף מהירות־זמן מלבן של 3 m/s לאורך 4 s. ההעתק?", "a": ["24 m", "12 m", "6 m"], "right": 1, "why": "שטח מלבן", "level": 7, "diff": "easy"}, {"id": "k.Q19", "unit": "motion.l7", "q": "מהירות היא −2 m/s במשך 5 s. מה ההעתק?", "a": ["-10 m", "-20 m", "-5 m"], "right": 0, "why": "השטח החתום שלילי", "level": 7, "diff": "medium"}, {"id": "k.Q20", "unit": "motion.l7", "q": "מהירות היא −2 m/s במשך 5 s. מה הדרך הכוללת?", "a": ["20 m", "5 m", "10 m"], "right": 2, "why": "הדרך חיובית: 2·5=10", "level": 7, "diff": "medium"}, {"id": "k.Q21", "unit": "motion.l8", "q": "יצור נוסע ב־8 m/s ומאט ב־−2 m/s² במשך 3 s. מה המהירות?", "a": ["4 m/s", "2 m/s", "1 m/s"], "right": 1, "why": "8−6=2", "level": 8, "diff": "medium"}, {"id": "k.Q22", "unit": "motion.l8", "q": "אותו מצב: מה ההעתק במהלך 3s?", "a": ["15 m", "30 m", "7.5 m"], "right": 0, "why": "8·3+0.5·(−2)·9=15", "level": 8, "diff": "medium"}, {"id": "k.Q23", "unit": "motion.l8", "q": "יצור נע מ־x=0 ב־v0=3 m/s וב־a=1 m/s² במשך 4 s. מה ההעתק?", "a": ["40 m", "10 m", "20 m"], "right": 2, "why": "12+8=20", "level": 8, "diff": "hard"}, {"id": "k.Q24", "unit": "motion.l8", "q": "היצור התחיל ב־v0=4 m/s, האיץ ב־3 m/s² לאורך 4 s. מה השינוי במהירות?", "a": ["24 m/s", "6 m/s", "12 m/s"], "right": 2, "why": "a·t=12", "level": 8, "diff": "easy"}, {"id": "k.Q25", "unit": "motion.l8", "q": "תאוצה קבועה −3 m/s² ו־v0=12 m/s. כמה זמן לעצירה?", "a": ["8 s", "2 s", "4 s"], "right": 2, "why": "12/3=4", "level": 8, "diff": "medium"}, {"id": "k.Q26", "unit": "motion.l8", "q": "באותם נתונים, מה מרחק העצירה?", "a": ["24 m", "48 m", "12 m"], "right": 0, "why": "144/(2·3)=24", "level": 8, "diff": "medium"}, {"id": "k.Q27", "unit": "motion.l4", "q": "כוח 8 N על מסה 2 kg. מה התאוצה?", "a": ["4 m/s²", "8 m/s²", "2 m/s²"], "right": 0, "why": "8/2=4", "level": 4, "diff": "easy"}, {"id": "k.Q28", "unit": "motion.l2", "q": "מה ההעתק בין t=0 ל־t=5 אם המהירות הקבועה היא 0?", "a": ["1 m", "5 m", "0 m"], "right": 2, "why": "אין תנועה", "level": 2, "diff": "easy"}, {"id": "k.Q29", "unit": "motion.l7", "q": "גרף תאוצה־זמן מציג a=−2 m/s² ל־3 s. מה Δv?", "a": ["-12 m/s", "-3 m/s", "-6 m/s"], "right": 2, "why": "−2·3=−6", "level": 7, "diff": "hard"}, {"id": "k.Q30", "unit": "motion.l6", "q": "העוגייה נעה 3 m/s והיצור 3 m/s, בפער 9 m בתחילה. מה יקרה לפער?", "a": ["18 m", "4.5 m", "9 m"], "right": 2, "why": "מהירויות שוות, הפער אינו נסגר", "level": 6, "diff": "medium"}], "say": {"launch": "אאא! העוגייה שלי בורחת! מי שם לה גלגלים?", "push": "היי! אני מתחיל להאיץ! עכשיו יש לי תנופה!", "release": "הפסקת לדחוף, אבל אני עדיין ממשיך. מוזר? דווקא לא!", "accelerating": "שמת לב? הנקודות מאחוריי מתרחקות זו מזו!", "brake": "בלמים! בלמים! אני לא רוצה להפוך לפנקייק!", "cookie_caught": "יש! סוף סוף! עכשיו אפשר לחזור למדע... אחרי ביס.", "wrong": "מעניין! בוא נבדוק את זה על המסילה, לא רק בניחוש.", "formula": "לחצת על נוסחה. אסביר מה כל אות אומרת, ואיך היא קשורה למה שקרה עכשיו.", "friend_swap": "וואו, דמות חדשה! נבדוק אם אותה דחיפה תיתן אותה תאוצה."}};
+
+// ======================================================================
+//  The EGG as the body in falls, drops and crashes (worlds machines).
+//  The creature stays in the other machines; where something falls, lands
+//  or hits hard, the egg takes its place. The gag is a drawing layer only:
+//  position, time and every number still come from the simulator.
+//
+//  How hard the landing was decides the gag (cartoon, never hurt for good):
+//    soft   (impact < 9 m/s)         a small squash and a wince
+//    squash (9 … 19 m/s)             pancake, lying dizzy with stars, back up
+//    fold   (heavy g ≥ 13, not crash) accordion folds, offended look
+//    crash  (≥ 19 m/s, or a crash event) the shell bursts into pieces,
+//            "קְרַאש!", the pieces fly back, a band-aid, and it stands again
+//  Pure logic (severity) is testable in node; drawing needs a canvas.
+// ======================================================================
+const EggActor = (() => {
+  "use strict";
+  const T_SOFT = 9, T_CRASH = 19, G_HEAVY = 13;
+  // the sizes of a hard stop (cushion, wall): deceleration in m/s²
+  const A_SOFT = 25, A_CRASH = 60;
+  function severity(vImpact, g = 10) {
+    const v = Math.abs(vImpact || 0);
+    if (v >= T_CRASH) return "crash";
+    if (g >= G_HEAVY && v >= 3) return "fold";
+    if (v >= T_SOFT) return "squash";
+    return "soft";
+  }
+  const severityStop = (decel) => (Math.abs(decel) >= A_CRASH ? "crash" : Math.abs(decel) >= A_SOFT ? "squash" : "soft");
+  const DUR = { soft: 0.9, squash: 2.1, fold: 1.8, crash: 3.4 };
+  const LINES = {
+    soft: ["אוף. בקושי הרגשתי.", "נחיתה רכה. כמעט.", "זה היה מתוכנן."],
+    squash: ["אני בסדר. בערך גאומטרי.", "הכול בשליטה. רק הצורה השתנתה.", "אפשר בבקשה ניסוי עם כרית?", "פה אני מכיר את הרצפה."],
+    fold: ["הכבידה לקחה את זה אישית.", "אני אקורדיון עכשיו. תנגנו בי.", "קצת כבד פה, לא?"],
+    crash: ["רגע… יש אפשרות להתחרט?", "מבקש צל. וגם עורך דין.", "סתם! אני שלם. כמעט.", "זה היה צריך להיות ניסוי מחשבתי."]
+  };
+
+  // ---------------- drawing ----------------
+  const POSES = ["oh", "scream", "flail1", "flail2", "flail3", "flail4", "wince", "lying", "crack1", "crack3", "crack5", "worry1", "nervous"];
+  let img = null;
+  function images() {
+    if (img || typeof Image === "undefined") return img;
+    img = {};
+    for (const k of POSES) { const i = new Image(); i.src = "art/pose_" + k + ".webp"; img[k] = i; }
+    return img;
+  }
+  const meta = (k) => (typeof SPR !== "undefined" && SPR.poses && SPR.poses[k]) || null;
+  // feet of the pose at (0,0), body height hpx (the pose's own drawn height)
+  function pose(ctx, k, hpx) {
+    const im = images()[k], m = meta(k);
+    if (!(im && im.complete && im.naturalWidth)) { ctx.fillStyle = "#FBF8F1"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, -hpx * 0.5, hpx * 0.36, hpx * 0.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); return; }
+    const hgt = m ? (m.hgt || m.h * 0.8) : im.naturalHeight, s = hpx / hgt, ax = m ? m.ax : im.naturalWidth / 2, ay = m ? m.ay : im.naturalHeight;
+    ctx.drawImage(im, -ax * s, -ay * s, im.naturalWidth * s, im.naturalHeight * s);
+  }
+  const ease = (t) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
+
+  function create(opts = {}) {
+    const reduce = !!opts.reduceMotion;
+    let mode = "idle", t0 = 0, sev = "soft", run = null, shards = null, lastLine = -1e9, lineI = 0, airT = 0;
+    const A = {
+      get mode() { return mode; },
+      get severity() { return sev; },
+      reset() { mode = "idle"; run = null; shards = null; },
+      busy(now) { return mode === "impact" && (now - t0) / 1000 < DUR[sev]; },
+      // call every frame: runId changes on every new run; landed/impact when the sim says so
+      update(now, info) {
+        if (info.runId !== run) { run = info.runId; mode = info.runId ? "air" : "idle"; shards = null; airT = now; }
+        if (mode === "air" && info.impact) {
+          sev = info.sev || severity(info.vImpact, info.g); mode = "impact"; t0 = now;
+          if (sev === "crash") shards = makeShards();
+          let line = null; if (now - lastLine > 7000) { const L = LINES[sev]; line = L[lineI++ % L.length]; lastLine = now; }
+          opts.onImpact && opts.onImpact(sev, line);
+        }
+      },
+      // feet at (px, py); hpx the body height; air = {vy (m/s, up +), g}; rot for tracks
+      draw(ctx, px, py, hpx, now, air = {}, rot = 0) {
+        ctx.save(); ctx.translate(px, py); if (rot) ctx.rotate(rot);
+        if (mode === "impact") drawImpact(ctx, hpx, (now - t0) / 1000);
+        else if (mode === "air") {
+          const vy = air.vy || 0, g = air.g || 10, t = (now - airT) / 1000;
+          let k = vy < -T_CRASH * 0.8 ? "scream" : vy < -4 ? "nervous" : vy > 3 ? "oh" : "flail" + (1 + (Math.floor(t * 9) % 4));
+          if (g <= 3 && Math.abs(vy) < 6) k = "flail" + (1 + (Math.floor(t * 5) % 4)); // low gravity: swimming in the air
+          if (air.standing) k = "worry1";
+          const wob = reduce ? 0 : Math.sin(t * 14) * (Math.abs(vy) > 8 ? 0.08 : 0.03);
+          ctx.rotate(wob); pose(ctx, k, hpx);
+        } else pose(ctx, air.nervous ? "nervous" : "crack1", hpx);
+        ctx.restore();
+      }
+    };
+
+    function makeShards() {
+      const out = [];
+      for (let i = 0; i < 11; i++) {
+        const a = -Math.PI * (0.08 + 0.84 * (i / 10)) + (Math.random() - 0.5) * 0.3, sp = 120 + Math.random() * 170;
+        const pts = []; const n = 3 + (i % 3); for (let j = 0; j < n; j++) { const b = j / n * Math.PI * 2 + Math.random() * 0.6; pts.push([Math.cos(b) * (0.5 + Math.random() * 0.5), Math.sin(b) * (0.5 + Math.random() * 0.5)]); }
+        out.push({ vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, rot: Math.random() * 6, w: (Math.random() - 0.5) * 14, size: 0.12 + Math.random() * 0.1, pts, oy: -0.2 - Math.random() * 0.6 });
+      }
+      return out;
+    }
+    function shardDraw(ctx, sh, hpx, x, y, rot) {
+      const r = sh.size * hpx; ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath();
+      sh.pts.forEach(([a, b], i) => (i ? ctx.lineTo(a * r, b * r) : ctx.moveTo(a * r, b * r))); ctx.closePath();
+      ctx.fillStyle = "#FBF8F1"; ctx.fill(); ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.fillStyle = "rgba(46,46,51,0.35)"; ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.1, 1.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    function stars(ctx, hpx, t, n = 3) {
+      ctx.save(); ctx.fillStyle = "#E39B28"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.2;
+      for (let i = 0; i < n; i++) { const a = t * 4 + i * Math.PI * 2 / n, x = Math.cos(a) * hpx * 0.42, y = -hpx * 0.62 + Math.sin(a) * hpx * 0.1;
+        ctx.beginPath(); for (let j = 0; j < 10; j++) { const rr = j % 2 ? 3 : 7, b = j * Math.PI / 5 - Math.PI / 2; j ? ctx.lineTo(x + Math.cos(b) * rr, y + Math.sin(b) * rr) : ctx.moveTo(x + Math.cos(b) * rr, y + Math.sin(b) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      ctx.restore();
+    }
+    function word(ctx, text, hpx, t, color = "#E2574C") {
+      const s = reduce ? 1 : Math.min(1, t * 6) * (1 + 0.15 * Math.sin(t * 20) * Math.max(0, 1 - t * 2));
+      ctx.save(); ctx.translate(0, -hpx * 1.35); ctx.scale(s, s); ctx.rotate(-0.08); ctx.font = "900 " + Math.round(Math.max(20, hpx * 0.42)) + "px Rubik, system-ui, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.direction = "rtl"; ctx.lineJoin = "round"; ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.strokeText(text, 0, 0); ctx.fillStyle = color; ctx.fillText(text, 0, 0); ctx.restore();
+    }
+    function bandAid(ctx, hpx) {
+      ctx.save(); ctx.translate(hpx * 0.1, -hpx * 0.78); ctx.rotate(-0.5); const w = hpx * 0.34, h = hpx * 0.1;
+      ctx.fillStyle = "#F3D2A8"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-w / 2, -h / 2, w, h, h / 2) : ctx.rect(-w / 2, -h / 2, w, h); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#E8BC8A"; ctx.fillRect(-w * 0.14, -h / 2, w * 0.28, h); ctx.restore();
+    }
+    function drawImpact(ctx, hpx, t) {
+      const p = t / DUR[sev];
+      if (reduce) { // same information, no squash, no flying pieces
+        const k = sev === "crash" ? (p < 0.5 ? "crack5" : "crack3") : sev === "soft" ? "wince" : p < 0.6 ? "lying" : "crack1";
+        pose(ctx, k, hpx); if (sev === "crash" && p < 0.5) word(ctx, "קְרַאש!", hpx, 1); if (sev === "crash" && p >= 0.5) bandAid(ctx, hpx); return;
+      }
+      if (sev === "soft") {
+        const sy = 1 - 0.28 * Math.exp(-6 * t) * Math.cos(t * 16); ctx.scale(1 / Math.sqrt(sy), sy); pose(ctx, t < 0.55 ? "wince" : "crack1", hpx); return;
+      }
+      if (sev === "squash") {
+        if (t < 0.12) { const q = t / 0.12, sy = 1 - 0.82 * q; ctx.scale(Math.min(2.6, 1 / Math.sqrt(sy)), sy); pose(ctx, "wince", hpx); return; }
+        if (t < 0.5) { const sy = 0.18, sx = 2.4; ctx.scale(sx, sy); pose(ctx, "wince", hpx); return; }   // pancake
+        if (t < 1.55) { pose(ctx, "lying", hpx * 0.86); stars(ctx, hpx * 0.86, t); return; }               // dizzy on the floor
+        const q = (t - 1.55) / 0.55, sy = 1 + 0.22 * Math.sin(q * Math.PI * 2) * (1 - q); ctx.scale(1 / Math.sqrt(sy), sy); pose(ctx, "worry1", hpx); return; // back up, a small boing
+      }
+      if (sev === "fold") {
+        const q = Math.min(1, t / 1.6), sy = 0.45 + 0.55 * ease(q) + Math.sin(q * 22) * 0.1 * (1 - q); ctx.scale(1.15 - 0.15 * q, sy); pose(ctx, "wince", hpx);
+        ctx.strokeStyle = "rgba(46,46,51,0.7)"; ctx.lineWidth = 2 / sy; for (let i = 0; i < 4 * (1 - q); i++) { const y = -hpx * (0.25 + i * 0.17); ctx.beginPath(); ctx.moveTo(-hpx * 0.3, y); ctx.quadraticCurveTo(0, y - hpx * 0.08, hpx * 0.3, y); ctx.stroke(); }
+        return;
+      }
+      // crash
+      if (t < 0.1) { const q = t / 0.1; ctx.scale(1 + q, 1 - 0.7 * q); pose(ctx, "crack5", hpx); return; }
+      const fly = Math.min(t - 0.1, 1.1), back = t > 1.9 ? ease((t - 1.9) / 0.6) : 0;
+      // puff of dust
+      if (t < 1.2) { ctx.save(); ctx.globalAlpha = Math.max(0, 1 - t / 1.2) * 0.8; ctx.fillStyle = "#EDEBE6"; ctx.strokeStyle = "rgba(46,46,51,0.4)"; ctx.lineWidth = 1.4;
+        for (let i = 0; i < 6; i++) { const a = Math.PI + i * Math.PI / 5, r = hpx * (0.18 + 0.4 * ease(t / 0.8)); ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r * 0.45 - 6, hpx * 0.14, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } ctx.restore(); }
+      if (t < 2.5) {
+        for (const sh of shards) { const x = sh.vx * fly, y = sh.oy * hpx + sh.vy * fly + 260 * fly * fly; const yy = Math.min(-4, y); shardDraw(ctx, sh, hpx, x * (1 - back), (yy) * (1 - back) + sh.oy * hpx * back, sh.rot + sh.w * fly * (1 - back)); }
+        if (t < 1.6) word(ctx, "קְרַאש!", hpx, t - 0.1);
+        else if (t < 2.5) word(ctx, "סתם!", hpx, t - 1.6, "#8A60E8");
+        if (t > 2.2) { ctx.save(); ctx.globalAlpha = Math.min(1, (t - 2.2) / 0.3); pose(ctx, "crack5", hpx); ctx.restore(); }
+        return;
+      }
+      const q = (t - 2.5) / 0.9, sy = 1 + 0.25 * Math.sin(q * Math.PI * 2.5) * (1 - q); ctx.scale(1 / Math.sqrt(sy), sy); pose(ctx, q < 0.55 ? "crack5" : "crack3", hpx); bandAid(ctx, hpx);
+    }
+    return A;
+  }
+  return { create, severity, severityStop, T_SOFT, T_CRASH, G_HEAVY, A_SOFT, A_CRASH, DUR, LINES };
+})();
 
 (() => {
   "use strict";
@@ -6914,7 +7120,66 @@ const EggExplain = (() => {
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
+    QS.refresh();
   }
+
+  // ---------------- quick scroll: drag the thumb on the left edge; jump buttons on game screens ----------------
+  const QS = (() => {
+    const rail = $("#qs"), thumb = rail.querySelector(".qs-thumb"), jump = $("#qjump");
+    let fadeT = 0, dragging = false, grabDy = 0;
+    const max = () => Math.max(0, screenEl.scrollHeight - screenEl.clientHeight);
+    function place() {
+      const r = screenEl.getBoundingClientRect(), u = ui.getBoundingClientRect(), m = max();
+      const scrollable = m > 40 && !ui.hidden;
+      rail.hidden = !scrollable;
+      const lab = screenEl.querySelector(":scope > .lab-screen");
+      jump.hidden = !(scrollable && lab);
+      if (!scrollable) return;
+      const top = r.top - u.top, h = r.height;
+      rail.style.top = top + "px"; rail.style.height = h + "px";
+      const th = Math.max(56, Math.min(110, h * h / screenEl.scrollHeight));
+      thumb.style.height = th + "px";
+      thumb.style.top = (6 + (h - th - 12) * (m ? screenEl.scrollTop / m : 0)) + "px";
+      if (!jump.hidden) {
+        jump.style.top = (top + h - 54) + "px";
+        // which part is on screen now
+        const vis = (el) => { if (!el) return -1; const b = el.getBoundingClientRect(); return Math.max(0, Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top)) / Math.max(1, Math.min(b.height, h)); };
+        const parts = { task: lab.querySelector(".mission, .task"), lab: lab.querySelector(".lab"), controls: lab.querySelector(".controls, #controls") };
+        let best = "task", bv = -1; for (const k in parts) { const v = vis(parts[k]); if (v > bv) { bv = v; best = k; } }
+        for (const b of jump.querySelectorAll("[data-j]")) { b.hidden = !parts[b.dataset.j]; b.setAttribute("aria-current", b.dataset.j === best); }
+      }
+    }
+    // the jump buttons show only while scrolling (and a little after), so they never sit on top of the content
+    function wake() { rail.classList.add("live"); jump.classList.remove("away"); clearTimeout(fadeT); fadeT = setTimeout(() => { if (!dragging && !jump.matches(":hover, :focus-within")) { rail.classList.remove("live"); jump.classList.add("away"); } }, 2200); }
+    let lastTop = 0;
+    screenEl.addEventListener("scroll", () => { place(); if (Math.abs(screenEl.scrollTop - lastTop) > 4) wake(); lastTop = screenEl.scrollTop; }, { passive: true });
+    new ResizeObserver(place).observe(screenEl);
+    new MutationObserver(() => requestAnimationFrame(place)).observe(screenEl, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "open"] });
+    const toY = (clientY) => {
+      const r = screenEl.getBoundingClientRect(), th = thumb.offsetHeight, f = (clientY - grabDy - r.top - 6) / Math.max(1, r.height - th - 12);
+      screenEl.scrollTop = clamp(f, 0, 1) * max();
+    };
+    // only the thumb takes touches, so buttons near the left edge keep working
+    thumb.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); dragging = true; rail.classList.add("drag"); thumb.setPointerCapture(e.pointerId);
+      grabDy = e.clientY - thumb.getBoundingClientRect().top; wake();
+    });
+    thumb.addEventListener("pointermove", (e) => { if (dragging) toY(e.clientY); });
+    const end = () => { dragging = false; rail.classList.remove("drag"); wake(); };
+    thumb.addEventListener("pointerup", end); thumb.addEventListener("pointercancel", end);
+    for (const b of jump.querySelectorAll("[data-j]")) b.addEventListener("click", () => {
+      const lab = screenEl.querySelector(":scope > .lab-screen"); if (!lab) return;
+      const el = b.dataset.j === "task" ? lab.querySelector(".mission, .task") : b.dataset.j === "lab" ? lab.querySelector(".lab") : lab.querySelector(".controls, #controls");
+      if (!el) return;
+      const top = b.dataset.j === "task" ? 0 : el.getBoundingClientRect().top - screenEl.getBoundingClientRect().top + screenEl.scrollTop - 6;
+      screenEl.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
+      el.classList.remove("qs-flash"); void el.offsetWidth; el.classList.add("qs-flash");
+      G.sfx.tick && G.sfx.tick();
+    });
+    jump.classList.add("away");
+    // a new screen shows the thumb for a moment (so it is found), the jump bar waits for a real scroll
+    return { refresh: () => requestAnimationFrame(() => { place(); jump.classList.add("away"); if (!rail.hidden) { rail.classList.add("live"); clearTimeout(fadeT); fadeT = setTimeout(() => rail.classList.remove("live"), 1600); } }) };
+  })();
   function back() {
     if (document.querySelector(".symtip")) { closeSym(); return; }
     if (EX.back()) return;
@@ -6928,7 +7193,7 @@ const EggExplain = (() => {
     if (cleanup) { cleanup(); cleanup = null; }
     EX.closeAll();
     ui.hidden = true; G.covered = false; stack.length = 0; current = null;
-    syncHud();
+    syncHud(); QS.refresh();
   }
   function openUI(name, args) { stack.length = 0; current = null; show(name, args, false); }
   $("#uiBack").addEventListener("click", back);
@@ -11664,6 +11929,51 @@ const EggExplain = (() => {
     const img = new Image(); img.src = artOf(sp);
     const say = (t, s = 2.4) => { const el = $("#say"); el.textContent = t; el.hidden = false; sayT = s; };
 
+    // ---------------- the egg in falls (egg-actor.js), shake, confetti ----------------
+    let shakeT = 0; const party = [];
+    const egg = typeof EggActor !== "undefined" ? EggActor.create({ reduceMotion, onImpact(sev, line) {
+      const sf = G.sfx;
+      if (sev === "soft") { sf.thudSoft && sf.thudSoft(); G.buzz && G.buzz(15); }
+      else if (sev === "squash") { sf.thud && sf.thud(); G.buzz && G.buzz(40); later(() => sf.dizzy && sf.dizzy(), 600); later(() => sf.boing && sf.boing(0.6), 1600); }
+      else if (sev === "fold") { sf.slap && sf.slap(); later(() => sf.boof && sf.boof(), 250); G.buzz && G.buzz(30); }
+      else { sf.crack && sf.crack(); later(() => sf.crash && sf.crash(), 60); G.buzz && G.buzz([40, 30, 60]); if (!reduceMotion) shakeT = 0.45; later(() => sf.boing && sf.boing(1), 2000); later(() => sf.phew && sf.phew(), 2700); }
+      if (line) later(() => say(line, 2.4), sev === "crash" ? 2600 : sev === "squash" ? 1500 : 500);
+    } }) : null;
+    // the body in falls: the egg; everywhere else the creature. info = { impact, vImpact, sev, vy, g, standing, nervous }
+    function eggBody(px, py, hpx, info = {}, rot = 0) {
+      if (!egg) return critter(px, py, hpx, rot);
+      const now = performance.now(); egg.update(now, { runId: L.sim || null, ...info }); egg.draw(ctx, px, py, hpx * 1.15, now, info, rot);
+    }
+    function confetti(x, y, n = 40) {
+      if (reduceMotion) return; const C = ["#8A60E8", "#25B58B", "#E39B28", "#2785C7", "#E2574C", "#F2C94C"];
+      for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, v = 160 + Math.random() * 260; party.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: Math.random() * 6, w: (Math.random() - 0.5) * 12, c: C[i % C.length], life: 1.4 + Math.random() * 0.6, t: 0, s: 4 + Math.random() * 4 }); }
+    }
+    function drawParty(dt) {
+      for (let i = party.length - 1; i >= 0; i--) { const q = party[i]; q.t += dt; if (q.t > q.life) { party.splice(i, 1); continue; } q.vy += 520 * dt; q.vx *= 0.99; q.x += q.vx * dt; q.y += q.vy * dt; q.r += q.w * dt;
+        ctx.save(); ctx.globalAlpha = Math.min(1, (q.life - q.t) * 2); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.s / 2, -q.s / 4, q.s, q.s / 2); ctx.restore(); }
+    }
+    // little stars flying out of a button (a right answer, a correct number)
+    function sparkleAt(el, n = 10) {
+      if (reduceMotion || !el) return; const r = el.getBoundingClientRect();
+      for (let i = 0; i < n; i++) { const d = document.createElement("i"); d.className = "spark"; const a = Math.random() * Math.PI * 2, dist = 30 + Math.random() * 40;
+        d.style.left = (r.left + r.width / 2) + "px"; d.style.top = (r.top + r.height / 2) + "px"; d.style.setProperty("--dx", Math.cos(a) * dist + "px"); d.style.setProperty("--dy", Math.sin(a) * dist + "px");
+        d.textContent = ["✦", "★", "✧"][i % 3]; document.body.appendChild(d); setTimeout(() => d.remove(), 800); }
+    }
+    // how close the last run came to a goal window ("hot / cold")
+    function paintHotCold() {
+      const el = $("#hotcold"), m = curM(); if (!el) return;
+      const g = m.goal; if (!g || g.key === undefined || isDone(m.id) && !ui.replay) { el.hidden = true; return; }
+      const rs = S.runsOf(L).filter((r) => r.done && r.id >= (L.since[m.id] || 1)); const r = rs[rs.length - 1];
+      if (!r || typeof r.ev[g.key] !== "number") { el.hidden = true; return; }
+      const v = r.ev[g.key], d = v < g.lo ? g.lo - v : v > g.hi ? v - g.hi : 0, span = Math.max(Math.abs(g.hi - g.lo) * 6, Math.abs((g.lo + g.hi) / 2) * 0.6, 1e-6);
+      const heat = Math.max(0, 1 - d / span), lvl = d === 0 ? 4 : heat > 0.85 ? 3 : heat > 0.55 ? 2 : heat > 0.25 ? 1 : 0;
+      const words = ["🥶 קר מאוד", "🌬 קר", "🌤 מתחמם", "🔥 חם! ממש קרוב", "🎯 בול!"];
+      const dir = d === 0 ? "" : v < g.lo ? "צריך יותר ↑" : "צריך פחות ↓";
+      el.hidden = false; el.dataset.lvl = lvl;
+      el.innerHTML = `<span class="hc-word">${words[lvl]}</span><span class="hc-bar"><i style="width:${Math.max(4, heat * 100)}%"></i></span><span class="hc-dir">${dir}</span><small class="ltr">${esc(nice(v))} ${(UNIT || {})[g.key] || ""}</small>`;
+      el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+    }
+
     // ---------------- controls ----------------
     function paintControls() {
       $("#controls").innerHTML = Object.entries(sc.knobs).map(([k, [he, lo, hi, step]]) => `
@@ -11679,14 +11989,18 @@ const EggExplain = (() => {
       const e = S.evalP(sc, L.P); $("#pnote").textContent = e.invalid ? "הערכים מחוץ לתחום של המודל. שנה ערך." : "";
     }
     function setK(k, v) { S.setParam(L, k, v); hist.length = 0; paused = false; paintValues(); paintReadouts(); paintTransport(); evaluate(true); }
+    function glide(k, a, b) { const inp = $("#k_" + k); if (!inp || reduceMotion) return; const t0 = performance.now(); const tick = (now) => { const q = Math.min(1, (now - t0) / 650), e = 1 - Math.pow(1 - q, 3); inp.value = a + (b - a) * e; if (q < 1 && alive) requestAnimationFrame(tick); else inp.value = b; }; requestAnimationFrame(tick); }
     let saveT = 0; function save() { clearTimeout(saveT); saveT = setTimeout(() => { R0.params[sc.id] = { ...L.P }; P.save(); }, 300); }
 
     // ---------------- transport ----------------
-    function paintTransport() { $("#tPlay").textContent = L.running && !paused ? "⏸" : "▶"; $("#tSlow").setAttribute("aria-pressed", slow); }
+    function paintTransport() { $("#tPlay").textContent = L.running && !paused ? "⏸" : "▶"; $("#tSlow").setAttribute("aria-pressed", slow); if (L.running) $("#tPlay").classList.remove("nudge"); }
     function start() { if (!S.startRun(L)) { say("הערכים מחוץ לתחום של המודל.", 2); return false; } hist.length = 0; paused = false; G.sfx.whoosh && G.sfx.whoosh(); return true; }
     $("#tPlay").addEventListener("click", () => { G.audio.unlock(); if (L.running) paused = !paused; else start(); paintTransport(); });
+    // tap the machine itself: run / pause (a swipe still scrolls the page)
+    cv.addEventListener("click", (e) => { G.audio.unlock(); if (L.running) paused = !paused; else if (!start()) return; paintTransport(); ripple(e.offsetX, e.offsetY); });
+    const ripples = []; const ripple = (x, y) => { if (!reduceMotion) ripples.push({ x, y, t: 0 }); };
     $("#tStep").addEventListener("click", () => { if (!L.running) { if (!start()) return; } paused = true; S.stepRun(L, 1 / 30); sample(); paintTransport(); });
-    $("#tReset").addEventListener("click", () => { S.idle(L); hist.length = 0; paused = false; paintTransport(); G.sfx.pop(); });
+    $("#tReset").addEventListener("click", () => { S.idle(L); hist.length = 0; paused = false; egg && egg.reset(); paintTransport(); G.sfx.pop(); });
     $("#tSlow").addEventListener("click", () => { slow = !slow; paintTransport(); G.sfx.pop(); if (slow) say("הילוך איטי: רק השעון של המסך מאט.", 2); });
     for (const b of document.querySelectorAll(".viewseg [data-v]")) b.addEventListener("click", () => {
       const v = b.dataset.v; G.sfx.pop();
@@ -11702,30 +12016,32 @@ const EggExplain = (() => {
     // ---------------- missions ----------------
     function paintBar() { for (const b of document.querySelectorAll("#mbar [data-i]")) { const i = +b.dataset.i; b.classList.toggle("done", isDone(sc.missions[i].id)); if (i === ui.mi) b.setAttribute("aria-selected", "true"); else b.removeAttribute("aria-selected"); } }
     for (const b of document.querySelectorAll("#mbar [data-i]")) b.addEventListener("click", () => { select(+b.dataset.i); G.sfx.pop(); });
-    function select(i) { ui.mi = i; ui.replay = false; ui.xtask = null; ui.predShown = false; S.activate(L, curM()); paintBar(); paintMission(); }
+    function select(i) { ui.mi = i; ui.replay = false; ui.xtask = null; ui.predShown = false; S.activate(L, curM()); paintBar(); paintMission(); const t = $("#task"); t.classList.remove("swap"); void t.offsetWidth; t.classList.add("swap"); }
     const head = (m, extra = "") => `<div class="mhead"><small>${["תחזית", "ניסוי", "הסבר", "העברה"][ui.mi]}${isDone(m.id) ? " · ✓ הושלמה" : ""}</small><p>${esc(extra || m.text)}</p></div>`;
     function paintMission() {
       const m = curM(), el = $("#task"); let h = "";
       if (isDone(m.id) && !ui.replay) h = head(m, m.kind === "goal" ? sc.objective : m.kind === "choice" ? m.q : m.text) + `<p class="learn">✓ ${esc(LEARN(m))}</p><div class="mrow"><button class="btn quiet" type="button" id="again">שוב (בלי מטבעות)</button>${nextBtn()}</div>`;
       else if (m.kind === "predict") h = predictHtml(m);
-      else if (m.kind === "goal") h = head(m, sc.objective) + `<p class="target">🎯 ${esc(m.goal.text)}</p><details class="mhint"><summary class="linkish">איך?</summary><p>${esc(m.goal.kind === "pair" ? "שתי הרצות: אחת לפני השינוי ואחת אחריו. נספרות רק הרצות שאחריהן כל השאר נשאר זהה." : "שנה ערכים בבקרים ואז ▶. נספרת רק הרצה שבה שינית לפחות ערך אחד מההתחלה.")}</p></details>`;
-      else if (m.kind === "choice") h = head(m, m.q) + (S.explainOpen(L) ? `<div class="options">${m.opts.map((o, i) => `<button type="button" data-ch="${i}">${esc(o)}</button>`).join("")}</div><p class="why" id="why" hidden></p>` : `<p class="gate">👉 קודם הרץ את המכונה פעם אחת (▶).</p>`);
+      else if (m.kind === "goal") h = head(m, sc.objective) + `<p class="target">🎯 ${esc(m.goal.text)}</p><div class="hotcold" id="hotcold" hidden></div><details class="mhint"><summary class="linkish">איך?</summary><p>${esc(m.goal.kind === "pair" ? "שתי הרצות: אחת לפני השינוי ואחת אחריו. נספרות רק הרצות שאחריהן כל השאר נשאר זהה." : "שנה ערכים בבקרים ואז ▶. נספרת רק הרצה שבה שינית לפחות ערך אחד מההתחלה.")}</p></details>`;
+      else if (m.kind === "choice") h = head(m, m.q) + (S.explainOpen(L) ? `<div class="options">${m.opts.map((o, i) => `<button type="button" data-ch="${i}" style="--i:${i}">${esc(o)}</button>`).join("")}</div><p class="why" id="why" hidden></p>` : GATE1);
       else if (m.kind === "transfer") h = transferHtml(m);
-      el.innerHTML = h; bind(m);
+      el.innerHTML = h; bind(m); paintHotCold();
+      $("#tPlay").classList.toggle("nudge", !!el.querySelector("[data-go]") && !L.running);
     }
+    const GATE1 = `<button class="gate go" type="button" data-go>👉 קודם הרץ את המכונה פעם אחת (▶)</button>`;
     const nextBtn = () => { const n = sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id)); if (n >= 0) return `<button class="btn primary" type="button" id="nextM">ל${["תחזית", "ניסוי", "הסבר", "העברה"][n]}</button>`; const ws = S.SCENES.filter((s) => s.w === sc.w), nx = ws.find((s) => sceneN(s) < 4 && s.id !== sc.id); return nx ? `<button class="btn primary" type="button" id="nextS">למכונה הבאה</button>` : `<button class="btn primary" type="button" id="toWorld">לעולם</button>`; };
     function predictHtml(m) {
       const pr = L.pred[m.id];
-      if (!pr) { const q = S.predQuestion(L, m); return head(m, q.q) + `<p class="fine">בחר לפני שאתה מריץ. אחר כך ▶ באותם ערכים.</p><div class="options">${q.opts.map((o, i) => `<button type="button" data-pr="${i}">${esc(o)}</button>`).join("")}</div>`; }
+      if (!pr) { const q = S.predQuestion(L, m); return head(m, q.q) + `<p class="fine">בחר לפני שאתה מריץ. אחר כך ▶ באותם ערכים.</p><div class="options">${q.opts.map((o, i) => `<button type="button" data-pr="${i}" style="--i:${i}">${esc(o)}</button>`).join("")}</div>`; }
       const r = S.predictionResult(L, m);
       if (r && !r.ready && r.changed) return head(m, pr.q.q) + `<p class="locked">🔒 ${esc(pr.q.opts[pr.pick])}</p><p class="bad">שינית ערכים: הניבוי היה על הערכים הקודמים.</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">ניבוי חדש</button></div>`;
       if (r && r.ready && !r.ok) return head(m, pr.q.q) + `<p class="locked">🔒 ${esc(pr.q.opts[pr.pick])}</p><p class="bad">הניסוי הראה: ${esc(pr.q.opts[r.truth])}.</p><p class="why">${esc(LEARN(m))}</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">ניבוי חדש</button></div>`;
-      return head(m, pr.q.q) + `<p class="locked">🔒 התחזית שלך: ${esc(pr.q.opts[pr.pick])}</p><p class="gate">👉 עכשיו ▶ (בלי לשנות ערכים).</p>`;
+      return head(m, pr.q.q) + `<p class="locked stamp">🔒 התחזית שלך: ${esc(pr.q.opts[pr.pick])}</p><button class="gate go" type="button" data-go>👉 עכשיו ▶ (בלי לשנות ערכים)</button>`;
     }
     function transferHtml(m) {
       const x = L.xfer[m.id];
-      if (x) return head(m) + `<p class="ok">✓ החישוב נכון. הערכים החדשים כבר בבקרים.</p><p class="gate">👉 ▶ כדי לבדוק בניסוי.</p>`;
-      if (!S.explainOpen(L)) return head(m) + `<p class="gate">👉 קודם הרץ את המכונה פעם אחת (▶).</p>`;
+      if (x) return head(m) + `<p class="ok">✓ החישוב נכון. הערכים החדשים כבר בבקרים.</p><button class="gate go" type="button" data-go>👉 ▶ כדי לבדוק בניסוי</button>`;
+      if (!S.explainOpen(L)) return head(m) + GATE1;
       ui.xtask = ui.xtask || S.transferTask(L, m);
       const t = ui.xtask;
       return head(m, t.text) + `<div class="numgrid"><label><span>${esc(t.field.he)}</span><span class="inp"><input data-f="x" inputmode="decimal" dir="ltr" autocomplete="off"><em class="ltr">${esc(t.field.unit)}</em></span></label></div>
@@ -11737,20 +12053,25 @@ const EggExplain = (() => {
       el.querySelector("#nextM")?.addEventListener("click", () => select(sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id))));
       el.querySelector("#nextS")?.addEventListener("click", () => { const nx = S.SCENES.filter((s) => s.w === sc.w).find((s) => sceneN(s) < 4 && s.id !== sc.id); show(names.scene, { id: nx.id }, false); });
       el.querySelector("#toWorld")?.addEventListener("click", () => show(names.world, { id: sc.w }, false));
-      for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { S.lockPrediction(L, m, +b.dataset.pr); ui.predShown = false; G.sfx.pop(); say("נעול. עכשיו ▶", 1.4); paintMission(); });
+      for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { b.classList.add("pick"); G.sfx.pop(); later(() => { S.lockPrediction(L, m, +b.dataset.pr); ui.predShown = false; G.sfx.woodTap && G.sfx.woodTap(); say("נעול. עכשיו ▶", 1.4); paintMission(); }, reduceMotion ? 0 : 260); });
+      // "👉 ▶" is a button too: it brings the machine into view and runs it
+      el.querySelector("[data-go]")?.addEventListener("click", () => { G.audio.unlock(); const r = box.getBoundingClientRect(), sc_ = $("#screen"); if (r.top < 0 || r.bottom > innerHeight) sc_.scrollTo({ top: sc_.scrollTop + r.top - sc_.getBoundingClientRect().top - 8, behavior: reduceMotion ? "auto" : "smooth" }); if (!L.running && start()) paintTransport(); else if (L.running && paused) { paused = false; paintTransport(); } });
       el.querySelector("#unlockP")?.addEventListener("click", () => { delete L.pred[m.id]; paintMission(); });
       for (const b of el.querySelectorAll("[data-ch]")) b.addEventListener("click", () => {
         if (el.dataset.answered) return; const ok = +b.dataset.ch === m.right; b.classList.add(ok ? "right" : "wrong"); const why = el.querySelector("#why"); why.hidden = false;
-        if (ok) { el.dataset.answered = "1"; why.textContent = "נכון!"; later(() => complete(m), 700); }
-        else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; why.textContent = ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "לא בדיוק. חזור לניסוי ונסה שוב."; G.sfx.hmph && G.sfx.hmph(0.4); later(() => b.classList.remove("wrong"), 900); }
+        if (ok) { el.dataset.answered = "1"; why.textContent = "נכון!"; sparkleAt(b, 14); G.sfx.sparkle && G.sfx.sparkle(1); for (const o of el.querySelectorAll("[data-ch]")) if (o !== b) o.classList.add("fade"); later(() => complete(m), 900); }
+        else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; why.textContent = ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "לא בדיוק. חזור לניסוי ונסה שוב."; G.sfx.hmph && G.sfx.hmph(0.4); say(["הממ… לא זה.", "כמעט. אולי.", "אני לא בטוח שזה נכון."][ui.attempts[m.id] % 3], 1.4); later(() => b.classList.remove("wrong"), 900); }
       });
       el.querySelector("#checkX")?.addEventListener("click", () => {
         const v = num(el.querySelector("[data-f]").value), why = el.querySelector("#why"); why.hidden = false;
         if (!Number.isFinite(v)) { why.textContent = "כתוב מספר (אפשר עם מינוס)."; return; }
         const r = S.checkTransfer(L, m, v, ui.xtask);
-        if (r.ok) { S.armTransfer(L, m, ui.xtask); hist.length = 0; paintControls(); paintReadouts(); G.sfx.sparkle && G.sfx.sparkle(1); paintMission(); }
+        if (r.ok) { const before = { ...L.P }; sparkleAt(el.querySelector("#checkX"), 12); S.armTransfer(L, m, ui.xtask); hist.length = 0; paintControls(); paintReadouts(); G.sfx.sparkle && G.sfx.sparkle(1); paintMission();
+          // the new values fly into the controls: changed rows glow and the sliders glide to them
+          for (const k in sc.knobs) if (Math.abs((before[k] || 0) - (L.P[k] || 0)) > 1e-9) { const row = $("#k_" + k)?.closest(".slider-row"); if (row) { row.classList.remove("glow"); void row.offsetWidth; row.classList.add("glow"); } glide(k, before[k], L.P[k]); } }
         else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; el.querySelector("[data-f]").classList.add("bad"); G.sfx.hmph && G.sfx.hmph(0.4);
           const sign = Math.abs(Math.abs(v) - Math.abs(r.truth)) <= Math.max(0.02, 0.02 * Math.abs(r.truth));
+          el.querySelector("[data-f]").classList.remove("shake"); void el.offsetWidth; el.querySelector("[data-f]").classList.add("shake");
           why.textContent = sign ? "הגודל נכון, הסימן לא." : ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "עוד לא. נסה להציב בנוסחה של המודל (בכפתור 'הסבר')."; }
       });
       el.querySelector("[data-f]")?.addEventListener("keydown", (e) => { if (e.key === "Enter") el.querySelector("#checkX")?.click(); });
@@ -11768,7 +12089,9 @@ const EggExplain = (() => {
       const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
       if (first) reward(cfg.coin + ":" + m.id, m.coins, from);
       G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
+      confetti(W / 2, H * 0.45, first ? 48 : 20);
       toast(m, first); paintBar();
+      const mb = document.querySelector(`#mbar [data-i="${ui.mi}"]`); if (mb) { mb.classList.remove("popdone"); void mb.offsetWidth; mb.classList.add("popdone"); }
       if (first && sceneN(sc) === 4) later(() => reward(cfg.coin + "scene:" + sc.id, 10, from), 900);
       const n = sc.missions.findIndex((x) => !isDone(x.id));
       if (first && n >= 0) later(() => select(n), 1300); else paintMission();
@@ -11825,12 +12148,7 @@ const EggExplain = (() => {
     // ======================================================================
     let cam = null;
     const sx = (x) => cam.ox + x * cam.S, sy = (y) => cam.oy - y * cam.S;
-    function fit(x0, x1, y0, y1, bottom) {
-      const S_ = Math.min((W - 24) / (x1 - x0), (H - 70) / (y1 - y0)); let oy = (H - 56) / 2 + S_ * (y0 + y1) / 2 + 6;
-      // FIT-BOTTOM: scenes with a floor sit low, just above the ▶ buttons, instead of floating mid-canvas
-      if (bottom) oy = Math.max(oy, Math.min(H - 50 + y0 * S_, H - 78));
-      cam = { S: S_, ox: W / 2 - S_ * (x0 + x1) / 2, oy };
-    }
+    function fit(x0, x1, y0, y1) { const S_ = Math.min((W - 24) / (x1 - x0), (H - 70) / (y1 - y0)); cam = { S: S_, ox: W / 2 - S_ * (x0 + x1) / 2, oy: (H - 56) / 2 + S_ * (y0 + y1) / 2 + 6 }; }
     const line = (x0, y0, x1, y1, w = 2, c = "#2e2e33") => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
     const label = (x, y, t, c = "#606671", al = "center", f = "600 12px ") => { ctx.save(); ctx.font = f + FONT; ctx.fillStyle = c; ctx.textAlign = al; ctx.textBaseline = "middle"; ctx.direction = "ltr"; ctx.fillText(t, x, y); ctx.restore(); };
     const ground = (y = 0) => { line(0, sy(y), W, sy(y), 2.2); };
@@ -11842,12 +12160,18 @@ const EggExplain = (() => {
       if (!(img.complete && img.naturalWidth)) { ctx.fillStyle = "#F7D9B5"; ctx.beginPath(); ctx.arc(px, py - hpx / 2, hpx / 2, 0, Math.PI * 2); ctx.fill(); return; }
       const w = hpx * img.naturalWidth / img.naturalHeight; ctx.save(); ctx.translate(px, py); ctx.rotate(rot); if (flip) ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -hpx, w, hpx); ctx.restore();
     }
+    // gravity of real places, for a label and a background tint (approximate surface values)
+    const PLANETS = [["הירח", 1.62, "#E6E8F0"], ["מאדים", 3.71, "#F6E1D6"], ["כוכב חמה", 3.7, "#EAE5DF"], ["אורנוס", 8.69, "#DDF2F2"], ["נוגה", 8.87, "#F5EBD6"], ["כדור הארץ", 9.81, null], ["שבתאי", 10.44, "#F3ECD8"], ["נפטון", 11.15, "#DDE6F8"]];
+    const nearPlanet = (g) => { let b = null; for (const q of PLANETS) if (Math.abs(q[1] - g) <= 0.35 && (!b || Math.abs(q[1] - g) < Math.abs(b[1] - g))) b = q; return b; };
+    const planetName = (g) => { const q = nearPlanet(g); return q && q[0] !== "כדור הארץ" ? ` · כמו ב${q[0]}` : g >= 13 ? " · כבד מאוד!" : ""; };
+    function planetTint(g) { const q = nearPlanet(g); const c = q ? q[2] : g >= 13 ? "#F1E3D3" : null; if (!c) return; ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = c; ctx.fillRect(0, 0, W, sy(0)); ctx.restore(); }
+    const impactColor = (v, g) => { const k = typeof EggActor !== "undefined" ? EggActor.severity(v, g) : "soft"; return k === "crash" ? "#E2574C" : k === "soft" ? "#137556" : "#B8741A"; };
     function cart(px, py, wpx, hpx, txt, fill = "#F5F1E8") {
       ctx.fillStyle = fill; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px - wpx / 2, py - hpx, wpx, hpx, 6) : ctx.rect(px - wpx / 2, py - hpx, wpx, hpx); ctx.fill(); ctx.stroke();
       for (const d of [-0.3, 0.3]) { ctx.beginPath(); ctx.arc(px + d * wpx, py, 5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); }
       if (txt) label(px, py - hpx / 2, txt, "#20232A", "center", "700 12px ");
     }
-    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, y = 54; /* FIT-BOTTOM: banner moved to the top so it never covers the floor */ ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
+    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, sayEl = $("#say"), y = sayEl && !sayEl.hidden ? Math.min(H - 140, sayEl.offsetTop + sayEl.offsetHeight + 8) : 34; /* top of the machine: never on the floor where the body lands */ ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
     const has = (t) => L.sim && L.sim.events.some((e) => e.type === t);
     const P_ = () => (L.sim && L.cur ? L.cur.P : L.P);
     const SIM = () => L.sim || (L._preview && L._previewP === JSON.stringify(L.P) ? L._preview : (L._previewP = JSON.stringify(L.P), L._preview = (() => { const e = S.evalP(sc, L.P); if (e.invalid) return null; const s = WP.makeSim(sc.family, { ...L.P }, { brake: !!sc.setup.brake, gap: sc.setup.gap, v: L.P.v, vf: L.P.vf }); s.step(0); return s; })()));
@@ -11907,7 +12231,8 @@ const EggExplain = (() => {
         ctx.save(); ctx.translate(sx(0), sy(top)); ctx.rotate(tilt); ctx.fillStyle = "#B58A55"; ctx.fillRect(0, -6, Math.min(Lm, span + gap) * cam.S, 8); ctx.restore();
         label((sx(0) + sx(gap)) / 2, sy(top) + 26, `${sc.setup.unitText}: ${nice(gap)} ${sc.setup.unitSI}`, "#20232A");
         label(sx(0) + Math.min(Lm, span) * cam.S / 2, sy(top) - 18, `${p.value} × ${p.factor} = ${nice(Lm, 3)} ${sc.setup.unitSI}`, Math.abs(Lm - gap) <= 0.01 * gap ? "#137556" : "#B8741A");
-        const x = s.st.x, fall = s.st.fell; critter(sx(Math.min(x, gap + 0.2 * gap)), sy(top) + (fall ? Math.min(H, (x - Lm) * 6 * cam.S) : -6), 0.45 * Math.min(cam.S * gap, 120));
+        const x = s.st.x, fall = s.st.fell, floor = H - 10 - sy(top), drop = fall ? Math.min(floor, (x - Lm) * 6 * cam.S) : 0;
+        eggBody(sx(Math.min(x, gap + 0.2 * gap)), sy(top) + (fall ? drop : -6), 0.45 * Math.min(cam.S * gap, 120), { impact: fall && drop >= floor - 0.5, sev: "squash", vy: fall ? -12 : 0, standing: !fall });
         if (fall) banner("הקרש קצר מדי!", "#E2574C"); else if (L.cur && L.cur.done !== undefined && s.done && Lm > gap * 1.01) banner("ארוך מדי: לא נכנס בין הקצוות", "#B8741A");
       },
       vectors(s, p) {
@@ -11926,7 +12251,7 @@ const EggExplain = (() => {
       },
       uniform(s, p) {
         const xs = [p.x0, p.x0 + p.v * p.t, 0, sc.setup.target || 0]; const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 3;
-        fit(lo, hi, -1, 3, 1); ground(0);
+        fit(lo, hi, -2, 3); ground(0);
         ctx.fillStyle = "#ECEEF1"; ctx.fillRect(sx(lo), sy(0), (hi - lo) * cam.S, 10);
         for (let i = Math.ceil(lo); i <= hi; i++) { line(sx(i), sy(0), sx(i), sy(0) + (i % 5 ? 5 : 10), 1.2); if (i % 5 === 0) label(sx(i), sy(0) + 20, String(i)); }
         line(sx(0), sy(0) - 40, sx(0), sy(0) + 8, 2, "#20232A"); label(sx(0), sy(0) - 48, "0", "#20232A");
@@ -11937,7 +12262,7 @@ const EggExplain = (() => {
       },
       meeting(s, p) {
         const xs = [p.x1, p.x2, s.st.x1, s.st.x2]; const lo = Math.min(...xs, 0) - 3, hi = Math.max(...xs, 16) + 3;
-        fit(lo, hi, -1, 3, 1); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
         if (sc.id === "W03-S05") { ctx.fillStyle = "rgba(226,87,76,0.35)"; ctx.fillRect(sx(14), sy(0) - 4, 2 * cam.S, 8); }
         if (sc.id === "W03-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 4 * cam.S, 8); label(sx(12), sy(0) - 14, "תחנה", "#137556"); }
         critter(sx(s.st.x1), sy(0), Math.min(64, cam.S * 2), 0, false);
@@ -11948,7 +12273,7 @@ const EggExplain = (() => {
       },
       acceleration(s, p) {
         const xs = [0, s.st.x, WP.evaluate("acceleration", p).dx, sc.id === "W12-S01" ? 12 : 0]; const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 4;
-        fit(lo, hi, -1, 3, 1); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
         if (sc.id === "W12-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 2 * cam.S, 8); line(sx(12.4), sy(0) - 50, sx(12.4), sy(0), 6, "#E2574C"); label(sx(12.4), sy(0) - 58, "מחסום", "#E2574C"); }
         const x = s.st.x; cart(sx(x), sy(0) - 4, 56, 30, ""); critter(sx(x), sy(0) - 30, 40);
         if (sc.setup.brake && L.sim && L.sim.stopped) banner("עצרה ונשארה: בלם לא דוחף אחורה");
@@ -11956,31 +12281,33 @@ const EggExplain = (() => {
       },
       vertical(s, p) {
         const e = WP.evaluate("vertical", { ...p, t: 0 }), top = Math.max(e.maxY, p.h) + 1.5;
-        fit(-top * 0.6, top * 0.6, -0.5, top, 1); ground(0);
+        fit(-top * 0.6, top * 0.6, -0.5, top); planetTint(p.g); ground(0);
         if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-top * 0.5), sy(p.h), (top * 0.35) * cam.S, p.h * cam.S); line(sx(-top * 0.5), sy(p.h), sx(-top * 0.15), sy(p.h), 2); }
         for (let y = 0; y <= top; y += top > 20 ? 5 : top > 8 ? 2 : 1) { line(sx(top * 0.45), sy(y), sx(top * 0.45) + 6, sy(y), 1.2); label(sx(top * 0.45) + 18, sy(y), String(y)); }
         if (has("peak") || s.st.landed) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(-top * 0.3), sy(e.maxY), sx(top * 0.3), sy(e.maxY), 1.4, "#20232A"); ctx.restore(); label(sx(top * 0.3) + 4, sy(e.maxY) - 10, "שיא " + nice(e.maxY) + " m", "#20232A", "left"); }
-        critter(sx(0), sy(s.st.y), Math.min(60, cam.S * 1.5));
-        if (forces()) { arrowS(sx(0) + 40, sy(s.st.y) - 20, 0, -s.st.v * 5, "#20232A", "v"); arrowS(sx(0) - 40, sy(s.st.y) - 20, 0, p.g * 5, "#2785C7", "g"); }
-        label(14, 20, "g = " + nice(p.g) + " m/s²", "#2785C7", "left");
-        if (s.st.landed) banner("נחת אחרי " + nice(e.tLand) + " s");
+        eggBody(sx(0), sy(s.st.y), clamp(cam.S * 2, 46, 72), { impact: !!s.st.landed, vImpact: s.st.v, vy: s.st.v, g: p.g, nervous: p.h > 6 });
+        if (forces() && !s.st.landed) { arrowS(sx(0) + 40, sy(s.st.y) - 20, 0, -s.st.v * 5, "#20232A", "v"); arrowS(sx(0) - 40, sy(s.st.y) - 20, 0, p.g * 5, "#2785C7", "g"); }
+        label(14, 20, "g = " + nice(p.g) + " m/s²" + planetName(p.g), "#2785C7", "left");
+        if (s.st.landed) banner("נחת אחרי " + nice(e.tLand) + " s · " + nice(Math.abs(s.st.v)) + " m/s בפגיעה", impactColor(Math.abs(s.st.v), p.g));
       },
       projectile(s, p) {
         const e = WP.evaluate("projectile", { ...p, t: 0 }), tgt = sc.setup.goal && sc.id === "W04-S04" ? [18, 19] : sc.id === "W12-S06" ? [25, 26] : null;
-        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35), 1); ground(0);
+        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35)); planetTint(p.g); ground(0);
         if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-2), sy(p.h), 2 * cam.S, p.h * cam.S); line(sx(-2), sy(p.h), sx(0), sy(p.h), 2); }
         if (tgt) { ctx.fillStyle = "rgba(226,87,76,0.3)"; ctx.fillRect(sx(tgt[0]), sy(0) - 5, (tgt[1] - tgt[0]) * cam.S, 10); label(sx((tgt[0] + tgt[1]) / 2), sy(0) - 16, "🎯", "#E2574C"); }
         for (let x = 0; x <= xm; x += xm > 30 ? 10 : 5) label(sx(x), sy(0) + 16, String(x));
         // the path so far (from the same formulas the simulator steps)
         ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath();
         const tt = L.sim ? L.sim.t : 0, vy0 = p.v0 * Math.sin(p.angle * Math.PI / 180); for (let i = 0; i <= 60; i++) { const t = tt * i / 60; const X = e.vx * t, Y = p.h + vy0 * t - 0.5 * p.g * t * t; i ? ctx.lineTo(sx(X), sy(Math.max(0, Y))) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke(); ctx.restore();
-        critter(sx(s.st.x), sy(s.st.y), Math.min(46, cam.S * 1.4));
+        const vImp = Math.hypot(s.st.vx || 0, s.st.vy || 0);
+        eggBody(sx(s.st.x), sy(s.st.y), clamp(cam.S * 1.6, 40, 60), { impact: !!s.st.landed, vImpact: vImp, vy: s.st.vy, g: p.g, nervous: p.h > 6 });
         if (forces() && !s.st.landed) { arrowS(sx(s.st.x), sy(s.st.y) - 24, s.st.vx * 5, 0, "#2785C7", "vx"); arrowS(sx(s.st.x), sy(s.st.y) - 24, 0, -s.st.vy * 5, "#E0702F", "vy"); }
-        if (s.st.landed) banner(`נחת: ${nice(e.range)} m אחרי ${nice(e.tLand)} s`);
+        if (s.st.landed) banner(`נחת: ${nice(e.range)} m אחרי ${nice(e.tLand)} s · ${nice(vImp)} m/s`, impactColor(vImp, p.g));
+        if (p.g !== 10) label(14, 20, "g = " + nice(p.g) + " m/s²" + planetName(p.g), "#2785C7", "left");
       },
       incline(s, p) {
         const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lr = 6, tr = s.tr || null, pos = tr ? tr.s : 3;
-        fit(-0.6, Lr * c + 0.6, -0.3, Lr * sn + 1.2, 1); ground(0);
+        fit(-0.6, Lr * c + 0.6, -0.3, Lr * sn + 1.2); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lr * c), sy(0)); ctx.lineTo(sx(Lr * c), sy(Lr * sn)); ctx.closePath(); ctx.fill();
         line(sx(0), sy(0), sx(Lr * c), sy(Lr * sn), 6, "#B58A55"); line(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * sn), 2);
         const fx = pos * c, fy = pos * sn, hpx = Math.min(70, cam.S * 0.75); critter(sx(fx), sy(fy), hpx, -th);
@@ -11992,7 +12319,7 @@ const EggExplain = (() => {
       },
       pulley(s, p) {
         const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lh = 2.6, base = 1.5, tr = s.tr, d = 1.3 + (tr ? tr.s : 0);
-        const pt = (q) => [q * c, base + q * sn], top = pt(Lh); fit(-0.4, top[0] + 0.9, -0.1, top[1] + 0.7, 1); ground(0);
+        const pt = (q) => [q * c, base + q * sn], top = pt(Lh); fit(-0.4, top[0] + 0.9, -0.1, top[1] + 0.7); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.fillRect(sx(-0.2), sy(base), (top[0] + 0.2) * cam.S, base * cam.S);
         line(sx(0), sy(base), sx(top[0]), sy(top[1]), 6, "#B58A55");
         const pul = [top[0] + 0.12, top[1] + 0.1]; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(sx(pul[0]), sy(pul[1]), 0.1 * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -12003,7 +12330,7 @@ const EggExplain = (() => {
           arrowS(C.x, C.y, c * T * k, -sn * T * k, "#3A9E6E", "T", T); if (Math.abs(R.f) > 1e-3) arrowS(C.x, C.y, c * R.f * k, -sn * R.f * k, "#CC5794", "f", Math.abs(R.f)); }
       },
       spring(s, p) {
-        const xm = Math.max(0.9, Math.abs(p.x) + 0.3); fit(-1.2, xm + 0.4, -0.3, 0.9, 1); ground(0);
+        const xm = Math.max(0.9, Math.abs(p.x) + 0.3); fit(-1.2, xm + 0.4, -0.3, 0.9); ground(0);
         line(sx(-1.1), sy(0), sx(-1.1), sy(0.8), 6, "#2e2e33");
         const x = s.st.x !== undefined ? s.st.x : p.x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
         for (let i = 0; i <= 20; i++) { const X = -1.1 + (end + 1.1) * i / 20, Y = 0.25 + (i % 2 ? 0.08 : -0.08) * (i && i < 20 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
@@ -12014,7 +12341,7 @@ const EggExplain = (() => {
       },
       energy(s, p) {
         const tr = s.tr; if (!tr) return; const segs = s.segs, pts = [[0, p.h]]; for (const g_ of segs) { const a = g_.angleDeg * Math.PI / 180, q = pts[pts.length - 1]; pts.push([q[0] + g_.length * Math.cos(a), q[1] - g_.length * Math.sin(a)]); }
-        fit(-0.5, pts[pts.length - 1][0] + 0.5, -0.4, Math.max(p.h, 1.5) + 1.2, 1); ground(0);
+        fit(-0.5, pts[pts.length - 1][0] + 0.5, -0.4, Math.max(p.h, 1.5) + 1.2); ground(0);
         for (let i = 0; i < segs.length; i++) line(sx(pts[i][0]), sy(pts[i][1]), sx(pts[i + 1][0]), sy(pts[i + 1][1]), segs[i].muK > 0 ? 9 : 5, segs[i].muK > 0 ? "#E39B28" : "#B58A55");
         const si = s.stripStart, sEnd = s.stripEnd; label(sx((pts[segs.length - 2][0] + pts[segs.length - 1][0]) / 2), sy(0) + 18, `רצועה: μ = ${nice(p.mu)}, ${nice(p.d)} m`, "#B8741A");
         let d = tr.s, i = 0; while (i < segs.length - 1 && d > segs[i].length) { d -= segs[i].length; i++; }
@@ -12035,7 +12362,7 @@ const EggExplain = (() => {
         label(14, 20, `v²/r = ${nice(p.v * p.v / p.r)}  ·  μg = ${nice(p.mu * p.g)}`, "#20232A", "left");
       },
       bank(s, p) {
-        const th = p.angle * Math.PI / 180, Lb = 4; fit(-0.6, Lb * Math.cos(th) + 1.2, -0.4, Lb * Math.sin(th) + 1.2, 1); ground(0);
+        const th = p.angle * Math.PI / 180, Lb = 4; fit(-0.6, Lb * Math.cos(th) + 1.2, -0.4, Lb * Math.sin(th) + 1.2); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lb * Math.cos(th)), sy(0)); ctx.lineTo(sx(Lb * Math.cos(th)), sy(Lb * Math.sin(th))); ctx.closePath(); ctx.fill();
         line(sx(0), sy(0), sx(Lb * Math.cos(th)), sy(Lb * Math.sin(th)), 6, "#7D7F86");
         const q = 2 + (s.st.up || 0) * 1.6, fx = q * Math.cos(th), fy = q * Math.sin(th); critter(sx(fx), sy(fy), Math.min(64, cam.S * 0.7), -th);
@@ -12044,23 +12371,26 @@ const EggExplain = (() => {
         if (Math.abs(s.st.drift) > 1e-6 && L.sim) banner(s.st.drift > 0 ? "מהר מדי: נסחף למעלה בעיקול" : "לאט מדי: מחליק פנימה ולמטה", "#B8741A");
       },
       loop(s, p) {
-        const r = p.r; fit(-r * 1.6, r * 2.8, -0.3, 2 * r + 0.6, 1); ground(0);
+        const r = p.r; fit(-r * 1.6, r * 2.8, -0.3, 2 * r + 0.6); ground(0);
         ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx(0), sy(r), r * cam.S, 0, Math.PI * 2); ctx.stroke();
-        const x = s.st.x, y = s.st.y, hpx = Math.min(44, cam.S * 0.5); critter(sx(x), sy(y), hpx, s.st.onTrack ? -(s.st.th || 0) : 0);
+        const x = s.st.x, y = s.st.y, hpx = clamp(cam.S * 0.5, 34, 50), landed = has("land");
+        eggBody(sx(x), sy(y), hpx, { impact: landed, vImpact: s.st.v, vy: s.st.onTrack ? 0 : -(s.st.v || 0), g: p.g, standing: s.st.onTrack }, s.st.onTrack ? -(s.st.th || 0) : 0);
         if (forces() && s.st.onTrack && s.st.N > 1e-6) { const N = s.st.N, k = Math.min(60 / (p.m * p.g), 110 / N); arrowS(sx(x), sy(y), (-x / r) * N * k, -((r - y) / r) * N * k, "#8969C6", "N", N); }
         label(14, 20, `v בפסגה (אם נשאר במגע) = ${nice(p.vTop)} · מינימום √(gr) = ${nice(Math.sqrt(p.g * r))}`, "#20232A", "left");
         if (has("lost_contact")) banner("איבד מגע: עף בקשת חופשית", "#E2574C"); else if (has("full_loop")) banner("הקפה שלמה!", "#137556");
       },
       impulse(s, p) {
-        fit(-6, 2.5, -0.5, 2, 1); ground(0);
+        fit(-6, 2.5, -0.5, 2); ground(0);
         ctx.fillStyle = "#F5E6CC"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; const cx = sx(1.0); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S, 10) : ctx.rect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S); ctx.fill(); ctx.stroke();
         line(sx(1.4), sy(0), sx(1.4), sy(1.6), 6); label(sx(1.2), sy(1.45), "כרית", "#606671");
-        const x = Math.min(0.6, s.st.x); cart(sx(x), sy(0) - 4, 60, 32, ""); critter(sx(x), sy(0) - 32, 40);
+        const x = Math.min(0.6, s.st.x), decel = Math.abs(p.v1 - p.v0) / p.dt; cart(sx(x), sy(0) - 4, 60, 32, "");
+        eggBody(sx(x), sy(0) - 32, 40, { impact: !!(L.sim && s.st.F), sev: EggActor.severityStop(decel), standing: true });
+        if (L.sim && L.sim.done) banner(`בלימה של ${nice(decel)} m/s² ≈ ${nice(decel / 9.81, 1)}g`, decel >= EggActor.A_CRASH ? "#E2574C" : decel >= EggActor.A_SOFT ? "#B8741A" : "#137556");
         if (forces()) { arrowS(sx(x), sy(0) - 96, s.st.v * 8, 0, "#20232A", "v"); if (s.st.F) arrowS(sx(x) + 30, sy(0) - 20, Math.sign(s.st.F) * Math.min(120, 30 + Math.abs(s.st.F)), 0, "#E0702F", "F", Math.abs(s.st.F)); }
         label(14, 20, `Δt = ${nice(p.dt)} s · J = ${nice(p.m * (p.v1 - p.v0))} N·s`, "#20232A", "left");
       },
       collision(s, p) {
-        fit(-5, 5, -0.5, 2, 1); ground(0);
+        fit(-5, 5, -0.5, 2); ground(0);
         const w = 0.4 * cam.S; cart(sx(s.st.x1), sy(0) - 4, w, 30, nice(p.m1, 1) + " kg"); critter(sx(s.st.x1), sy(0) - 34, 36);
         cart(sx(s.st.x2), sy(0) - 4, w, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
         if (forces()) { arrowS(sx(s.st.x1), sy(0) - 84, s.st.v1 * 8, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 52, s.st.v2 * 8, 0, "#20232A", "v₂"); }
@@ -12068,7 +12398,7 @@ const EggExplain = (() => {
         if (has("hit")) { const e = L.sim.events.find((q) => q.type === "hit"); if (L.sim.t - e.t < 0.3) banner("בום!", "#E39B28"); }
       },
       recoil(s, p) {
-        fit(-6, 6, -0.5, 2, 1); ground(0);
+        fit(-6, 6, -0.5, 2); ground(0);
         cart(sx(s.st.x1), sy(0) - 4, 0.45 * cam.S, 30, nice(p.m1, 1) + " kg"); critter(sx(s.st.x1), sy(0) - 34, 36);
         cart(sx(s.st.x2), sy(0) - 4, 0.45 * cam.S, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
         if (!has("push")) { ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.4; ctx.beginPath(); for (let i = 0; i <= 8; i++) { const X = sx(s.st.x1) + 0.22 * cam.S + i * (sx(s.st.x2) - sx(s.st.x1) - 0.44 * cam.S) / 8; const Y = sy(0) - 18 + (i % 2 ? -6 : 6); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke(); }
@@ -12082,13 +12412,13 @@ const EggExplain = (() => {
         if (!L.trail || L.trailRun !== (L.cur && L.cur.id)) { L.trail = []; L.trailRun = L.cur && L.cur.id; }
         if (L.sim && s.st.x !== undefined) { L.trail.push([s.st.x, s.st.y]); if (L.trail.length > 600) L.trail.shift(); }
         ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath(); L.trail.forEach(([x, y], i) => (i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)))); ctx.stroke();
-        const x = s.st.x !== undefined ? s.st.x : p.r, y = s.st.y || 0; critter(sx(x), sy(y) + 14, 32);
+        const x = s.st.x !== undefined ? s.st.x : p.r, y = s.st.y || 0; eggBody(sx(x), sy(y) + 14, 32, { impact: has("crash"), sev: "crash", vy: 0, g: 1 });
         if (forces()) { const d = Math.hypot(x, y); arrowS(sx(x), sy(y), -x / d * 50, y / d * 50, "#2785C7", "g", undefined); }
         label(14, 20, `r = ${nice(p.r / 1000, 0)} km · g = ${nice(WP.evaluate("gravity", p).g)} m/s²`, "#20232A", "left");
         if (has("crash")) banner("נפל אל הכוכב", "#E2574C"); else if (has("escape")) banner("ברח מהשדה!", "#8A60E8");
       },
       oscillator(s, p) {
-        fit(-1.4, 1.4, -0.4, 1, 1); ground(0); line(sx(-1.35), sy(0), sx(-1.35), sy(0.8), 6);
+        fit(-1.4, 1.4, -0.4, 1); ground(0); line(sx(-1.35), sy(0), sx(-1.35), sy(0.8), 6);
         const x = s.st.x !== undefined ? s.st.x : WP.evaluate("oscillator", p).x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
         for (let i = 0; i <= 22; i++) { const X = -1.35 + (end + 1.35) * i / 22, Y = 0.25 + (i % 2 ? 0.07 : -0.07) * (i && i < 22 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
         for (const d of [-p.A, p.A]) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(d), sy(0) + 4, sx(d), sy(0.7), 1.2, "#9A9AA0"); ctx.restore(); }
@@ -12109,7 +12439,7 @@ const EggExplain = (() => {
       },
       // ================= ELECTRICITY =================
       coulomb(s, p) {
-        const span = Math.max(1.2, Math.abs(s.st.x2 - s.st.x1) + 0.8); fit(-span, span, -0.4, 1.4, 1); ground(0);
+        const span = Math.max(1.2, Math.abs(s.st.x2 - s.st.x1) + 0.8); fit(-span, span, -0.4, 1.4); ground(0);
         const ball = (x, q, who) => { const cx = sx(x), cy = sy(0.55), R = Math.max(14, Math.min(34, cam.S * 0.16));
           line(cx, cy + R, cx, sy(0), 1.2, "#9A9AA0"); ctx.fillStyle = q > 0 ? "#FCE4EC" : q < 0 ? "#E3F2FD" : "#F1F2F4"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
           label(cx, cy, (q > 0 ? "+" : q < 0 ? "−" : "") + nice(Math.abs(q), 1), "#20232A", "center", "800 13px "); label(cx, cy + R + 12, who, "#606671"); };
@@ -12230,18 +12560,22 @@ const EggExplain = (() => {
         critter(sx(x) - Math.sign(p.v || 1) * 34, sy(-0.4), 40);
         if (L.sim) label(14, 20, `עבודת היד ${nice(s.st.handWork)} J = חום בנגד ${nice(s.st.heat)} J`, "#20232A", "left"); }
     };
-    function draw() {
+    function draw(dt = 0) {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const s = SIM(); if (!s) { label(W / 2, H / 2, "הערכים מחוץ לתחום של המודל", "#E2574C"); return; }
+      if (shakeT > 0) { shakeT -= dt; const k = 7 * Math.max(0, shakeT / 0.45); ctx.translate((Math.random() - 0.5) * k, (Math.random() - 0.5) * k); }
       try { DRAW[sc.family](s, P_()); } catch (e) { label(W / 2, H / 2, "…", "#606671"); }
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       if (L.sim) label(W - 12, H - 66, "t = " + fmt(L.sim.t, 2) + " s", "#606671", "right");
+      for (let i = ripples.length - 1; i >= 0; i--) { const q = ripples[i]; q.t += dt; if (q.t > 0.5) { ripples.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = 1 - q.t / 0.5; ctx.strokeStyle = "#8A60E8"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, 10 + q.t * 70, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+      drawParty(dt);
     }
 
     // ---------------- loop ----------------
     function frame(now) {
       const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
-      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); } }
-      draw();
+      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); paintHotCold(); } }
+      draw(dt);
       if ((frameN++ & 3) === 0) paintGraph();
       if ((evalT += dt) > 0.3) { evalT = 0; evaluate(false); }
       if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }

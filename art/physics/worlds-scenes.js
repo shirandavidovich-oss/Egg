@@ -37,7 +37,8 @@ const WorldScenes = (() => {
   // goal kinds:  win(key, lo, hi, also)  one run whose result lies in a window
   //              cond(fn)                one run that satisfies fn(run)
   //              pair(keys, fn)          two runs that differ ONLY in these knobs, fn(a, b)
-  const win = (key, lo, hi, also, text) => ({ kind: "one", text, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
+  // key/lo/hi also let the screen show how close a run came ("hot / cold")
+  const win = (key, lo, hi, also, text) => ({ kind: "one", text, key, lo, hi, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
   const cond = (fn, text) => ({ kind: "one", text, check: fn });
   const pair = (keys, fn, text) => ({ kind: "pair", keys, text, check: fn });
   const ev = (r, k) => r.ev[k];

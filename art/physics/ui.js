@@ -214,7 +214,66 @@
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
+    QS.refresh();
   }
+
+  // ---------------- quick scroll: drag the thumb on the left edge; jump buttons on game screens ----------------
+  const QS = (() => {
+    const rail = $("#qs"), thumb = rail.querySelector(".qs-thumb"), jump = $("#qjump");
+    let fadeT = 0, dragging = false, grabDy = 0;
+    const max = () => Math.max(0, screenEl.scrollHeight - screenEl.clientHeight);
+    function place() {
+      const r = screenEl.getBoundingClientRect(), u = ui.getBoundingClientRect(), m = max();
+      const scrollable = m > 40 && !ui.hidden;
+      rail.hidden = !scrollable;
+      const lab = screenEl.querySelector(":scope > .lab-screen");
+      jump.hidden = !(scrollable && lab);
+      if (!scrollable) return;
+      const top = r.top - u.top, h = r.height;
+      rail.style.top = top + "px"; rail.style.height = h + "px";
+      const th = Math.max(56, Math.min(110, h * h / screenEl.scrollHeight));
+      thumb.style.height = th + "px";
+      thumb.style.top = (6 + (h - th - 12) * (m ? screenEl.scrollTop / m : 0)) + "px";
+      if (!jump.hidden) {
+        jump.style.top = (top + h - 54) + "px";
+        // which part is on screen now
+        const vis = (el) => { if (!el) return -1; const b = el.getBoundingClientRect(); return Math.max(0, Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top)) / Math.max(1, Math.min(b.height, h)); };
+        const parts = { task: lab.querySelector(".mission, .task"), lab: lab.querySelector(".lab"), controls: lab.querySelector(".controls, #controls") };
+        let best = "task", bv = -1; for (const k in parts) { const v = vis(parts[k]); if (v > bv) { bv = v; best = k; } }
+        for (const b of jump.querySelectorAll("[data-j]")) { b.hidden = !parts[b.dataset.j]; b.setAttribute("aria-current", b.dataset.j === best); }
+      }
+    }
+    // the jump buttons show only while scrolling (and a little after), so they never sit on top of the content
+    function wake() { rail.classList.add("live"); jump.classList.remove("away"); clearTimeout(fadeT); fadeT = setTimeout(() => { if (!dragging && !jump.matches(":hover, :focus-within")) { rail.classList.remove("live"); jump.classList.add("away"); } }, 2200); }
+    let lastTop = 0;
+    screenEl.addEventListener("scroll", () => { place(); if (Math.abs(screenEl.scrollTop - lastTop) > 4) wake(); lastTop = screenEl.scrollTop; }, { passive: true });
+    new ResizeObserver(place).observe(screenEl);
+    new MutationObserver(() => requestAnimationFrame(place)).observe(screenEl, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "open"] });
+    const toY = (clientY) => {
+      const r = screenEl.getBoundingClientRect(), th = thumb.offsetHeight, f = (clientY - grabDy - r.top - 6) / Math.max(1, r.height - th - 12);
+      screenEl.scrollTop = clamp(f, 0, 1) * max();
+    };
+    // only the thumb takes touches, so buttons near the left edge keep working
+    thumb.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); dragging = true; rail.classList.add("drag"); thumb.setPointerCapture(e.pointerId);
+      grabDy = e.clientY - thumb.getBoundingClientRect().top; wake();
+    });
+    thumb.addEventListener("pointermove", (e) => { if (dragging) toY(e.clientY); });
+    const end = () => { dragging = false; rail.classList.remove("drag"); wake(); };
+    thumb.addEventListener("pointerup", end); thumb.addEventListener("pointercancel", end);
+    for (const b of jump.querySelectorAll("[data-j]")) b.addEventListener("click", () => {
+      const lab = screenEl.querySelector(":scope > .lab-screen"); if (!lab) return;
+      const el = b.dataset.j === "task" ? lab.querySelector(".mission, .task") : b.dataset.j === "lab" ? lab.querySelector(".lab") : lab.querySelector(".controls, #controls");
+      if (!el) return;
+      const top = b.dataset.j === "task" ? 0 : el.getBoundingClientRect().top - screenEl.getBoundingClientRect().top + screenEl.scrollTop - 6;
+      screenEl.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
+      el.classList.remove("qs-flash"); void el.offsetWidth; el.classList.add("qs-flash");
+      G.sfx.tick && G.sfx.tick();
+    });
+    jump.classList.add("away");
+    // a new screen shows the thumb for a moment (so it is found), the jump bar waits for a real scroll
+    return { refresh: () => requestAnimationFrame(() => { place(); jump.classList.add("away"); if (!rail.hidden) { rail.classList.add("live"); clearTimeout(fadeT); fadeT = setTimeout(() => rail.classList.remove("live"), 1600); } }) };
+  })();
   function back() {
     if (document.querySelector(".symtip")) { closeSym(); return; }
     if (EX.back()) return;
@@ -228,7 +287,7 @@
     if (cleanup) { cleanup(); cleanup = null; }
     EX.closeAll();
     ui.hidden = true; G.covered = false; stack.length = 0; current = null;
-    syncHud();
+    syncHud(); QS.refresh();
   }
   function openUI(name, args) { stack.length = 0; current = null; show(name, args, false); }
   $("#uiBack").addEventListener("click", back);

@@ -34,6 +34,7 @@ jobs:
           node tests/profile.test.js
           node tests/incline.test.js
           node tests/explain.test.js
+          node tests/damping.test.js
 
       - name: Build
         run: |

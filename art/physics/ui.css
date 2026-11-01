@@ -522,3 +522,29 @@
   /* mass m and metre m look different: mass is an orange slanted letter, metres a teal upright unit */
   .sym[data-sym="m"], .sym[data-sym="m1"], .sym[data-sym="m2"], .mv-mass .mv-letter { color: #D0612F; }
   .mv-card .mv-val i.unit.metre { color: #17876A; font-weight: 700; font-family: var(--ui-font); font-style: normal; }
+
+  /* readouts: stronger labels, with the English physics name under them */
+  .readout small { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .readout small .en { display: block; font: 600 10.5px/1.25 var(--ui-font); color: var(--ink-2); letter-spacing: 0.1px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
+  .readout b { margin-top: 2px; }
+
+  /* damping: a real button that opens the media picker */
+  .adv-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; margin-top: 10px; padding: 8px 12px; border-radius: 16px; border: 1.5px solid #3a3a40; background: #F2F9FC; color: var(--ink); cursor: pointer; text-align: start; font-family: var(--ui-font); box-shadow: 0 2px 0 rgba(30,30,34,0.2); -webkit-tap-highlight-color: transparent; }
+  .adv-toggle:active { transform: translateY(2px); box-shadow: none; }
+  .adv-toggle[aria-expanded="true"] { background: #E3F3FA; border-color: #2a8dbb; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+  .adv-ic { font-size: 22px; }
+  .adv-t { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .adv-t b { font-size: 15.5px; }
+  .adv-t small { font-size: 13px; color: #1A749C; font-weight: 600; }
+  .adv-chev { font-size: 22px; color: var(--ink-2); transition: transform .2s; line-height: 1; }
+  .adv-toggle[aria-expanded="true"] .adv-chev { transform: rotate(180deg); }
+  .adv { margin-top: 6px; padding: 10px 2px 0; }
+  .media { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+  .medium { min-height: 56px; border-radius: 14px; border: 1.5px solid var(--line); background: #fff; font: 600 14px var(--ui-font); color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .medium span { font-size: 20px; line-height: 1; }
+  .medium[aria-checked="true"] { border-color: #2a8dbb; background: #E3F3FA; box-shadow: 0 0 0 3px rgba(42,141,187,0.18); }
+  .medium[data-medium="oil"][aria-checked="true"] { border-color: #D49B53; background: #FCF1E2; box-shadow: 0 0 0 3px rgba(212,155,83,0.2); }
+  .medium[data-medium="honey"][aria-checked="true"] { border-color: #C9962A; background: #FBF0D6; box-shadow: 0 0 0 3px rgba(201,150,42,0.2); }
+  .fluid-sweep { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 15; pointer-events: none; }
+  .readout small { white-space: normal; line-height: 1.2; overflow: visible; }
+  .readout .qi { width: 15px; height: 15px; font-size: 10px; }

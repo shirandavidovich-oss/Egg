@@ -222,6 +222,21 @@
   // calculator (always in the top bar, next to the sound button)
   $("#uiCalc").addEventListener("click", () => { closeInfo(); EX.openCalc(); });
 
+  // ---------------- readouts: bolder labels plus the usual English name used in physics ----------------
+  const EN = { "התארכות": "Extension", "התארכות x": "Extension", "מתיחה x": "Extension", "דחיסה x": "Compression", "כוח קפיץ": "Spring force", "כוח F": "Force",
+    "אנרגיה": "Energy", "אנרגיה כוללת": "Total energy", "זמן מחזור": "Period", "משרעת A": "Amplitude", "ω": "Angular frequency", "מהירות": "Velocity",
+    "תאוצה a": "Acceleration", "גובה": "Height", "גובה מרבי": "Max height", "חום": "Heat", "חיכוך": "Friction", "נורמל N": "Normal force",
+    "זווית θ": "Angle", "משקולות": "Load", "k מהגרף": "Spring constant", "k שקול": "Equivalent k", "F1 · F2": "Forces", "x1 · x2": "Extensions", "מיקום": "Position", "דרך": "Distance", "זמן": "Time" };
+  function englishReadouts(root) {
+    for (const sm of root.querySelectorAll(".readout small")) {
+      if (sm.querySelector(".en")) continue;
+      const he = [...sm.childNodes].filter((n) => n.nodeType === 3).map((n) => n.nodeValue).join("").trim();
+      const en = EN[he]; if (!en) continue;
+      const tag = document.createElement("span"); tag.className = "en"; tag.lang = "en"; tag.dir = "ltr"; tag.textContent = en; sm.appendChild(tag);
+    }
+  }
+  new MutationObserver(() => englishReadouts(screenEl)).observe(screenEl, { childList: true, subtree: true });
+
   // ---------------- the home overlay ----------------
   function syncHud() {
     const show = G.hatched() && ui.hidden;
@@ -944,6 +959,84 @@
   const U_MAX = 0.25;                   // how far below equilibrium it can be pulled (m)
   const lab = { k: 120, massOverride: null, b: 0, lastU0: 0.12, mode: "hang", surface: "dry_wood" };
 
+  // ======================================================================
+  //  THE MEDIUM AROUND THE HANGING SPRING: a wave sweeps the screen left to right when it
+  //  changes, then only a thin wobbling surface line and a tint that fades downwards stay in
+  //  the lab, plus a few bubbles while the creature moves. Display only: the physics is b.
+  // ======================================================================
+  function makeFluid(box) {
+    let md = SP.MEDIA[0], tint = 0, color = md.rgb, t = 0, sweep = null, overlay = null, octx = null;
+    const bubbles = [];
+    function killOverlay() { if (overlay) overlay.remove(); overlay = null; octx = null; sweep = null; }
+    function to(next, animate) {
+      md = next; if (next.id !== "air") color = next.rgb;
+      bubbles.length = 0;
+      killOverlay();                                            // a quick second change starts cleanly
+      if (!animate || reduceMotion) { tint = next.id === "air" ? 0 : 1; return; }
+      overlay = document.createElement("canvas"); overlay.className = "fluid-sweep"; overlay.setAttribute("aria-hidden", "true");
+      document.body.appendChild(overlay);
+      const d = Math.min(devicePixelRatio || 1, 2); overlay.width = innerWidth * d; overlay.height = innerHeight * d;
+      octx = overlay.getContext("2d"); octx.setTransform(d, 0, 0, d, 0, 0);
+      sweep = { start: performance.now(), rgb: next.id === "air" ? color : next.rgb, dir: next.id === "air" ? -1 : 1 };
+      if (next.id !== "air") G.sfx.whoosh && G.sfx.whoosh();
+    }
+    function drawSweep(now) {
+      if (!sweep) return;
+      const age = (now - sweep.start) / 1000, W = innerWidth, H = innerHeight;
+      if (age > 1.9) { killOverlay(); return; }
+      const f = Math.min(1, age / 0.98), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+      const px = sweep.dir > 0 ? -W * 0.14 + W * 1.3 * e : W * 1.14 - W * 1.3 * e;
+      const fade = age < 1.05 ? 1 : Math.max(0, 1 - (age - 1.05) / 0.75), [r, g, b] = sweep.rgb;
+      const front = (y) => px + Math.sin(y * 0.025 + age * 11) * 14 + Math.sin(y * 0.061 - age * 9) * 6;
+      octx.clearRect(0, 0, W, H);
+      octx.beginPath(); octx.moveTo(sweep.dir > 0 ? 0 : W, 0);
+      for (let y = 0; y <= H + 6; y += 6) octx.lineTo(front(y), y);
+      octx.lineTo(sweep.dir > 0 ? 0 : W, H); octx.closePath();
+      octx.fillStyle = `rgba(${r},${g},${b},${0.29 * fade})`; octx.fill();
+      octx.beginPath(); for (let y = 0; y <= H + 5; y += 5) { const x = front(y); if (y) octx.lineTo(x, y); else octx.moveTo(x, y); }
+      octx.lineWidth = 7; octx.strokeStyle = `rgba(255,255,255,${0.77 * fade})`; octx.stroke();
+      octx.lineWidth = 3; octx.strokeStyle = `rgba(${r},${g},${b},${0.65 * fade})`; octx.stroke();
+      if (sweep.dir > 0) for (let i = 0; i < 15; i++) {           // a few droplets at the front
+        const y = (i * 137 + 43) % H, x = front(y) - 24 - (i % 4) * 13;
+        octx.globalAlpha = fade * (0.25 + (i % 4) * 0.12); octx.fillStyle = "#fff"; octx.beginPath(); octx.ellipse(x, y, 4 + (i % 3) * 2, 2, 0, 0, Math.PI * 2); octx.fill();
+      }
+      octx.globalAlpha = 1;
+    }
+    function tick(dt, now) {
+      t += dt;
+      const want = md.id === "air" ? 0 : 1;
+      tint += (want - tint) * Math.min(1, dt * 2.4); if (reduceMotion) tint = want;
+      for (let i = bubbles.length - 1; i >= 0; i--) { const q = bubbles[i]; q.life += dt; q.y -= (14 + 3 * q.r) * dt; q.x += q.dx; q.a = Math.max(0, 1 - q.life / q.ttl); if (q.a <= 0) bubbles.splice(i, 1); }
+      drawSweep(now);
+    }
+    function drawBack(ctx, W, H, top) {
+      if (tint < 0.005) return;
+      const [r, g, b] = color, y = top + 8;
+      const gr = ctx.createLinearGradient(0, y, 0, H);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${0.23 * tint})`); gr.addColorStop(0.22, `rgba(${r},${g},${b},${0.12 * tint})`);
+      gr.addColorStop(0.6, `rgba(${r},${g},${b},${0.045 * tint})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.save(); ctx.fillStyle = gr; ctx.fillRect(0, y, W, H - y);
+      const wave = (dy, a, w, s1, s2) => { ctx.beginPath(); for (let x = 0; x <= W + 4; x += 3) { const yy = y + dy + Math.sin(x * s1 + t * 1.65) * a + Math.sin(x * s2 - t * 1.14) * 0.9; if (x) ctx.lineTo(x, yy); else ctx.moveTo(x, yy); } ctx.lineWidth = w; ctx.stroke(); };
+      ctx.strokeStyle = `rgba(${r},${g},${b},${0.62 * tint})`; wave(0, 2, 2.8, 0.032, 0.074);
+      ctx.strokeStyle = `rgba(255,255,255,${0.65 * tint})`; wave(5, 2, 1.25, 0.025, 0.05);
+      ctx.restore();
+    }
+    function drawFront(ctx, cx, cy, w, v) {
+      if (md.id !== "air" && tint > 0.3 && Math.abs(v) > 0.1 && Math.random() < 0.3 && bubbles.length < 45 && !reduceMotion)
+        bubbles.push({ x: cx + (Math.random() - 0.5) * w * 0.9, y: cy + (Math.random() - 0.5) * 40, r: 1.8 + Math.random() * 4, a: 1, life: 0, ttl: 0.75 + Math.random() * 0.8, dx: (Math.random() - 0.5) * 0.3 });
+      const [r, g, b] = color;
+      ctx.save();
+      if (md.id !== "air" && Math.abs(v) > 0.12 && tint > 0.1) {     // small ripples beside the body while it moves
+        ctx.strokeStyle = `rgba(${r},${g},${b},${0.6 * tint})`; ctx.lineWidth = 1.8;
+        for (let i = 0; i < 4; i++) { const side = i % 2 ? 1 : -1, x = cx + side * (w * 0.55 + i * 6), y = cy - 19 + (i * 13) % 48; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + side * 13, y + 6, x + side * 3, y + 11); ctx.stroke(); }
+      }
+      for (const q of bubbles) { ctx.globalAlpha = q.a * 0.63; ctx.strokeStyle = md.id === "water" ? "#70bedc" : "#d5a65b"; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.restore();
+    }
+    function destroy() { killOverlay(); bubbles.length = 0; }
+    return { to, tick, drawBack, drawFront, destroy, get medium() { return md; }, get tint() { return tint; } };
+  }
+
   SCREENS.lab = (args = {}) => {
     if (lab.mode === "wall") return SCREENS.wall(args);
     if (lab.mode === "launch") return SCREENS.launch(args);
@@ -982,11 +1075,13 @@
           <div class="slider-row"><label for="mIn"><span>מסה m ${infoBtn("m")} <span class="note" id="mNote"></span></span><span class="val" id="mVal"></span></label>
             <input id="mIn" class="mass" type="range" min="0.5" max="4" step="0.1">
             <button class="linkish" id="mReset" type="button" hidden>חזרה למסת הדמות</button></div>
-          <details class="adv" id="adv"><summary>מתקדם: בלימה b</summary>
+          <button class="adv-toggle" id="advBtn" type="button" aria-expanded="false" aria-controls="adv"><span class="adv-ic" aria-hidden="true">🌊</span><span class="adv-t"><b>בלימה: באיזה חומר הקפיץ?</b><small id="advNow">אוויר</small></span><span class="adv-chev" aria-hidden="true">⌄</span></button>
+          <div class="adv" id="adv" hidden>
+            <div class="media" role="radiogroup" aria-label="חומר הסביבה">${SP.MEDIA.map((md) => `<button type="button" role="radio" class="medium" data-medium="${md.id}"><span aria-hidden="true">${md.emoji}</span>${md.he}</button>`).join("")}</div>
             <div class="slider-row"><label for="bIn"><span>מקדם בלימה b ${infoBtn("b")}</span><span class="val" id="bVal"></span></label>
-              <input id="bIn" class="damp" type="range" min="0" max="3" step="0.1"></div>
-            <p class="fine">עם בלימה התנודה דועכת, וזמן המחזור כבר לא בדיוק 2π√(m/k).</p>
-          </details>
+              <input id="bIn" class="damp" type="range" min="0" max="3" step="0.5"></div>
+            <p class="fine" id="mediumDesc"></p>
+          </div>
         </div>
         <div class="card formula" id="formula" hidden></div>
       </div>`;
@@ -1021,12 +1116,13 @@
     }
     // any change: start again at rest at the NEW equilibrium, and say what moved
     function reconfigure(why) {
+      if (lab.medium) { const md = SP.MEDIA.find((x) => x.id === lab.medium); lab.b = +SP.dampingFor(md.zeta, lab.k, mass()).toFixed(1); }   // a chosen medium keeps its ζ when k or m change
       const before = { eq: SP.equilibrium(sim.p), T: SP.period(sim.p) };
       sim.reset(params(), 0);
       trial = null;
       const after = { eq: SP.equilibrium(sim.p), T: SP.period(sim.p) };
       if (why) say(`${why} שיווי המשקל: ${fmt(before.eq * 100, 1)} ← ${fmt(after.eq * 100, 1)} ס״מ. T: ${fmt(before.T)} ← ${fmt(after.T)} שנ׳.`, 4);
-      paintControls(); paintFormula();
+      paintControls(); paintFormula(); paintMedium(true);
     }
     kIn.addEventListener("input", () => { lab.k = +kIn.value; reconfigure(); });
     kIn.addEventListener("change", () => reconfigure("הקפיץ הוחלף."));
@@ -1035,7 +1131,27 @@
       reconfigure();
       if (lab.massOverride !== null) say(`${FEEL(mass() / m0())} שיווי המשקל עכשיו ${fmt(SP.equilibrium(sim.p) * 100, 1)} ס״מ, T = ${fmt(SP.period(sim.p))} שנ׳. מהר, נסו לפני שאני חוזר לעצמי!`, 4);
     });
-    bIn.addEventListener("input", () => { lab.b = +bIn.value; reconfigure(); });
+    // ---- the medium around the spring (air, water, oil, honey): it names the b slider and animates the change ----
+    const fluid = makeFluid(box);
+    let shownMedium = null;                                    // the first paint sets the lab's look without a wave
+    function paintMedium(animate) {
+      const md = SP.mediumOf(lab.b, lab.k, mass());
+      bIn.max = Math.max(3, Math.ceil(SP.dampingFor(1.8, lab.k, mass()))); bIn.value = lab.b;
+      $("#advNow").textContent = `${md.emoji} ${md.he}${lab.b > 0 ? " · b = " + fmt(lab.b, 1) : ""}`;
+      for (const c of screenEl.querySelectorAll("[data-medium]")) c.setAttribute("aria-checked", c.dataset.medium === md.id ? "true" : "false");
+      $("#mediumDesc").textContent = md.desc + (lab.b > 0 ? ". עם בלימה זמן המחזור כבר לא בדיוק 2π√(m/k)." : ".");
+      if (md.id !== shownMedium) { shownMedium = md.id; fluid.to(md, animate); }
+    }
+    $("#advBtn").addEventListener("click", () => {
+      const open = $("#adv").hidden; $("#adv").hidden = !open; $("#advBtn").setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) $("#adv").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      G.sfx.pop();
+    });
+    for (const c of screenEl.querySelectorAll("[data-medium]")) c.addEventListener("click", () => {
+      const md = SP.MEDIA.find((x) => x.id === c.dataset.medium);
+      lab.medium = md.id; reconfigure(); say(`${md.emoji} ${md.he}: ${md.desc}.`, 3.4);
+    });
+    bIn.addEventListener("input", () => { lab.b = +bIn.value; lab.medium = null; reconfigure(); });
     $("#mReset").addEventListener("click", () => { lab.massOverride = null; mIn.value = m0(); reconfigure("חזרה למסת הדמות."); });
     $("#formulaBtn").addEventListener("click", () => {
       formulaOpen = !$("#formula").hidden ? false : true;
@@ -1053,7 +1169,7 @@
         <div class="eq"><span>זמן מחזור (בלי בלימה)</span><span class="m">T = 2π·√(m/k)<em>${fmt(SP.period(p))} s</em></span></div>
         <p class="fine">s היא ההתארכות מהאורך הטבעי של הקפיץ. כוח חיובי פירושו כלפי מטה, ולכן כשהקפיץ מתוח F שלילי: הוא מושך למעלה.</p>`);
     }
-    paintControls();
+    paintControls(); paintMedium(false);
     const keeper = massKeeper({ say: (t, d) => say(t, d), m0, apply: (m) => { mIn.value = m; sim.reset(params(), 0); trial = null; paintControls(); } });
     infoLive = () => ({ k: lab.k, m: mass(), m0: m0(), name: nameOf(sp), s: sim.st.s, eq: SP.equilibrium(sim.p) });
 
@@ -1103,9 +1219,9 @@
         return;
       }
       G.audio.unlock();
-      dragging = { dy: p.y - hookY(sim.st.s) };
+      dragging = { dy: p.y - hookY(sim.st.s), u: Math.max(0, sim.u) };
       cv.setPointerCapture(e.pointerId);
-      sim.hold(sim.u);
+      sim.pull(dragging.u);                                  // the finger pulls through a "grip": thick media make it lag
       trial = null;
       if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
       say(DRAG_LINES[Math.floor(Math.random() * DRAG_LINES.length)], 2);
@@ -1115,13 +1231,13 @@
       const p = pointerPos(e);
       const eqY = hookY(SP.equilibrium(sim.p));
       const u = clamp((p.y - dragging.dy - eqY) / scale, 0, U_MAX);
-      sim.hold(u);
+      dragging.u = u; sim.pull(u);
     });
     const letGo = () => {
       if (!dragging) return;
       dragging = null;
       const u0 = sim.u;
-      if (u0 < 0.02) { sim.reset(sim.p, 0); return; }        // too small: it just settles
+      if (u0 < 0.02 && Math.abs(sim.st.v) < 0.05) { sim.reset(sim.p, 0); return; }        // too small: it just settles
       lab.lastU0 = u0;
       sim.release();
       trial = startRelease(u0);
@@ -1180,6 +1296,7 @@
       ctx.strokeStyle = "rgba(58,58,64,0.35)"; ctx.lineWidth = 1.2;
       for (let i = -10; i < 160; i += 10) { ctx.beginPath(); ctx.moveTo(x - 70 + i, TOP); ctx.lineTo(x - 70 + i + 14, 0); ctx.stroke(); }
       ctx.restore();
+      fluid.drawBack(ctx, W, H, TOP);
       // ruler: s from the natural length, in metres
       const rx = 40, y0 = hookY(0), yEnd = hookY(eq + U_MAX + 0.02);
       pencilLine(rx, TOP, rx, yEnd, 1.6, "#6B6B70");
@@ -1223,14 +1340,25 @@
         forceArrow(ctx, x + Math.min(ox, W - x - 70), cy, 0, Wt * kpx, "#2785C7", "mg", { value: Wt });
         if (Math.abs(Fs) > 0.05) forceArrow(ctx, x + Math.min(ox, W - x - 70), cy, 0, -Fs * kpx, "#25A06F", "kΔx", { value: Math.abs(Fs) });
       }
-      // first time: show where to pull
+      fluid.drawFront(ctx, x, yS + r.h * 0.45, r.w, sim.st.v);
+      // where the finger is, when the body lags behind it (thick media)
+      if (dragging && Math.abs(dragging.u - sim.u) * scale > 6) {
+        const ty = hookY(SP.equilibrium(p) + dragging.u);
+        ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(150,120,70,0.75)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x - r.w * 0.6, ty); ctx.lineTo(x + r.w * 0.6, ty); ctx.stroke(); ctx.restore();
+        ctx.fillStyle = "#7f6c4c"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "right"; ctx.fillText("האצבע", x - r.w * 0.6 - 6, ty + 4); ctx.direction = "ltr";
+      }
+      // first time: show where to pull (big, and to the side of the creature so it does not cover it)
       if (!everDragged && !reduceMotion) {
         const k = (performance.now() / 900) % 1;
-        ctx.globalAlpha = Math.sin(k * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
-        const ax = x - r.w / 2 - 18, ay = yS + r.h * 0.35 + k * 26;
-        ctx.beginPath(); ctx.moveTo(ax, ay - 22); ctx.lineTo(ax, ay); ctx.moveTo(ax - 7, ay - 8); ctx.lineTo(ax, ay); ctx.lineTo(ax + 7, ay - 8); ctx.stroke();
-        ctx.globalAlpha = 1; ctx.fillStyle = "#1A74D0"; ctx.font = "600 13px " + FONT;
-        ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.fillText("גררו למטה", ax, yS + r.h * 0.35 + 50); ctx.direction = "ltr";
+        const ax = Math.max(rx + 50, x - r.w / 2 - 38), ay = yS + r.h * 0.25 + k * 34;
+        ctx.globalAlpha = Math.sin(k * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 4.5;
+        ctx.beginPath(); ctx.moveTo(ax, ay - 32); ctx.lineTo(ax, ay); ctx.moveTo(ax - 11, ay - 12); ctx.lineTo(ax, ay); ctx.lineTo(ax + 11, ay - 12); ctx.stroke();
+        ctx.globalAlpha = 1; ctx.font = "800 18px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center";
+        const ty = yS + r.h * 0.25 + 62;
+        ctx.lineWidth = 5; ctx.strokeStyle = "rgba(255,254,252,0.95)"; ctx.fillStyle = "#1A74D0";
+        ["גררו", "למטה"].forEach((w, i) => { ctx.strokeText(w, ax, ty + i * 21); ctx.fillText(w, ax, ty + i * 21); });   // two short lines: fits beside the creature
+        ctx.direction = "ltr";
       }
     }
     function paintReadouts() {
@@ -1249,6 +1377,7 @@
     function frame(now) {
       const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
       if (!isSheetOpen()) sim.advance(dt);
+      fluid.tick(dt, now);
       const target = targetScale();
       scale += (target - scale) * Math.min(1, dt * 5);
       draw();
@@ -1261,7 +1390,7 @@
     scale = targetScale() || 300;
     raf = requestAnimationFrame(frame);
     say(nameOf(sp) + " תלוי על הקפיץ. גררו אותו למטה ושחררו.", 3.2);
-    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); document.querySelector(".sheet-back")?.remove(); };
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); fluid.destroy(); document.querySelector(".sheet-back")?.remove(); };
     bindModeSeg(args);
   };
 

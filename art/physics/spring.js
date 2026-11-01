@@ -30,10 +30,33 @@ const SpringPhys = (() => {
   // underdamped? (b < 2√(km))
   const underdamped = (p) => p.b < 2 * Math.sqrt(p.k * p.m);
 
-  function step(st, p, dt = DT) {
+  function step(st, p, dt = DT, extra = 0) {
     positive("dt", dt);
-    const v = st.v + accel(st.s, st.v, p) * dt;                 // semi-implicit Euler
+    const v = st.v + (accel(st.s, st.v, p) + extra / p.m) * dt; // semi-implicit Euler (extra = an outside force, e.g. a finger)
     return { s: st.s + v * dt, v };
+  }
+
+  // ---------------- the medium around the spring (spring_damping pack) ----------------
+  // b = 2·ζ·√(k·m). "Air" here is b = 0 so periods can still be measured exactly; water, oil and honey
+  // are chosen by their damping ratio ζ (a teaching model: linear drag, no buoyancy).
+  const MEDIA = [
+    { id: "air", he: "אוויר", emoji: "🌬️", zeta: 0, rgb: [224, 231, 216], desc: "כמעט בלי בלימה: התנודה נמשכת הרבה זמן" },
+    { id: "water", he: "מים", emoji: "💧", zeta: 0.32, rgb: [61, 184, 224], desc: "התנודה דועכת מהר, ובמשיכה מרגישים השהיה" },
+    { id: "oil", he: "שמן", emoji: "🫗", zeta: 0.78, rgb: [220, 151, 67], desc: "התנגדות חזקה: כמעט בלי תנודות" },
+    { id: "honey", he: "דבש", emoji: "🍯", zeta: 1.65, rgb: [218, 161, 39], desc: "בלימה חזקה מאוד: חוזר לאט, בלי לעבור את שיווי המשקל" }
+  ];
+  const criticalDamping = (k, m) => 2 * Math.sqrt(k * m);
+  const dampingFor = (zeta, k, m) => zeta * criticalDamping(k, m);
+  // which medium a b value looks like (the slider stays continuous; this only names it)
+  function mediumOf(b, k, m) {
+    const z = b / criticalDamping(k, m);
+    return z < 0.12 ? MEDIA[0] : z < 0.55 ? MEDIA[1] : z < 1.1 ? MEDIA[2] : MEDIA[3];
+  }
+  // pulling with a finger: the finger is a stiff, damped "grip" spring towards where the finger is,
+  // so in thick media the body follows a little late instead of jumping to the finger
+  function gripForce(st, targetS, p) {
+    const K = 825 * p.m + 4 * p.k, C = 1.4 * Math.sqrt(K * p.m);
+    return K * (targetS - st.s) - C * st.v + p.k * (targetS - equilibrium(p));   // the last term holds it exactly at the finger once still
   }
   // start at rest, u below the equilibrium (u = 0 is a true rest state)
   const fromEquilibrium = (p, u) => ({ s: equilibrium(p) + u, v: 0 });
@@ -43,10 +66,14 @@ const SpringPhys = (() => {
     constructor(p, u0 = 0) { this.reset(p, u0); }
     reset(p, u0 = 0) {
       this.p = p; this.st = fromEquilibrium(p, u0); this.acc = 0; this.t = 0;
-      this.crossings = []; this.lastU = u0; this.held = false; this.maxU = Math.abs(u0);
+      this.crossings = []; this.lastU = u0; this.held = false; this.pullU = null; this.maxU = Math.abs(u0);
     }
-    hold(u) { this.held = true; this.st = { s: equilibrium(this.p) + u, v: 0 }; this.lastU = u; }
-    release() { this.held = false; this.acc = 0; this.t = 0; this.crossings = []; this.maxU = Math.abs(this.u); }
+    hold(u) { this.held = true; this.pullU = null; this.st = { s: equilibrium(this.p) + u, v: 0 }; this.lastU = u; }
+    // follow a finger at u (below equilibrium) through the grip force: the medium slows it down
+    pull(u) { this.held = false; this.pullU = u; }
+    get pulling() { return this.pullU !== null && this.pullU !== undefined; }
+    // letting go keeps the speed it has at that moment
+    release() { this.held = false; this.pullU = null; this.acc = 0; this.t = 0; this.crossings = []; this.maxU = Math.abs(this.u); }
     get u() { return this.st.s - equilibrium(this.p); }
     // advance by real elapsed time (capped), in fixed steps; returns the number of steps
     advance(elapsed) {
@@ -54,8 +81,10 @@ const SpringPhys = (() => {
       this.acc += Math.min(elapsed, 0.25);
       let n = 0;
       while (this.acc >= DT) {
-        this.st = step(this.st, this.p, DT);
+        const f = this.pulling ? gripForce(this.st, equilibrium(this.p) + this.pullU, this.p) : 0;
+        this.st = step(this.st, this.p, DT, f);
         this.acc -= DT; this.t += DT; n++;
+        if (this.pulling) { this.lastU = this.u; continue; }   // no period measuring while held
         const u = this.u;
         // upward pass through equilibrium (u goes from + to -): one per period
         if (this.lastU > 0 && u <= 0) {
@@ -231,6 +260,7 @@ const SpringPhys = (() => {
   }
 
   return { G_EARTH, DT, params, equilibrium, period, omega, springForce, elasticEnergy, accel, totalEnergy, underdamped, step, fromEquilibrium, Sim,
+    MEDIA, criticalDamping, dampingFor, mediumOf, gripForce,
     hparams, stickZone, halfSwingLoss, hstep, HSim,
     lparams, restCompression, detachCompression, launchSpeed, launchApex, riseFromStart, lstep, LSim,
     track, trackAt, trackEnd, rstep, rparams, rEnergy,

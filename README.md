@@ -55,6 +55,11 @@ player's coins or progress.
 | Tests (run in the APK build) | `tests/spring.test.js`, `tests/incline.test.js`, `tests/profile.test.js` |
 | The specs and art they are built from | `art/source/physics/`, `art/source/incline/` |
 
+Damping (hanging spring): the **🌊 בלימה** button opens air / water / oil / honey (`SP.MEDIA`, b = 2ζ√(km)) and the
+continuous b slider. Changing the medium sends a wave across the screen; afterwards only a thin surface line and a fading
+tint stay in the lab, with bubbles while the creature moves. Dragging pulls through a "grip" force, so in thick media the
+creature follows the finger a little late. Tests: `tests/damping.test.js` (from the spring_damping pack).
+
 Mini games so far: **קפיץ־קפוץ** (springs; switch between a hanging spring and a spring from the wall
 on wood, ice or rubber) and **מי מושך אותי?!** (inclined plane in 7 stages; only the angle and the
 surface can change, the creature's body is fixed).

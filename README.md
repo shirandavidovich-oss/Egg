@@ -50,6 +50,10 @@ player's coins or progress.
 |---|---|
 | Spring physics: hanging, and from a wall on a floor with friction | `art/physics/spring.js` |
 | Inclined plane physics (forces, static/kinetic friction, sliding) | `art/physics/incline.js` |
+| "הרפתקאות על המדרון": 18 situations, exact-event engine (forces in time, pulleys, piecewise track, slack rope, spring contact, energy) | `art/physics/ramp-engine.js` |
+| The 18 situations and 90 missions, run tracking and answer checks (all answers computed at run time) | `art/physics/ramp-scenes.js` |
+| Map of situations and the situation screen (rigs, graphs, force diagrams, predictions) | `art/physics/ramp-ui.js` |
+| Tests: the pack's 18 reference checks + acceptance, and a robot that completes all 90 missions | `tests/ramp-engine.test.js`, `tests/ramp-missions.test.js` |
 | Player profile: coins ledger, progress, owned creatures | `art/physics/profile.js` |
 | Screens, lever, lab, coins, map | `art/physics/ui.js`, `ui.css`, `ui.html` |
 | Tests (run in the APK build) | `tests/spring.test.js`, `tests/incline.test.js`, `tests/profile.test.js` |
@@ -105,3 +109,12 @@ a reinstall once the account is linked.
 - Supabase > Authentication > Sign In / Providers: **Allow anonymous sign-ins** must be on. The game
   makes a quiet account on first launch; linking it to Google comes next.
 - Odds: table `rarity_weights`; which creature is which rarity: table `creatures`.
+
+### הרפתקאות על המדרון (inclined plane, 18 situations)
+
+The newton topic card now opens a map of 18 situations in five groups (יסודות, ביניים, מתקדם, העשרה, אתגר בגרות).
+The original seven stages stay as "ההדרכה". Stages 4, 5 and 6 count as S02-M01, S01-M01 and S01-M03, with no second payout.
+Missions pay 5 coins the first time and a finished situation pays 15 more (`ramp:<id>` ledger events).
+The topic meter is mastery over 12 skills, not a count of missions, and the newton topic weighs 12 units in the overall meter.
+Body mass is the creature's own mass plus an optional backpack. μ comes from the surface.
+Spec: `incline_friction_claude_pack` (docs in Hebrew, `data/scenarios.json`).

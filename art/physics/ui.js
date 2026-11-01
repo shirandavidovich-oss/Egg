@@ -37,12 +37,25 @@
   const INCLINE_UNITS = SPR.inclineStages.map((st) => ({ id: "newton.s" + st.stage, stage: st.stage, he: st.title_he, insight: st.takeaway_he, eq: INCLINE_EQ[st.stage], coins: st.unique_reward_coins, task: st.interaction_he }));
   const MOTION_UNITS = KIN_DATA.units.map((u) => ({ id: u.id, level: u.level, he: u.he, concept: u.concept, insight: u.insight, eq: u.eq, coins: u.level === 8 ? 25 : 10 }));
   const FAMILY_UNITS = { springs: SPRING_UNITS, newton: INCLINE_UNITS, motion: MOTION_UNITS };
-  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מי מושך אותי?!", motion: "העוגייה בורחת!" };
-  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + (FAMILY_UNITS[t.id] ? FAMILY_UNITS[t.id].length : t.subtopics_he.length), 0);
+  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מישור משופע וחיכוך", motion: "העוגייה בורחת!" };
+  // the inclined plane is now 18 situations measured by 12 skills (RampScenes.coverage); it weighs 12 units
+  // in the overall meter. The seven original stages still count, once, inside that skill meter.
+  const FAMILY_WEIGHT = { newton: 12 };
+  const weightOf = (id, t) => FAMILY_WEIGHT[id] || (FAMILY_UNITS[id] ? FAMILY_UNITS[id].length : t ? t.subtopics_he.length : 0);
+  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + weightOf(t.id, t), 0);
   const done = () => P.data.physics.completed_subtopic_ids;
-  const ALL_UNITS = Object.values(FAMILY_UNITS).flat();
-  const doneUnits = () => ALL_UNITS.filter((u) => done().includes(u.id)).length;
-  const familyCoverage = (id) => FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
+  const rampState = () => {
+    const ph = P.data.physics;
+    if (!ph.ramp) { ph.ramp = { v: 1, completed: [], params: {}, seed: P.data.player_id, legacy_mapped: [] }; P.save(); }
+    // the old stages that match a new mission count as done there (no coins a second time)
+    let changed = false;
+    for (const id in RampScenes.LEGACY) { const l = RampScenes.LEGACY[id]; if (l.mission && done().includes(id) && !ph.ramp.completed.includes(l.mission)) { ph.ramp.completed.push(l.mission); ph.ramp.legacy_mapped.push(l.mission); changed = true; } }
+    if (changed) P.save();
+    return ph.ramp;
+  };
+  const familyCoverage = (id) => id === "newton" ? RampScenes.coverage(rampState().completed, done()).total
+    : FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
+  const doneUnits = () => Object.keys(FAMILY_UNITS).reduce((n, id) => n + familyCoverage(id) * weightOf(id), 0);
   const overallCoverage = () => doneUnits() / TOTAL_UNITS;
   const pct = (x) => Math.round(x * 100) + "%";
 
@@ -183,7 +196,7 @@
     ui.hidden = false; G.covered = true;
     screenEl.className = ""; void screenEl.offsetWidth; screenEl.className = "screen-in";
     screenEl.scrollTop = 0;
-    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
+    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", ramps: "physics", rscene: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
@@ -272,7 +285,7 @@
           <span class="btn secondary">להמשיך במסלול</span>
         </button>
         <div class="card">
-          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${doneUnits()}/${TOTAL_UNITS}</span></div>
+          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${Math.round(doneUnits())}/${TOTAL_UNITS}</span></div>
           <div class="meter-row"><span class="meter teal"><i style="width:0"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         </div>
       </div>`;
@@ -383,13 +396,14 @@
       art: `<svg viewBox="0 0 90 210"><path d="M4 196h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="14" y="176" width="44" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="22" cy="190" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="50" cy="190" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="74" cy="182" r="9" fill="#E3B26A" stroke="currentColor" stroke-width="2"/><path d="M8 150h40" stroke="#2785C7" stroke-width="3" stroke-linecap="round"/><path d="M42 144l8 6-8 6" fill="none" stroke="#2785C7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
     springs: { title: "קפיצים ואלסטיות", name: "קפיץ־קפוץ", bubble: "תמשוך אותי בעדינות… או שלא!", screen: "lab",
       art: `<svg viewBox="0 0 90 210"><path d="M10 6h70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M45 6v14l-22 7 44 9-44 9 44 9-44 9 44 9-44 9 44 9-22 7v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="45" cy="138" r="5" fill="none" stroke="#F49A35" stroke-width="2.6"/></svg>` },
-    newton: { title: "מישור משופע, כוחות וחיכוך", name: "מי מושך אותי?!", bubble: "אני רק יושב פה. מה כבר יכול לקרות?", screen: "incline",
+    newton: { title: "מישור משופע, כוחות וחיכוך", name: "הרפתקאות על המדרון", bubble: "18 מדרונות. אחד מהם בטח מחליק.", screen: "ramps",
       art: `<svg viewBox="0 0 90 210"><path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 196L84 120v76z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M28 196a20 20 0 0 0-4-12" fill="none" stroke="#F49A35" stroke-width="2.4"/><circle cx="84" cy="120" r="6" fill="#F49A35" stroke="currentColor" stroke-width="2"/></svg>` }
   };
   SCREENS.card = ({ topic = "springs", ordered = false }) => {
     const t = TOPICS.find((x) => x.id === topic), g = GAMES[topic] || GAMES.springs, units = FAMILY_UNITS[topic] || SPRING_UNITS;
     setTitle(g.title, ordered ? "לפי הסדר" : t ? t.world_he : "");
-    const sp = activeSpecies(), cov = familyCoverage(topic), n = units.filter((u) => done().includes(u.id)).length;
+    const sp = activeSpecies(), cov = familyCoverage(topic);
+    const isRamp = topic === "newton", n = isRamp ? rampState().completed.length : units.filter((u) => done().includes(u.id)).length, of = isRamp ? RampScenes.ALL.length : units.length;
     screenEl.innerHTML = `
       <div class="stack intro">
         <div class="scene">
@@ -398,9 +412,9 @@
           ${creatureImg(sp)}
         </div>
         <h2>${esc(g.name)}${g.name.endsWith("!") ? "" : "!"}</h2>
-        ${ordered ? `<p class="path-line">המסלול: ${esc(t.world_he)} ‹ ${esc(t.title_he)} ‹ שלב ${Math.min(n + 1, units.length)} מתוך ${units.length}</p>` : ""}
+        ${ordered ? `<p class="path-line">המסלול: ${esc(t.world_he)} ‹ ${esc(t.title_he)} ‹ ${isRamp ? "משימה" : "שלב"} ${Math.min(n + 1, of)} מתוך ${of}</p>` : ""}
         <div class="card" style="text-align:right">
-          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${units.length}</span></div>
+          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${of}</span></div>
           <div class="meter-row"><span class="meter violet"><i style="width:${Math.max(2, cov * 100)}%"></i></span><span class="pct">${pct(cov)}</span></div>
         </div>
         <button class="btn primary block" id="go" type="button">בוא ננסה</button>
@@ -466,7 +480,7 @@
     const mast = P.data.physics.mastery, attempts = Object.values(mast).reduce((n, m) => n + m.attempts, 0), correct = Object.values(mast).reduce((n, m) => n + m.correct, 0);
     screenEl.innerHTML = `
       <div class="card">
-        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${doneUnits()}/${TOTAL_UNITS}</span></div>
+        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${Math.round(doneUnits())}/${TOTAL_UNITS}</span></div>
         <div class="meter-row"><span class="meter teal"><i style="width:${Math.max(2, overallCoverage() * 100)}%"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         <p class="fine" style="margin:10px 0 0">זה מד של חומר שפגשת, לא ציון בגרות. ${attempts >= 3 ? `שאלות קטנות: ${correct} נכונות מתוך ${attempts}.` : ""}</p>
       </div>
@@ -3845,4 +3859,10 @@
   paintCoins();
   syncHud();
   window.eggPhysics = { open: openUI, reward, units: UNITS };
+  // the inclined-plane situations (ramp-ui.js) build on the same shell, coins, meters and drawing helpers
+  window.eggPhysics.kit = {
+    G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, back, setTitle, sheet, isSheetOpen, reward, forceArrow, paintCoins,
+    activeSpecies, phys, nameOf, artOf, creatureImg, familyCoverage, overallCoverage, pct, rampState, done,
+    onCleanup: (fn) => { cleanup = fn; }, closeInfo, icon
+  };
 })();

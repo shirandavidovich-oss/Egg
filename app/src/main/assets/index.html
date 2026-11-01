@@ -574,6 +574,82 @@
   .tl-hl { box-shadow: 0 0 0 3px #FFD45C !important; background: #FFF6D6 !important; transition: box-shadow .8s, background .8s; }
   @media (prefers-reduced-motion: reduce) { .tl-ring { animation: none; } }
 
+  /* ---------- הרפתקאות על המדרון: the map of 18 situations and one situation ---------- */
+  .rmap h3.rgroup { margin: 8px 2px 0; font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .rtile { display: flex; gap: 10px; align-items: flex-start; text-align: right; padding: 12px; cursor: pointer; font: inherit; color: var(--ink); min-width: 0; }
+  .rtile.tut { align-items: center; }
+  .rtile .ricon { width: 46px; height: 46px; flex: none; color: #3a3a40; }
+  .rtile .ricon svg { width: 100%; height: 100%; }
+  .rtile .rtxt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .rtile b { font-size: 15px; line-height: 1.25; }
+  .rtile small { font-size: 12px; color: var(--ink-2); line-height: 1.3; }
+  .rtile.locked { opacity: 0.45; }
+  .rtile.full { border-color: #D9CBF8; background: #FBF9FF; }
+  .rtile.shake { animation: rshake 0.35s; }
+  @keyframes rshake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .dots { display: flex; gap: 4px; margin-top: 4px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: #E4E6EA; }
+  .dots i.on { background: var(--violet); }
+  .skills { margin-top: 8px; }
+  .skill-list { display: grid; gap: 7px; margin-top: 8px; }
+  .skill-list div { display: grid; grid-template-columns: 9em 1fr; gap: 8px; align-items: center; font-size: 13px; }
+
+  .rscene .mbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .rscene .mbar button { height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font: 700 15px var(--ui-font); color: var(--ink-2); cursor: pointer; }
+  .rscene .mbar button.done { background: #EFE8FC; border-color: #D9CBF8; color: #5B37B8; }
+  .rscene .mbar button[aria-selected] { border-color: var(--violet); color: #5B37B8; box-shadow: 0 0 0 2px rgba(138,96,232,0.2); }
+  .mission { display: block; padding: 12px 14px; }
+  .mission .mhead small { color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+  .mission .mhead p { margin: 4px 0 6px; font-size: 16.5px; font-weight: 600; line-height: 1.4; }
+  .mission .q { margin: 6px 0 0; font-weight: 600; }
+  .mission .gate, .mission .status { margin: 4px 0 0; color: var(--ink-2); font-size: 14.5px; }
+  .mission .learn, .mission .ok { margin: 4px 0 8px; color: #137556; font-weight: 600; }
+  .mission .bad { margin: 4px 0; color: #B03A2E; font-weight: 600; }
+  .mission .why { margin: 8px 0 0; font-size: 14.5px; color: var(--ink); }
+  .mission .locked { margin: 4px 0; font-weight: 700; color: #5B37B8; }
+  .mission .options { margin-top: 8px; }
+  .mission .options button { min-height: 46px; font-size: 15px; }
+  .mrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .mrow .btn { flex: 1; min-height: 46px; }
+  .mhint summary { font-size: 13px; }
+  .mhint p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
+  .numgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 6px; }
+  .numgrid label { display: grid; gap: 4px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+  .numgrid .inp { display: flex; align-items: center; gap: 6px; direction: ltr; }
+  .numgrid input { width: 100%; min-width: 0; min-height: 44px; border-radius: 12px; border: 1.5px solid var(--line); padding: 0 10px; font: 700 17px var(--ui-font); text-align: left; }
+  .numgrid input.bad { border-color: #F0B3AD; background: #FDF0EE; }
+  .numgrid em { font-style: normal; color: var(--ink-2); font-size: 13px; white-space: nowrap; }
+  .fbd, .multi { display: grid; gap: 10px; margin-top: 6px; }
+  .frow { display: grid; gap: 6px; padding: 6px; border-radius: 12px; }
+  .frow.bad { background: #FDF0EE; }
+  .flabel { font-weight: 700; font-size: 14px; }
+  .fopts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .fopts button { display: grid; justify-items: center; gap: 0; width: 64px; padding: 4px 2px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; font: 500 10.5px var(--ui-font); line-height: 1.15; }
+  .fopts button svg { width: 30px; height: 30px; }
+  .fopts button[aria-pressed="true"] { border-color: var(--violet); background: #F5F0FF; color: #5B37B8; }
+  .transport { display: flex; gap: 6px; direction: ltr; }
+  .tbtn { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid #3a3a40; background: rgba(255,255,255,0.96); font: 700 18px var(--ui-font); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+  .tbtn[aria-pressed="true"] { background: #F2F8FF; border-color: var(--blue); }
+  #tPlay { background: var(--blue); color: #fff; border-color: var(--blue-press); }
+  .viewseg button { font-size: 14px; }
+  .graphcard { padding: 10px; display: grid; gap: 6px; }
+  .graphcard canvas { position: static; inset: auto; width: 100%; height: 170px; display: block; touch-action: auto; }
+  .graphcard .seg { overflow-x: auto; }
+  .graphcard .seg button { white-space: nowrap; min-width: 64px; font-size: 13.5px; direction: ltr; }
+  .rscene .lab { height: 52vh; min-height: 300px; }
+  .rscene .toast { position: absolute; left: 10px; right: 10px; bottom: 64px; z-index: 3; padding: 10px 12px; animation: sheetUp 0.3s cubic-bezier(.2,.8,.2,1); }
+  .rscene .toast b { display: flex; align-items: center; gap: 6px; color: var(--gold-2); font-size: 15px; }
+  .rscene .toast p { margin: 4px 0 6px; font-size: 14.5px; line-height: 1.35; }
+  .tmeters { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; font-size: 11.5px; color: var(--ink-2); }
+  .btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .srow { display: flex; align-items: center; gap: 8px; }
+  .srow input { flex: 1; min-width: 0; }
+  .srow .step { width: 42px; height: 42px; font-size: 20px; }
+  .meas table { margin-top: 6px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 360px) { .rgrid { grid-template-columns: 1fr; } }
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
@@ -922,6 +998,1223 @@ const InclinePhys = (() => {
     return { d, v, bottom, fr };
   }
   return { DEG, G_EARTH, DT, forces, components, step };
+})();
+
+// ======================================================================
+//  "הרפתקאות על המדרון": physics for the 18 inclined-plane situations.
+//  SI units, g = 10 by default. Every model is a 1-D track: one coordinate s,
+//  one velocity v, an inertial mass M, and at each moment a driving force
+//  (everything but friction, along +s), a static-friction limit and a
+//  kinetic-friction size. The integrator steps exactly between events:
+//    v crossing zero  -> static friction gets re-evaluated (no flip-flop)
+//    a time event     -> engine off, brake on (split the step there)
+//    a position event -> track joint, barrier, spring contact
+//  Static friction is only as large as needed; kinetic friction opposes v.
+//  (spec: incline_friction_claude_pack/docs/PHYSICS_SPEC_HE.md)
+// ======================================================================
+const RampPhys = (() => {
+  "use strict";
+  const EPS = 1e-9, DEG = Math.PI / 180, G = 10;
+  const rad = (d) => d * DEG;
+  const sgn = (x) => (x > 0 ? 1 : x < 0 ? -1 : 0);
+  const fin = (o) => { for (const k in o) if (typeof o[k] === "number" && !Number.isFinite(o[k])) throw new Error("invalid " + k + ": " + o[k]); };
+
+  // ---------- reference kernel (same contract as engine.mjs in the pack) ----------
+  function validateSingle(p) {
+    fin({ m: p.m, angleDeg: p.angleDeg, muS: p.muS, muK: p.muK, g: p.g });
+    if (p.m <= 0 || p.g <= 0 || p.angleDeg < 0 || p.angleDeg >= 90 || p.muS < 0 || p.muK < 0) throw new Error("Invalid plane input");
+    if (p.muK > p.muS + EPS) throw new Error("Presets require muS >= muK");
+  }
+  // fApplied: along the plane, + is UP. fInto: pressing into the plane (+) or lifting off it (−).
+  function singleBlockForces(p, { velocity = 0, fApplied = 0, fInto = 0 } = {}) {
+    validateSingle(p);
+    const { m, angleDeg, muS, muK, g } = p, th = rad(angleDeg);
+    const N = m * g * Math.cos(th) + fInto;
+    if (N <= EPS) return { contact: false, reason: "contact_lost_requires_2d_model", N: Math.max(0, N) };
+    const gravParallel = -m * g * Math.sin(th), driving = fApplied + gravParallel, maxStatic = muS * N;
+    let friction, mode, acceleration;
+    if (Math.abs(velocity) < EPS && Math.abs(driving) <= maxStatic + EPS) { friction = -driving; mode = "static"; acceleration = 0; }
+    else {
+      const dir = Math.abs(velocity) >= EPS ? Math.sign(velocity) : Math.sign(driving);
+      friction = -dir * muK * N; mode = "kinetic"; acceleration = (driving + friction) / m;
+    }
+    return { contact: true, N, gravParallel, driving, maxStatic, friction, mode, acceleration, netParallel: driving + friction, fApplied, fInto };
+  }
+  function stepSingle(p, state, dt, applied = {}) {
+    if (!(dt > 0 && dt <= 0.1)) throw new Error("dt must be >0 and <= 0.1s");
+    const tr = makeSingle({ ...p, F: applied.fApplied || 0, beta: 0, Q: applied.fInto || 0, L: Infinity, sMin: -Infinity });
+    tr.s = state.s; tr.v = state.v; tr.advance(dt);
+    return { s: tr.s, v: tr.v, forces: singleBlockForces(p, { velocity: tr.v, ...applied }) };
+  }
+  function hangingPulley({ mA, mB, angleDeg, muS, muK, g = G }, velocity = 0) {
+    validateSingle({ m: mA, angleDeg, muS, muK, g });
+    if (!(mB > 0)) throw new Error("mB must be positive");
+    const N = mA * g * Math.cos(rad(angleDeg)), drive = mB * g - mA * g * Math.sin(rad(angleDeg)), maxStatic = muS * N;
+    if (Math.abs(velocity) < EPS && Math.abs(drive) <= maxStatic + EPS) return { mode: "static", a: 0, drive, N, friction: -drive, T: mB * g, maxStatic };
+    const dir = Math.abs(velocity) >= EPS ? Math.sign(velocity) : Math.sign(drive);
+    const friction = -dir * muK * N, a = (drive + friction) / (mA + mB), T = mB * (g - a);
+    if (T < -EPS) return { mode: "invalid_rope_slack", a, T };
+    return { mode: "kinetic", a, T, friction, N, drive, maxStatic };
+  }
+  function doubleInclinePulley({ mA, mB, angleA, angleB, muSA, muSB, muKA, muKB, g = G }, velocity = 0) {
+    validateSingle({ m: mA, angleDeg: angleA, muS: muSA, muK: muKA, g });
+    validateSingle({ m: mB, angleDeg: angleB, muS: muSB, muK: muKB, g });
+    const NA = mA * g * Math.cos(rad(angleA)), NB = mB * g * Math.cos(rad(angleB));
+    const drive = mB * g * Math.sin(rad(angleB)) - mA * g * Math.sin(rad(angleA)), maxStatic = muSA * NA + muSB * NB;
+    if (Math.abs(velocity) < EPS && Math.abs(drive) <= maxStatic + EPS) return { mode: "static", a: 0, drive, NA, NB, maxStatic };
+    const dir = Math.abs(velocity) >= EPS ? Math.sign(velocity) : Math.sign(drive);
+    const frictionA = -dir * muKA * NA, frictionB = -dir * muKB * NB, a = (drive + frictionA + frictionB) / (mA + mB);
+    // rope tension from B's equation (B moves +s down its ramp)
+    const T = mB * g * Math.sin(rad(angleB)) + frictionB - mB * a;
+    return { mode: "kinetic", a, drive, NA, NB, frictionA, frictionB, maxStatic, T };
+  }
+  function descentEnergy({ m, angleDeg, muK, s, g = G }) {
+    if (m <= 0 || s < 0 || muK < 0 || angleDeg < 0 || angleDeg >= 90 || g <= 0) throw new Error("Invalid energy parameters");
+    const lostPotential = m * g * s * Math.sin(rad(angleDeg)), dissipated = muK * m * g * Math.cos(rad(angleDeg)) * s;
+    return { lostPotential, dissipated, deltaK: lostPotential - dissipated };
+  }
+  function stopDistanceUphill({ speed, angleDeg, muK, g = G }) {
+    if (speed < 0 || g <= 0 || muK < 0 || angleDeg < 0 || angleDeg >= 90) throw new Error("Invalid stop parameters");
+    const dec = g * (Math.sin(rad(angleDeg)) + muK * Math.cos(rad(angleDeg)));
+    return dec < EPS ? Infinity : speed * speed / (2 * dec);
+  }
+  // A uphill, B downhill, both sliding down, rope from A down to B
+  function linkedBlocksSameRamp({ mA, mB, angleDeg, muKA, muKB, g = G }) {
+    if (mA <= 0 || mB <= 0 || g <= 0 || angleDeg < 0 || angleDeg >= 90 || muKA < 0 || muKB < 0) throw new Error("Invalid block inputs");
+    const th = rad(angleDeg);
+    const driveA = mA * g * Math.sin(th) - muKA * mA * g * Math.cos(th), driveB = mB * g * Math.sin(th) - muKB * mB * g * Math.cos(th);
+    const a = (driveA + driveB) / (mA + mB), T = mA * a - driveA;
+    return T < 0 ? { mode: "rope_slack", a, T, aA: driveA / mA, aB: driveB / mB } : { mode: "taut", a, T };
+  }
+  const criticalAngle = (muS) => Math.atan(muS) / DEG;
+  // range of parallel pulls (up = +) that keep a body at rest
+  function staticForceRange({ m, angleDeg, muS, g = G, Q = 0 }) {
+    const th = rad(angleDeg), par = m * g * Math.sin(th), lim = muS * (m * g * Math.cos(th) + Q);
+    return { min: Math.max(0, par - lim), max: par + lim, par, lim };
+  }
+
+  // ======================================================================
+  //  The 1-D track integrator. def.forces(s, v, t) returns
+  //   { drive, maxS, fk, contact=true, smooth=false, ...anything for drawing }
+  //  drive: all non-friction forces along +s; maxS = μs·ΣN; fk = μk·ΣN.
+  //  def.timeEvents: sorted times where forces jump; def.posEvents(s) -> sorted
+  //  positions where forces jump (joints) ; def.sMin / def.sMax: barriers.
+  // ======================================================================
+  class Track {
+    constructor(def) {
+      this.def = def; this.M = def.M;
+      this.s = def.s0 || 0; this.v = def.v0 || 0; this.t = 0;
+      this.heat = 0; this.work = 0;                 // friction heat (≥0), work by the applied/external force
+      this.events = []; this.stopped = null; this.lost = false;
+      this.peak = this.s; this.trough = this.s;
+    }
+    // forces at the current moment, with friction resolved
+    resolve(s = this.s, v = this.v, t = this.t) {
+      const F = this.def.forces(s, v, t, this);
+      if (F.contact === false) return { ...F, mode: "lost", a: 0, f: 0 };
+      if (Math.abs(v) < EPS && Math.abs(F.drive) <= F.maxS + EPS) return { ...F, mode: "static", f: -F.drive, a: 0, need: Math.abs(F.drive) };
+      const dir = Math.abs(v) >= EPS ? sgn(v) : sgn(F.drive);
+      // resting against an end stop and pushed into it: the stop holds it (not friction)
+      if (Math.abs(v) < EPS && ((dir < 0 && s <= this.lo + 1e-9) || (dir > 0 && s >= this.hi - 1e-9))) return { ...F, mode: "wall", f: 0, a: 0, dir };
+      const f = -dir * F.fk;
+      return { ...F, mode: "kinetic", f, a: (F.drive + f) / this.M, dir };
+    }
+    get lo() { return this.def.lo === undefined ? -Infinity : this.def.lo; }
+    get hi() { return this.def.hi === undefined ? Infinity : this.def.hi; }
+    log(type, extra = {}) { this.events.push({ type, t: this.t, s: this.s, v: this.v, ...extra }); }
+    advance(dt) {
+      let rem = dt, guard = 0;
+      while (rem > 1e-12 && guard++ < 400) {
+        if (this.lost) { this.t += rem; return; }
+        const R = this.resolve();
+        if (R.mode === "lost") { this.lost = true; this.v = 0; this.log("lost_contact"); continue; }
+        // window until the next time event
+        let tau = rem;
+        const te = (this.def.timeEvents || []).find((x) => x > this.t + 1e-12);
+        if (te !== undefined && te - this.t < tau) tau = te - this.t;
+        if (R.mode === "static" || R.mode === "wall") {
+          if (this.v !== 0) { this.v = 0; }
+          if (!this.stopped) { this.stopped = { t: this.t, s: this.s }; }
+          this.t += tau; rem -= tau; continue;
+        }
+        if (this.stopped) { this.log("start", { dir: R.dir }); this.stopped = null; }
+        const a = R.a, v = this.v;
+
+        // v reaching zero
+        let stopAt = Infinity;
+        if (Math.abs(v) > EPS && sgn(a) === -sgn(v)) stopAt = -v / a;
+        if (stopAt <= tau + 1e-12) tau = stopAt;
+        // position events (joints, barriers, contacts)
+        const marks = (this.def.marks ? this.def.marks(this) : []).slice();
+        if (Number.isFinite(this.lo)) marks.push({ s: this.lo, kind: "barrier", name: "bottom" });
+        if (Number.isFinite(this.hi)) marks.push({ s: this.hi, kind: "barrier", name: "top" });
+        let hit = null;
+        for (const mk of marks) {
+          const d = mk.s - this.s;
+          if (Math.abs(d) < 1e-10) continue;
+          const tt = firstHit(v, a, d);
+          if (tt !== null && tt < tau - 1e-12) { tau = tt; hit = mk; }
+        }
+        let ds, stoppedNow = tau === stopAt;
+        if (R.harm) {
+          // in contact with a spring: m s'' = A − k s exactly (friction direction fixed inside the window)
+          const r = harmonic(this.s, v, R.harm, this.M, R.f, tau);
+          tau = r.tau; ds = r.s - this.s; this.v = r.v; stoppedNow = r.stop; if (r.left) hit = { s: r.s, kind: "contact", name: "spring_off" };
+          this.s = r.s;
+        } else { ds = v * tau + 0.5 * a * tau * tau; this.s += ds; this.v = v + a * tau; }
+        this.t += tau; rem -= tau;
+        this.heat += Math.abs(R.f) * Math.abs(ds);
+        this.work += (R.Fwork || 0) * ds;
+        if (stoppedNow) { this.v = 0; this.log("v_zero"); }
+        if (hit) {
+          this.s = hit.s;
+          if (hit.kind === "barrier") { this.log("barrier", { at: hit.name || "" }); this.v = 0; this.stopped = { t: this.t, s: this.s, barrier: true }; }
+          else this.log(hit.kind, { at: hit.name || "" });
+        }
+        this.peak = Math.max(this.peak, this.s); this.trough = Math.min(this.trough, this.s);
+        if (this.def.after) this.def.after(this);
+      }
+    }
+    atEnd() { return this.s <= this.lo + 1e-9 ? "bottom" : this.s >= this.hi - 1e-9 ? "top" : null; }
+  }
+  // spring contact: drive = A0 − k·s (A0 includes gravity, applied force and k·at), friction f fixed.
+  // Exact solution; stops at v = 0 or when the body leaves the spring (s = at).
+  function harmonic(s0, v0, H, M, f, tau) {
+    const w = Math.sqrt(H.k / M), seq = (H.A0 + f) / H.k, X = s0 - seq;
+    const pos = (t) => seq + X * Math.cos(w * t) + (v0 / w) * Math.sin(w * t);
+    const vel = (t) => -X * w * Math.sin(w * t) + v0 * Math.cos(w * t);
+    // first time v = 0 (if moving): tan(wt) = v0 / (w X)
+    let tz = Infinity;
+    if (Math.abs(v0) > EPS) { let t = Math.atan2(v0, w * X) / w; if (t <= 1e-14) t += Math.PI / w; tz = t; }
+    // first time s = at (leaving the spring), scan then bisect
+    let tl = Infinity; const N = 64, end = Math.min(tau, tz);
+    let prev = pos(0) - H.at;
+    for (let i = 1; i <= N; i++) {
+      const t = end * i / N, cur = pos(t) - H.at;
+      if (cur >= 0 && prev < 0) { let lo = end * (i - 1) / N, hi = t; for (let j = 0; j < 60; j++) { const m = (lo + hi) / 2; if (pos(m) - H.at >= 0) hi = m; else lo = m; } tl = hi; break; }
+      prev = cur;
+    }
+    if (tl <= end) return { tau: tl, s: H.at, v: vel(tl), stop: false, left: true };
+    if (tz <= tau) return { tau: tz, s: pos(tz), v: 0, stop: true, left: false };
+    return { tau, s: pos(tau), v: vel(tau), stop: false, left: false };
+  }
+  // smallest τ>0 with v τ + ½ a τ² = d
+  function firstHit(v, a, d) {
+    if (Math.abs(a) < 1e-14) { if (Math.abs(v) < 1e-14) return null; const t = d / v; return t > 1e-14 ? t : null; }
+    const disc = v * v + 2 * a * d;
+    if (disc < 0) return null;
+    const r = Math.sqrt(disc), t1 = (-v - r) / a, t2 = (-v + r) / a;
+    const c = [t1, t2].filter((t) => t > 1e-14).sort((x, y) => x - y);
+    return c.length ? c[0] : null;
+  }
+
+  // ---------- one body on a ramp ----------
+  // p: m, angleDeg, muS, muK, g, F (rope force, N), beta (rope angle above the surface, deg),
+  //    Q (press into the surface, N), forceOffAt (s), brake {at, muS, muK, on}, spring {k, at},
+  //    L (ramp length; s from the bottom, + up), s0, v0, sMin
+  function makeSingle(p) {
+    const g = p.g || G, th = rad(p.angleDeg), c = Math.cos(th), sn = Math.sin(th);
+    const L = p.L === undefined ? 4 : p.L, sMin = p.sMin === undefined ? 0 : p.sMin;
+    const tr = new Track({
+      M: p.m, s0: p.s0 === undefined ? L * 0.8 : p.s0, v0: p.v0 || 0,
+      timeEvents: [p.forceOffAt, p.brake && p.brake.at].filter((x) => Number.isFinite(x)).sort((a, b) => a - b),
+      forces(s, v, t, me) {
+        const on = !(Number.isFinite(p.forceOffAt) && t >= p.forceOffAt - 1e-12);
+        const F = on ? (p.F || 0) : 0, beta = rad(p.beta || 0);
+        const Fpar = F * Math.cos(beta), Flift = F * Math.sin(beta), Q = p.Q || 0;
+        const N = p.m * g * c - Flift + Q;
+        const braking = p.brake && (p.brake.on || (Number.isFinite(p.brake.at) && t >= p.brake.at - 1e-12));
+        const muS = braking ? p.brake.muS : p.muS, muK = braking ? p.brake.muK : p.muK;
+        let spring = 0, x = 0;
+        if (p.spring && s < p.spring.at) { x = p.spring.at - s; spring = p.spring.k * x; }
+        const grav = -p.m * g * sn;
+        if (N <= EPS) return { contact: false, N: 0, grav, Fpar, Flift, Q, F, on };
+        const inSpring = p.spring && (x > 1e-12 || (Math.abs(s - p.spring.at) <= 1e-10 && v <= 0));
+        return { drive: Fpar + grav + spring, maxS: muS * N, fk: muK * N, N, grav, Fpar, Flift, Q, F, on, muS, muK, braking, spring, x, springK: p.spring ? p.spring.k : 0,
+          harm: inSpring ? { k: p.spring.k, A0: Fpar + grav + p.spring.k * p.spring.at, at: p.spring.at } : null, Fwork: Fpar };
+      },
+      lo: sMin, hi: L, marks: () => (p.spring ? [{ s: p.spring.at, kind: "contact", name: "spring" }] : [])
+    });
+    tr.kind = "single"; tr.p = p;
+    tr.height = (s) => s * sn;                                         // above the bottom end
+    tr.energy = () => {
+      const R = tr.resolve(), x = R.x || 0;
+      return { K: 0.5 * p.m * tr.v * tr.v, U: p.m * g * tr.height(tr.s), Es: p.spring ? 0.5 * p.spring.k * x * x : 0, Q: tr.heat, W: tr.work };
+    };
+    return tr;
+  }
+
+  // ---------- a track of segments (slope, flat, slope) ----------
+  // segments: [{ length, angleDeg (+ = going DOWN in the forward direction), muS, muK }]
+  function makePiecewise(p) {
+    const g = p.g || G, segs = p.segments, ends = [];
+    let acc = 0; for (const sg of segs) { acc += sg.length; ends.push(acc); }
+    const total = acc;
+    const segAt = (s, v) => {
+      // on a joint, use the segment the body is heading into
+      for (let i = 0; i < segs.length; i++) {
+        const a = i ? ends[i - 1] : 0, b = ends[i];
+        if (s > a + 1e-10 && s < b - 1e-10) return i;
+        if (Math.abs(s - b) <= 1e-10) return v < -EPS ? i : Math.min(i + 1, segs.length - 1);
+        if (Math.abs(s - a) <= 1e-10 && i === 0) return 0;
+      }
+      return s <= 0 ? 0 : segs.length - 1;
+    };
+    // height of the path above its lowest point
+    const hAt = (s) => { let h = 0, a = 0; for (const sg of segs) { const d = Math.max(0, Math.min(sg.length, s - a)); h -= d * Math.sin(rad(sg.angleDeg)); a += sg.length; } return h; };
+    const tr = new Track({
+      M: p.m, s0: 0, v0: p.v0 || 0,
+      forces(s, v, t, me) {
+        const i = segAt(s, Math.abs(v) < EPS ? (p.dirHint || 1) : v), sg = segs[i], ph = rad(sg.angleDeg);
+        const N = p.m * g * Math.cos(ph);
+        return { drive: p.m * g * Math.sin(ph), maxS: sg.muS * N, fk: sg.muK * N, N, seg: i, grav: p.m * g * Math.sin(ph), muS: sg.muS, muK: sg.muK };
+      },
+      lo: 0, hi: total, marks: () => ends.slice(0, -1).map((e, i) => ({ s: e, kind: "joint", name: "j" + (i + 1) }))
+    });
+    tr.kind = "piecewise"; tr.p = p; tr.ends = ends; tr.total = total; tr.segAt = segAt; tr.hAt = hAt;
+    const hmin = Math.min(0, ...ends.map(hAt));
+    tr.energy = () => ({ K: 0.5 * p.m * tr.v * tr.v, U: p.m * g * (hAt(tr.s) - hmin), Es: 0, Q: tr.heat, W: 0 });
+    return tr;
+  }
+
+  // ---------- body on a ramp, rope over a pulley at the top, hanging weight ----------
+  // s: how far A moved UP the ramp (= how far B moved down)
+  function makeHanging(p) {
+    const g = p.g || G, th = rad(p.angleDeg);
+    const NA = p.mA * g * Math.cos(th);
+    const tr = new Track({
+      M: p.mA + p.mB, s0: 0, v0: p.v0 || 0,
+      forces() { return { drive: p.mB * g - p.mA * g * Math.sin(th), maxS: p.muS * NA, fk: p.muK * NA, N: NA, WB: p.mB * g, WA: p.mA * g, gravA: -p.mA * g * Math.sin(th) }; },
+      lo: p.sMin === undefined ? -1.2 : p.sMin, hi: p.sMax === undefined ? 1.2 : p.sMax
+    });
+    tr.kind = "hanging"; tr.p = p;
+    // tension from B's own equation: mB g − T = mB a ; at rest T balances what is needed
+    tr.tension = () => { const R = tr.resolve(); return R.mode === "static" ? p.mB * g : p.mB * (g - R.a); };
+    tr.energy = () => ({ K: 0.5 * (p.mA + p.mB) * tr.v * tr.v, U: p.mA * g * tr.s * Math.sin(th) - p.mB * g * tr.s, Es: 0, Q: tr.heat, W: 0 });
+    return tr;
+  }
+
+  // ---------- two ramps back to back, a pulley on the peak ----------
+  // s: how far B moved DOWN its ramp (= A moved up)
+  function makeDouble(p) {
+    const g = p.g || G, tA = rad(p.angleA), tB = rad(p.angleB);
+    const NA = p.mA * g * Math.cos(tA), NB = p.mB * g * Math.cos(tB);
+    const tr = new Track({
+      M: p.mA + p.mB, s0: 0, v0: 0,
+      forces() { return { drive: p.mB * g * Math.sin(tB) - p.mA * g * Math.sin(tA), maxS: p.muSA * NA + p.muSB * NB, fk: p.muKA * NA + p.muKB * NB, NA, NB, parA: p.mA * g * Math.sin(tA), parB: p.mB * g * Math.sin(tB) }; },
+      lo: p.sMin === undefined ? -1.1 : p.sMin, hi: p.sMax === undefined ? 1.1 : p.sMax
+    });
+    tr.kind = "double"; tr.p = p;
+    tr.split = () => {                                   // friction on each side and the tension
+      const R = tr.resolve();
+      if (R.mode === "static") {
+        // statically indeterminate: share in proportion to each side's limit (a common model choice; shown as such)
+        const share = R.maxS > 0 ? -R.drive / R.maxS : 0;
+        const fA = share * p.muSA * NA, fB = share * p.muSB * NB;
+        return { mode: "static", fA, fB, T: p.mB * g * Math.sin(tB) + fB };
+      }
+      const fA = -R.dir * p.muKA * NA, fB = -R.dir * p.muKB * NB;
+      return { mode: "kinetic", fA, fB, a: R.a, T: p.mB * g * Math.sin(tB) + fB - p.mB * R.a };
+    };
+    tr.energy = () => ({ K: 0.5 * (p.mA + p.mB) * tr.v * tr.v, U: p.mA * g * tr.s * Math.sin(tA) - p.mB * g * tr.s * Math.sin(tB), Es: 0, Q: tr.heat, W: 0 });
+    return tr;
+  }
+
+  // ---------- two bodies on the same ramp, joined by a rope that can go slack ----------
+  // positions measured DOWN the ramp. "up" is the body nearer the top. gap ∈ [0, rope]:
+  // gap = rope -> the rope can pull; gap = 0 -> the bodies touch and can push; between: free.
+  class Linked {
+    constructor(p) {
+      this.p = p; const g = this.g = p.g || G, th = rad(p.angleDeg);
+      this.sn = Math.sin(th); this.cs = Math.cos(th);
+      this.rope = p.rope || 0.5;
+      this.xUp = 0; this.xDn = this.rope; this.vUp = 0; this.vDn = 0; this.t = 0; this.L = p.L || 3.4;
+      this.events = []; this.heat = 0; this.mode = "taut";
+    }
+    // body i = { m, muS, muK } ; returns free acceleration at velocity v (down = +)
+    free(b, v) {
+      const g = this.g, drive = b.m * g * this.sn, N = b.m * g * this.cs;
+      if (Math.abs(v) < EPS && drive <= b.muS * N + EPS) return { a: 0, f: -drive, mode: "static", N };
+      const dir = Math.abs(v) >= EPS ? sgn(v) : 1, f = -dir * b.muK * N;
+      return { a: (drive + f) / b.m, f, mode: "kinetic", N };
+    }
+    bodies() { return this.p.swap ? { up: this.p.B, dn: this.p.A } : { up: this.p.A, dn: this.p.B }; }
+    // the joined system (same velocity) and the internal force (+ = rope tension, − = contact push)
+    joined(v) {
+      const { up, dn } = this.bodies(), g = this.g, M = up.m + dn.m;
+      const drive = M * g * this.sn, Nu = up.m * g * this.cs, Nd = dn.m * g * this.cs;
+      let a, fu, fd;
+      if (Math.abs(v) < EPS && drive <= up.muS * Nu + dn.muS * Nd + EPS) {
+        a = 0; const share = drive / (up.muS * Nu + dn.muS * Nd || 1); fu = -share * up.muS * Nu; fd = -share * dn.muS * Nd;
+      } else { const dir = Math.abs(v) >= EPS ? sgn(v) : 1; fu = -dir * up.muK * Nu; fd = -dir * dn.muK * Nd; a = (drive + fu + fd) / M; }
+      // the lower body: m a = m g sinθ + f − T  →  T = m g sinθ + f − m a
+      const T = dn.m * g * this.sn + fd - dn.m * a;
+      return { a, T, fu, fd, Nu, Nd, mode: a === 0 && Math.abs(v) < EPS ? "static" : "kinetic" };
+    }
+    state() {
+      const { up, dn } = this.bodies(), gap = this.xDn - this.xUp;
+      const together = Math.abs(this.vUp - this.vDn) < 1e-7;
+      if (together && (gap >= this.rope - 1e-9 || gap <= 1e-9)) {
+        const J = this.joined(this.vUp);
+        if (gap >= this.rope - 1e-9 && J.T >= -1e-9) return { kind: "taut", ...J };
+        if (gap <= 1e-9 && J.T <= 1e-9) return { kind: "contact", ...J };
+      }
+      const fu = this.free(up, this.vUp), fd = this.free(dn, this.vDn);
+      return { kind: "slack", aUp: fu.a, aDn: fd.a, fu: fu.f, fd: fd.f, Nu: fu.N, Nd: fd.N, T: 0 };
+    }
+    advance(dt) {
+      const h = 1 / 2000; let rem = dt;
+      while (rem > 1e-12) {
+        const step = Math.min(h, rem); rem -= step;
+        const S = this.state();
+        if (S.kind === "slack") {
+          this.mode = "slack";
+          const vu = this.vUp + S.aUp * step, vd = this.vDn + S.aDn * step;
+          const du = (this.vUp + vu) / 2 * step, dd = (this.vDn + vd) / 2 * step;
+          this.heat += Math.abs(S.fu * du) + Math.abs(S.fd * dd);
+          this.xUp += du; this.xDn += dd; this.vUp = vu; this.vDn = vd;
+          // a velocity crossing zero stops at zero (static gets re-checked next step)
+          if (Math.abs(this.vUp) < 1e-6 && S.aUp === 0) this.vUp = 0;
+          if (Math.abs(this.vDn) < 1e-6 && S.aDn === 0) this.vDn = 0;
+          const gap = this.xDn - this.xUp;
+          if (gap >= this.rope || gap <= 0) {            // the rope snaps taut / the bodies bump: perfectly inelastic
+            const M = this.bodies().up.m + this.bodies().dn.m, vc = (this.bodies().up.m * this.vUp + this.bodies().dn.m * this.vDn) / M;
+            if (gap >= this.rope) { this.xDn = this.xUp + this.rope; this.events.push({ type: "taut", t: this.t }); }
+            else { this.xUp = this.xDn; this.events.push({ type: "touch", t: this.t }); }
+            this.vUp = this.vDn = vc;
+          }
+        } else {
+          this.mode = S.kind;
+          const v = this.vUp, vn = v + S.a * step;
+          const d = (v + vn) / 2 * step;
+          this.heat += (Math.abs(S.fu) + Math.abs(S.fd)) * Math.abs(d);
+          this.xUp += d; this.xDn += d; this.vUp = this.vDn = vn;
+        }
+        this.t += step;
+        if (this.xDn >= this.L) { this.xDn = this.L; this.vDn = 0; if (this.xUp > this.xDn) this.xUp = this.xDn; this.vUp = Math.min(this.vUp, 0); this.ended = true; }
+      }
+    }
+  }
+  const makeLinked = (p) => new Linked(p);
+
+  // ---------- run a track to the end of its motion (for answers computed at run time) ----------
+  function simulate(tr, { tMax = 30, dt = 1 / 240, until } = {}) {
+    const out = [];
+    for (let i = 0; tr.t < tMax; i++) {
+      tr.advance(dt);
+      const R = tr.resolve ? tr.resolve() : null;
+      out.push({ t: tr.t, s: tr.s, v: tr.v, a: R ? R.a : 0 });
+      if (until && until(tr)) break;
+      if (tr.stopped && tr.t > (tr.stopped.t + 0.25) && !(tr.def.timeEvents || []).some((x) => x > tr.t)) break;
+      if (tr.lost) break;
+    }
+    return out;
+  }
+
+  return {
+    EPS, DEG, G, rad, validateSingle, singleBlockForces, stepSingle, hangingPulley, doubleInclinePulley, descentEnergy,
+    stopDistanceUphill, linkedBlocksSameRamp, criticalAngle, staticForceRange,
+    Track, makeSingle, makePiecewise, makeHanging, makeDouble, makeLinked, simulate, firstHit
+  };
+})();
+
+// ======================================================================
+//  "הרפתקאות על המדרון": 18 situations, 90 missions (from the
+//  incline_friction pack, data/scenarios.json). Pure logic, no DOM:
+//  how each situation builds its physics, what a run records, and how
+//  each mission is checked. Every right answer is computed at run time
+//  from the live parameters by RampPhys; nothing is a stored number.
+//  Axis on a single ramp: + is UP the slope.
+// ======================================================================
+const RampScenes = (() => {
+  "use strict";
+  const RP = (typeof RampPhys !== "undefined") ? RampPhys : require("./ramp-engine.js");
+  const DEG = Math.PI / 180, g = 10;
+  const sin = (d) => Math.sin(d * DEG), cos = (d) => Math.cos(d * DEG), tan = (d) => Math.tan(d * DEG);
+
+  // ---------- the 12 skills the topic meter is made of ----------
+  const SKILLS = {
+    components: "רכיבי המשקל", normal: "כוח נורמלי", rest: "מנוחה ושיווי משקל", static: "חיכוך סטטי", kinetic: "חיכוך קינטי",
+    newton2: "החוק השני", kinematics: "קינמטיקה", external: "כוחות חיצוניים", systems: "מערכות גופים", energy: "עבודה ואנרגיה",
+    graphs: "גרפים", inference: "הסקת מסקנות"
+  };
+  // the seven stages of the original chapter keep counting, once each (legacy save ids newton.s1..s7)
+  const LEGACY = {
+    "newton.s1": { skills: ["rest"] }, "newton.s2": { skills: ["normal"] }, "newton.s3": { skills: ["components"] },
+    "newton.s4": { skills: ["static"], mission: "S02-M01" }, "newton.s5": { skills: ["kinetic"], mission: "S01-M01" },
+    "newton.s6": { skills: ["newton2"], mission: "S01-M03" }, "newton.s7": { skills: ["inference"] }
+  };
+
+  const MATS = {
+    ice: { he: "קרח", s: 0.10, k: 0.05, tint: "#7FC1DE" },
+    wood: { he: "עץ", s: 0.45, k: 0.30, tint: "#B58A55" },
+    sand: { he: "נייר זכוכית", s: 0.70, k: 0.55, tint: "#C9A36B" },
+    rubber: { he: "גומי", s: 0.90, k: 0.70, tint: "#4F5157" }
+  };
+
+  // ---------- directions for force diagrams ----------
+  const DIRS = {
+    down: "אנכית למטה", up: "אנכית למעלה", out: "ניצב, החוצה מהמשטח", into: "ניצב, לתוך המשטח",
+    upslope: "במעלה המדרון", downslope: "במורד המדרון", against: "נגד כיוון התנועה", with: "בכיוון התנועה",
+    tpulley: "לאורך החבל, אל הגלגלת", none: "אין כוח כזה"
+  };
+  const SLOPE_DIRS = ["down", "up", "out", "into", "upslope", "downslope", "none"];
+
+  // ---------- helpers on a lab ----------
+  const runs = (L) => L.cur ? L.runs.concat([L.cur]) : L.runs;
+  const finished = (L) => L.runs;
+  const after = (L, i) => runs(L).filter((r) => r.id >= i);
+  const lastRun = (L) => runs(L).slice(-1)[0] || null;
+  const mOf = (L, P = L.P) => L.mc + (P.load || 0);
+  const near = (a, b, rel = 0.03, abs = 1e-3) => Math.abs(a - b) <= Math.max(abs, rel * Math.abs(b));
+  const sameP = (a, b, keys) => keys.every((k) => Math.abs((a[k] || 0) - (b[k] || 0)) < 1e-6);
+  const fresh = (L, over = {}) => L.scene.build({ ...L.P, ...over }, L.mc, L);
+  const R0 = (L, over) => fresh(L, over).resolve();
+
+  // ======================================================================
+  //  what a run remembers (filled every simulation step by track())
+  // ======================================================================
+  function newRun(L, sim, id) {
+    const R = sim.resolve ? sim.resolve() : null;
+    const e = sim.energy ? sim.energy() : null;
+    return {
+      id, P: { ...L.P }, phase: L.P.phase || null, m: mOf(L), t: 0, s0: sim.s !== undefined ? sim.s : sim.xUp, sMax: sim.s, sMin: sim.s, lastT: 0, vMax: 0, moved: false, startDir: 0,
+      aFirst: null, aUp: null, aDown: null, segA: {}, joints: [], events: [], static0: R ? R.mode === "static" : false,
+      lost: false, barrier: null, settled: false, endMode: null, vEnd: 0, U0: e ? e.U + e.Es : 0, Kend: 0, Qend: 0, Uend: 0,
+      vOff: null, sOff: null, tPeak: null, sPeak: null, braked: null, xMax: 0, contact: false, bounced: false,
+      taut: 0, slack: false, touch: false, N: R ? R.N : null, fStart: R ? R.f : null, mode0: R ? R.mode : null, meas: null
+    };
+  }
+  function track(run, sim, L) {
+    if (sim.kind === undefined && sim.xUp !== undefined) return trackLinked(run, sim);
+    if (run.done) return sim.resolve();
+    const R = sim.resolve();
+    run.t = sim.t;
+    run.sMax = Math.max(run.sMax, sim.s); run.sMin = Math.min(run.sMin, sim.s);
+    run.vMax = Math.max(run.vMax, Math.abs(sim.v));
+    if (!run.moved && Math.abs(sim.s - run.s0) > 1e-4) { run.moved = true; run.startDir = Math.sign(sim.s - run.s0); }
+    if (R.mode === "kinetic") {
+      if (run.aFirst === null) run.aFirst = R.a;
+      if (sim.v > 1e-6) run.aUp = R.a; else if (sim.v < -1e-6) { if (run.aDown === null) run.aDown = R.a; }
+      if (R.seg !== undefined && sim.v > 1e-6 && run.segA[R.seg] === undefined) run.segA[R.seg] = R.a;
+    }
+    if (R.x > run.xMax) run.xMax = R.x;
+    if (R.x > 0) run.contact = true;
+    if (run.contact && R.x > 0 && sim.v > 1e-4) run.bounced = true;
+    for (const ev of sim.events.slice(run.events.length)) {
+      run.events.push(ev);
+      if (ev.type === "joint") run.joints.push(ev.at);
+      if (ev.type === "barrier") { run.barrier = ev.at; if (ev.at === "bottom" && run.tFinish === undefined) { run.tFinish = ev.t; run.vFinish = Math.abs(ev.v); } }
+      if (ev.type === "lost_contact") run.lost = true;
+      if (ev.type === "v_zero" && run.tPeak === null && run.startDir > 0) { run.tPeak = ev.t; run.sPeak = ev.s; }
+    }
+    const p = sim.p || {};
+    if (Number.isFinite(p.forceOffAt) && run.vOff === null && sim.t >= p.forceOffAt - 1e-9) { run.vOff = sim.v; run.sOff = sim.s; }
+    if (p.brake && p.brake.on && !run.braked) run.braked = { t: sim.t, v: sim.v, s: sim.s };
+    run.endMode = R.mode; run.vEnd = sim.v;
+    if (sim.energy) { const e = sim.energy(); run.Kend = e.K; run.Qend = e.Q; run.Uend = e.U + e.Es; }
+    if (R.mode === "kinetic") { run.settled = false; run.restSince = null; }
+    else { if (run.restSince == null) run.restSince = sim.t; run.settled = (run.moved || run.lost || sim.t > 1.2) && sim.t - run.restSince >= 0.5 && sim.t > 0.6; }
+    if (sim.tension) run.T = sim.tension();
+    if (L && L.scene.secret && run.aFirst !== null && !run.meas) run.meas = { a: noisy(run.aFirst, run.id, L.secretSeed || "s"), th: run.P.th };
+    return R;
+  }
+  function trackLinked(run, sim) {
+    run.t = sim.t;
+    const d = sim.xUp - run.s0; if (Math.abs(d) > 1e-4) { run.moved = true; run.startDir = 1; }
+    run.vMax = Math.max(run.vMax, Math.abs(sim.vUp), Math.abs(sim.vDn));
+    if (sim.mode === "taut") run.taut += sim.t - run.lastT; run.lastT = sim.t; if (sim.mode === "slack" && !sim.ended) run.slack = true;
+    if (sim.events.some((e) => e.type === "touch")) run.touch = true;
+    const S = sim.state(); if (S.kind !== "slack" && run.aFirst === null && S.a) run.aFirst = S.a;
+    run.T = S.T; run.settled = sim.ended || sim.t > 4;
+    return S;
+  }
+
+  // ======================================================================
+  //  mission builders (keep the 90 definitions short)
+  // ======================================================================
+  const auto = (o) => ({ kind: "auto", ...o });
+  const choice = (o) => ({ kind: "choice", ...o });
+  const predict = (o) => ({ kind: "predict", ...o });
+  const numeric = (o) => ({ kind: "numeric", ...o });
+  const fbd = (o) => ({ kind: "fbd", ...o });
+
+  // ======================================================================
+  //  scene builders
+  // ======================================================================
+  const RAMP_L = 4;
+  function single(P, mc, extra = {}) {
+    const m = mc + (P.load || 0);
+    return RP.makeSingle({ m, angleDeg: P.th, muS: P.muS, muK: Math.min(P.muK, P.muS), g, L: RAMP_L, ...extra });
+  }
+  const C = {   // reusable controls
+    th: (min = 5, max = 60, step = 1) => ({ k: "th", he: "זווית המדרון θ", min, max, step, unit: "°", d: step < 1 ? 1 : 0 }),
+    load: (max = 6) => ({ k: "load", he: "תרמיל משקולות", min: 0, max, step: 0.5, unit: "kg", d: 1 }),
+    muS: () => ({ k: "muS", he: "μs (סטטי)", min: 0, max: 1, step: 0.01, unit: "", d: 2 }),
+    muK: () => ({ k: "muK", he: "μk (קינטי)", min: 0, max: 1, step: 0.01, unit: "", d: 2 }),
+    F: (mult = 4) => ({ k: "F", he: "כוח המשיכה F", min: 0, max: (mc) => Math.ceil(mult * mc * g / 5) * 5, step: 0.5, unit: "N", d: 1 }),
+    v0: (max = 8) => ({ k: "v0", he: "מהירות שיגור v₀", min: 0.5, max, step: 0.1, unit: "m/s", d: 1 })
+  };
+
+  // ======================================================================
+  //  THE 18 SITUATIONS
+  // ======================================================================
+  const SCENES = [];
+  const add = (s) => { SCENES.push(s); return s; };
+
+  // ---------------- S01 ----------------
+  add({
+    id: "S01", tier: 1, title: "הרמפה החלקה", rig: "ramp", icon: "ramp", desc: "גולשים בלי חיכוך. מה משתנה עם הזווית והמסה?",
+    defaults: { th: 30, load: 0, muS: 0, muK: 0 }, controls: [C.th(5, 60), C.load()], surface: "ice",
+    build: (P, mc) => single(P, mc, { s0: RAMP_L - 0.3 }),
+    missions: [
+      auto({ type: "experiment", skills: ["kinematics", "components"], text: "שחרר את הדמות ובדוק: לאיזה כיוון היא מאיצה?",
+        hint: "לחץ ▶ ותסתכל על חץ התאוצה.",
+        check: (L) => runs(L).some((r) => r.moved && r.aFirst < 0 && r.t > 0.3),
+        learn: "התאוצה במורד: a = −g·sinθ (+ זה במעלה). אין חיכוך, אז רק רכיב המשקל במורד מאיץ." }),
+      predict({ type: "prediction", skills: ["components", "kinematics"], text: "נבא: איפה התאוצה גדולה יותר, ב-15° או ב-45°? אחר כך תריץ בשתי הזוויות.",
+        options: ["ב-15°", "ב-45°", "אותה תאוצה"],
+        needs: (L, i) => { const rs = after(L, i).filter((r) => r.aFirst !== null); return rs.some((r) => Math.abs(r.P.th - 15) < 0.6) && rs.some((r) => Math.abs(r.P.th - 45) < 0.6); },
+        needHint: "שים את הזווית על 15° ושחרר, ואז על 45° ושחרר.",
+        truth: (L, i) => { const rs = after(L, i); const a15 = rs.find((r) => Math.abs(r.P.th - 15) < 0.6 && r.aFirst !== null).aFirst, a45 = rs.find((r) => Math.abs(r.P.th - 45) < 0.6 && r.aFirst !== null).aFirst; return Math.abs(a45) > Math.abs(a15) + 1e-9 ? 1 : Math.abs(a15) > Math.abs(a45) + 1e-9 ? 0 : 2; },
+        learn: "sin45° גדול מ-sin15°, ולכן רכיב המשקל במורד גדול יותר." }),
+      auto({ type: "manipulation", skills: ["newton2"], text: "הכפל את המסה (תרמיל במשקל הדמות) בלי לשנות זווית, ושחרר פעמיים. התאוצה השתנתה?",
+        hint: "שחרר פעם בלי תרמיל, ופעם עם תרמיל שמכפיל את המסה. הזווית אותה זווית.",
+        check: (L) => { const rs = runs(L).filter((r) => r.aFirst !== null); return rs.some((a) => rs.some((b) => b.m >= 1.9 * a.m && sameP(a.P, b.P, ["th", "muK"]))); },
+        then: choice({ q: "השווית שתי ריצות: מסה כפולה, אותה זווית. התאוצה…", options: ["גדלה פי 2", "קטנה פי 2", "לא השתנתה"], right: () => 2 }),
+        learn: "mg·sinθ גדל פי 2, אבל גם המסה שצריך להאיץ: a = g·sinθ בלי m." }),
+      fbd({ type: "force_diagram", skills: ["components", "normal"], text: "שרטט: לאן מצביע כל חץ על הדמות שעל הרמפה החלקה?",
+        rows: [{ label: "כובד mg", opts: SLOPE_DIRS, truth: () => "down" }, { label: "נורמל N", opts: SLOPE_DIRS, truth: () => "out" },
+               { label: "רכיב המשקל mg·sinθ", opts: SLOPE_DIRS, truth: () => "downslope" }, { label: "חיכוך", opts: SLOPE_DIRS, truth: (L) => (L.P.muK > 0 ? "upslope" : "none") }],
+        learn: "mg תמיד אנכי, N תמיד ניצב למשטח. mg·sinθ הוא חלק מ-mg, לא כוח נוסף." }),
+      numeric({ type: "calculation", skills: ["normal", "newton2"], text: "חשב לזווית ולמסה שעכשיו: התאוצה ונורמל. (+ = במעלה)",
+        fields: [{ k: "a", he: "תאוצה a", unit: "m/s²", value: (L) => -g * sin(L.P.th) }, { k: "N", he: "נורמל N", unit: "N", value: (L) => mOf(L) * g * cos(L.P.th) }],
+        learn: "a = −g·sinθ, N = mg·cosθ. המדידה החיה במסך מראה את אותם מספרים." })
+    ]
+  });
+
+  // ---------------- S02 ----------------
+  add({
+    id: "S02", tier: 1, title: "רגע לפני ההחלקה", rig: "ramp", icon: "gauge", desc: "מגדילים זווית עד שהחיכוך הסטטי נכנע.",
+    defaults: { th: 8, load: 0, muS: 0.5, muK: 0.35 }, controls: [C.th(0, 50, 0.5), C.muS(), C.muK()], surface: "wood", gauge: true, live: true,
+    build: (P, mc) => single(P, mc, { s0: RAMP_L * 0.55 }),
+    missions: [
+      choice({ type: "experiment", skills: ["static", "rest"], text: "התחל בזווית קטנה (מעל 3°) והסבר למה הדמות לא זזה.",
+        gate: (L) => L.P.th >= 3 && R0(L).mode === "static", gateHint: "שים זווית של כמה מעלות, מתחת לזווית הסף.",
+        q: "למה הדמות לא זזה?", options: ["החיכוך הסטטי מתאים את עצמו ושווה בדיוק ל-mg·sinθ", "החיכוך תמיד שווה ל-μs·N", "אין כוח במורד כשהזווית קטנה"], right: () => 0,
+        learn: "f_s = mg·sinθ, לא μs·N. המקסימום רק אומר עד כמה הוא יכול לגדול." }),
+      auto({ type: "prediction", skills: ["static"], text: "הגדל את השיפוע לאט (צעדי חצי מעלה) עד שהחלקה מתחילה.",
+        hint: "השתמש ב-+ או גרור לאט. כשהמד האדום מתמלא, אתה קרוב.",
+        check: (L) => runs(L).some((r) => r.moved && r.startDir < 0 && r.P.th <= RP.criticalAngle(r.P.muS) + 2.5 && r.P.th > RP.criticalAngle(r.P.muS) - 1e-9),
+        learn: "ההחלקה מתחילה רק כש-mg·sinθ עובר את μs·N, כלומר tanθ > μs." }),
+      numeric({ type: "manipulation", skills: ["static"], text: "בזווית שבה הדמות עוד עומדת (לפחות 8°): כמה חיכוך סטטי יש באמת, ומה המקסימום?",
+        gate: (L) => L.P.th >= 8 && R0(L).mode === "static", gateHint: "שים זווית של 8° ומעלה שבה הדמות עדיין לא מחליקה.",
+        fields: [{ k: "fs", he: "f_s בפועל", unit: "N", value: (L) => mOf(L) * g * sin(L.P.th) }, { k: "max", he: "μs·N המקסימום", unit: "N", value: (L) => L.P.muS * mOf(L) * g * cos(L.P.th) }],
+        learn: "בפועל f_s = mg·sinθ, והוא קטן מהמקסימום μs·N. רק בסף הם שווים." }),
+      numeric({ type: "force_diagram", skills: ["static", "inference"], text: "נבא מ-tanθ = μs את זווית הסף לחיכוך שעכשיו, ואז בדוק בניסוי.",
+        fields: [{ k: "crit", he: "זווית סף", unit: "°", value: (L) => RP.criticalAngle(L.P.muS), tolAbs: 0.5 }],
+        confirm: { check: (L, i) => after(L, i).some((r) => r.moved && r.startDir < 0), hint: "עכשיו הגדל את הזווית אל מעבר לסף ובדוק." },
+        learn: "θ_c = arctan(μs). המסה לא נכנסת בכלל." }),
+      numeric({ type: "calculation", skills: ["kinetic", "newton2"], text: "אחרי שהדמות התחילה להחליק: חשב את התאוצה. איזה μ נכנס לחישוב? (+ = במעלה)",
+        gate: (L) => runs(L).some((r) => r.aFirst !== null && sameP(r.P, L.P, ["th", "muS", "muK"])), gateHint: "תן לדמות להחליק בזווית הנוכחית.",
+        fields: [{ k: "a", he: "תאוצה a", unit: "m/s²", value: (L) => -g * (sin(L.P.th) - L.P.muK * cos(L.P.th)) }],
+        learn: "בתנועה החיכוך קינטי: f_k = μk·N, קבוע. לכן a = −g(sinθ − μk·cosθ)." })
+    ]
+  });
+
+  // ---------------- S03 ----------------
+  add({
+    id: "S03", tier: 1, title: "מי מחליק על מה?", rig: "ramp", icon: "swatch", desc: "אותה רמפה, משטחים שונים.",
+    defaults: { th: 30, load: 0, mat: "ice", v0: 0, muS: MATS.ice.s, muK: MATS.ice.k }, controls: [C.th(5, 55), { k: "v0", he: "דחיפה התחלתית במורד", min: 0, max: 4, step: 0.1, unit: "m/s", d: 1 }], mats: true, finish: true,
+    build: (P, mc) => single({ ...P, muS: MATS[P.mat].s, muK: MATS[P.mat].k }, mc, { s0: RAMP_L - 0.3, v0: -(P.v0 || 0) }),
+    missions: [
+      auto({ type: "experiment", skills: ["kinetic"], text: "החלק על קרח, ואז על משטח מחוספס (נייר זכוכית או גומי) באותה זווית.",
+        hint: "בחר חומר, לחץ ▶. אחר כך חומר אחר.",
+        check: (L) => { const rs = runs(L).filter((r) => r.t > 0.5); return rs.some((a) => a.P.mat === "ice" && rs.some((b) => (b.P.mat === "sand" || b.P.mat === "rubber") && Math.abs(a.P.th - b.P.th) < 0.6)); },
+        learn: "על קרח μ קטן, החיכוך חלש והדמות מאיצה יותר. על משטח מחוספס היא אולי לא זזה בכלל." }),
+      predict({ type: "prediction", skills: ["kinetic", "inference"], text: "נבא: מי מגיע לקו הסיום ראשון, קרח או עץ, באותה זווית ובאותה דחיפה?",
+        options: ["הקרח", "העץ", "ביחד", "אף אחד לא יגיע"],
+        needs: (L, i) => { const rs = after(L, i); return ["ice", "wood"].every((mt) => rs.some((r) => r.P.mat === mt && r.settled)) && sameRunsP(rs, ["th", "v0"]); },
+        needHint: "הרץ פעם על קרח ופעם על עץ, באותה זווית ואותה דחיפה, עד הסוף.",
+        truth: (L, i) => { const rs = after(L, i); const t = (mt) => { const r = rs.filter((x) => x.P.mat === mt && x.settled).slice(-1)[0]; return r.barrier === "bottom" ? r.tFinish : Infinity; }; const a = t("ice"), b = t("wood"); return a === Infinity && b === Infinity ? 3 : Math.abs(a - b) < 1e-6 ? 2 : a < b ? 0 : 1; },
+        learn: "אותו שיפוע: מי שה-μk שלו קטן מאיץ יותר ומגיע קודם." }),
+      choice({ type: "manipulation", skills: ["normal"], text: "החלף חומר כמה פעמים והסתכל על הנורמל N.",
+        gate: (L) => new Set(runs(L).map((r) => r.P.mat)).size >= 2 || (L.matSeen && L.matSeen.size >= 2), gateHint: "נסה לפחות שני חומרים.",
+        q: "מה קורה לנורמל כשמחליפים חומר?", options: ["גדל על משטח מחוספס", "לא משתנה: N = mg·cosθ", "קטן על קרח"], right: () => 1,
+        learn: "החומר משנה את μ, לא את N. החיכוך משתנה כי μ משתנה." }),
+      numeric({ type: "force_diagram", skills: ["kinetic"], text: "בזמן החלקה על החומר שבחרת: מה גודל החיכוך הקינטי?",
+        gate: (L) => runs(L).some((r) => r.aFirst !== null && r.P.mat === L.P.mat && Math.abs(r.P.th - L.P.th) < 0.6), gateHint: "בחר חומר וזווית שבהם הדמות מחליקה, והרץ.",
+        fields: [{ k: "fk", he: "f_k", unit: "N", value: (L) => MATS[L.P.mat].k * mOf(L) * g * cos(L.P.th) }],
+        learn: "f_k = μk·N: אותו N, μk אחר, חיכוך אחר." }),
+      auto({ type: "calculation", skills: ["kinematics", "kinetic", "inference"], text: "תכנן: בחר חומר, זווית ודחיפה כך שהדמות מאטה בדרך אבל עדיין חוצה את קו הסיום.",
+        hint: "צריך חיכוך שמאט (μk > tanθ) ודחיפה מספיקה. נסה עץ בזווית קטנה עם דחיפה.",
+        check: (L) => runs(L).some((r) => r.barrier === "bottom" && r.vFinish !== undefined && r.vFinish < (r.P.v0 || 0) - 0.05 && r.vFinish > 0.05),
+        learn: "כש-μk > tanθ התאוצה במעלה (נגד התנועה): הדמות מאטה. הדחיפה צריכה להספיק: v² = v₀² − 2|a|d > 0." })
+    ]
+  });
+
+  // ---------------- S04 ----------------
+  add({
+    id: "S04", tier: 1, title: "זריקה במעלה המדרון", rig: "ramp", icon: "launch", desc: "דוחפים למעלה: המהירות והכוח לא באותו כיוון.",
+    defaults: { th: 25, load: 0, muS: 0.5, muK: 0.2, v0: 5 }, controls: [C.th(5, 50), C.v0(8), C.muK()], surface: "wood", launch: true,
+    build: (P, mc) => single(P, mc, { s0: 0.3, v0: P.v0, L: 9 }), L: 9,
+    missions: [
+      auto({ type: "experiment", skills: ["kinematics"], text: "זרוק את הדמות במעלה וראה שהיא מאטה.", hint: "לחץ ▶ לזריקה.",
+        check: (L) => runs(L).some((r) => r.tPeak !== null), learn: "בעלייה הכובד והחיכוך שניהם במורד: a = −g(sinθ + μk·cosθ)." }),
+      fbd({ type: "prediction", skills: ["kinetic"], text: "בזמן העלייה, לאן מצביע כל כוח?",
+        rows: [{ label: "חיכוך f", opts: SLOPE_DIRS, truth: () => "downslope" }, { label: "מהירות v", opts: ["upslope", "downslope", "none"], truth: () => "upslope" }, { label: "תאוצה a", opts: ["upslope", "downslope", "none"], truth: () => "downslope" }],
+        learn: "החיכוך נגד המהירות, לא נגד התאוצה. עולה, אז החיכוך במורד." }),
+      numeric({ type: "manipulation", skills: ["kinematics", "kinetic"], text: "נבא לפני הזריקה: איזה מרחק תעבור עד שתעצור רגעית? אחר כך זרוק ובדוק.",
+        fields: [{ k: "d", he: "מרחק עצירה", unit: "m", value: (L) => RP.stopDistanceUphill({ speed: L.P.v0, angleDeg: L.P.th, muK: L.P.muK }) }],
+        confirm: { check: (L, i) => after(L, i).some((r) => r.tPeak !== null && sameP(r.P, L.P, ["th", "v0", "muK"])), hint: "עכשיו זרוק באותם ערכים ובדוק מול סימון השיא." },
+        learn: "d = v₀² / [2g(sinθ + μk·cosθ)]." }),
+      predict({ type: "force_diagram", skills: ["static", "inference"], text: "נבא לפני הזריקה: ברגע העצירה, היא תחליק חזרה או תישאר?",
+        options: ["תחליק חזרה למטה", "תישאר במקום"],
+        needs: (L, i) => after(L, i).some((r) => r.tPeak !== null && r.t > r.tPeak + 0.4), needHint: "זרוק וחכה רגע אחרי העצירה.",
+        truth: (L, i) => { const r = after(L, i).find((x) => x.tPeak !== null); return tan(r.P.th) > r.P.muS + 1e-9 ? 0 : 1; },
+        learn: "בעצירה בודקים מחדש: אם tanθ ≤ μs, החיכוך הסטטי מחזיק. אחרת היא חוזרת עם a קטנה יותר." }),
+      numeric({ type: "calculation", skills: ["graphs", "kinetic"], text: "בזווית שבה היא חוזרת: קרא מגרף v(t) את התאוצה בעלייה ובירידה. (+ = במעלה)",
+        gate: (L) => runs(L).some((r) => r.aUp !== null && r.aDown !== null && sameP(r.P, L.P, ["th", "muK", "muS"])), gateHint: "הגדל זווית (tanθ > μs), זרוק, ותן לה לחזור.",
+        fields: [{ k: "up", he: "a בעלייה", unit: "m/s²", value: (L) => -g * (sin(L.P.th) + L.P.muK * cos(L.P.th)), tol: 0.05 }, { k: "dn", he: "a בירידה", unit: "m/s²", value: (L) => -g * (sin(L.P.th) - L.P.muK * cos(L.P.th)), tol: 0.05 }],
+        graph: "v", learn: "שני שיפועים שונים: החיכוך התהפך ברגע ש-v התהפכה, לא לפני." })
+    ]
+  });
+
+  // ---------------- S05 ----------------
+  const pulling = (L) => RP.staticForceRange({ m: mOf(L), angleDeg: L.P.th, muS: L.P.muS });
+  add({
+    id: "S05", tier: 2, title: "חבל המשיכה", rig: "ramp", icon: "rope", desc: "כוח מקביל למדרון: מאזן, מושך או מאיץ.",
+    defaults: { th: 30, load: 0, muS: 0.4, muK: 0.25, F: 0 }, controls: [C.F(2.5), C.th(5, 50), C.muS(), C.muK()], surface: "wood", rope: "parallel", live: true,
+    build: (P, mc) => single(P, mc, { s0: 0.8, F: P.F }),
+    missions: [
+      auto({ type: "experiment", skills: ["static", "external"], text: "משוך בעדינות: מצא כוח (לא 0) שבו הדמות עדיין במנוחה והחיכוך במעלה.",
+        hint: "התחל מ-0 והגדל קצת. חץ החיכוך צריך להצביע במעלה.",
+        check: (L) => { const R = R0(L); return L.P.F > 0 && R.mode === "static" && R.f > 1e-6; },
+        learn: "F + f_s = mg·sinθ: החיכוך עוזר לחבל להחזיק." }),
+      numeric({ type: "prediction", skills: ["static", "rest"], text: "מצא את טווח הכוחות שבו הדמות נשארת במנוחה.",
+        fields: [{ k: "min", he: "F מינימלי", unit: "N", value: (L) => pulling(L).min }, { k: "max", he: "F מקסימלי", unit: "N", value: (L) => pulling(L).max }],
+        learn: "mg·sinθ − μs·N ≤ F ≤ mg·sinθ + μs·N. בכל הטווח הזה החיכוך הסטטי מאזן." }),
+      auto({ type: "manipulation", skills: ["external", "static"], text: "הגדל את הכוח עד שהדמות מתחילה לעלות.",
+        check: (L) => runs(L).some((r) => r.moved && r.startDir > 0) || (R0(L).mode === "kinetic" && R0(L).a > 0 && L.liveMoved > 0),
+        learn: "רק מעל mg·sinθ + μs·N. מתחת לזה החיכוך פשוט הופך כיוון ונשאר סטטי." }),
+      fbd({ type: "force_diagram", skills: ["static", "kinetic"], text: "בחר את כיוון החיכוך בשני מצבים.",
+        rows: [{ label: "f כשהחבל מושך חלש (F = ½·mg·sinθ) והדמות במנוחה", opts: ["upslope", "downslope", "none"], truth: (L) => dirOf(R0(L, { F: 0.5 * mOf(L) * g * sin(L.P.th) }).f) },
+               { label: "f בזמן שהדמות עולה", opts: ["upslope", "downslope", "none"], truth: () => "downslope" }],
+        learn: "סטטי: נגד הנטייה לזוז. קינטי: נגד המהירות." }),
+      numeric({ type: "calculation", skills: ["newton2", "external"], text: "קבע כוח שמעלה את הדמות, וחשב את תאוצת העלייה.",
+        gate: (L) => L.P.F > pulling(L).max + 0.1, gateHint: "הגדל את F מעל הטווח הסטטי.",
+        fields: [{ k: "a", he: "a", unit: "m/s²", value: (L) => (L.P.F - mOf(L) * g * (sin(L.P.th) + L.P.muK * cos(L.P.th))) / mOf(L) }],
+        learn: "a = [F − mg·sinθ − μk·mg·cosθ] / m." })
+    ]
+  });
+
+  // ---------------- S06 ----------------
+  add({
+    id: "S06", tier: 2, title: "מושכים באלכסון", rig: "ramp", icon: "angle", desc: "זווית החבל משנה את הנורמל ואת החיכוך.",
+    defaults: { th: 20, load: 0, muS: 0.4, muK: 0.25, F: 20, beta: 0 }, defaultsFn: (mc) => ({ F: Math.round(mc * g * 0.9 * 2) / 2 }), controls: [C.F(5), { k: "beta", he: "זווית החבל β", min: 0, max: 80, step: 1, unit: "°", d: 0 }, C.th(0, 45)],
+    surface: "wood", rope: "angled", live: true, measure: true,
+    build: (P, mc) => single(P, mc, { s0: 0.8, F: P.F, beta: P.beta }),
+    measureRow: (L, sim) => { const R = sim.resolve(); return { F: L.P.F, beta: L.P.beta, th: L.P.th, N: R.N, a: R.a, mode: R.mode, lost: sim.lost }; },
+    missions: [
+      auto({ type: "experiment", skills: ["external", "normal"], text: "📌 מדוד משיכה מקבילה (β = 0), ואז אותו כוח מורם קצת (β ≥ 10°).",
+        hint: "לחץ 📌 כדי לרשום מדידה. אותו F בשתיהן.",
+        check: (L) => (L.meas || []).some((a) => a.beta === 0 && (L.meas || []).some((b) => b.beta >= 10 && Math.abs(b.F - a.F) < 1e-6 && Math.abs(b.th - a.th) < 1e-6)),
+        learn: "ההרמה מורידה את N, ולכן גם את החיכוך." }),
+      fbd({ type: "prediction", skills: ["components", "external"], text: "פרק את כוח החבל: לאן מצביע כל רכיב?",
+        rows: [{ label: "F·cosβ", opts: SLOPE_DIRS, truth: () => "upslope" }, { label: "F·sinβ", opts: SLOPE_DIRS, truth: () => "out" }],
+        learn: "F·cosβ מושך במעלה, F·sinβ מרים מהמשטח ומקטין את N." }),
+      numeric({ type: "manipulation", skills: ["normal"], text: "הרם את החבל (β ≥ 10°) וחשב את הנורמל.",
+        gate: (L) => L.P.beta >= 10 && fresh(L).resolve().mode !== "lost", gateHint: "שים β של 10° ומעלה.",
+        fields: [{ k: "N", he: "N", unit: "N", value: (L) => mOf(L) * g * cos(L.P.th) - L.P.F * sin(L.P.beta) }],
+        learn: "N = mg·cosθ − F·sinβ." }),
+      auto({ type: "force_diagram", skills: ["external", "kinetic", "inference"], text: "📌 מצא זווית חבל שנותנת תאוצה גדולה יותר מ-β = 0, באותו כוח (כשהדמות עולה).",
+        hint: "הגדל F כך שהיא עולה. רשום β = 0, ואז נסה זוויות.",
+        check: (L) => (L.meas || []).some((a) => a.beta === 0 && a.mode === "kinetic" && a.a > 0 && (L.meas || []).some((b) => b.beta > 0 && b.mode === "kinetic" && Math.abs(b.F - a.F) < 1e-6 && Math.abs(b.th - a.th) < 1e-6 && b.a > a.a + 0.005)),
+        learn: "ההרמה מאבדת קצת מהמשיכה במעלה, אבל מורידה חיכוך. השיא ב-tanβ = μk." }),
+      choice({ type: "calculation", skills: ["normal", "inference"], text: "משוך חזק ובזווית גבוהה עד שהמודל מתריע.",
+        gate: (L) => L.lostSeen, gateHint: "הגדל F ו-β עד ש-N מגיע לאפס.",
+        q: "למה המודל עוצר?", options: ["כי N יורד לאפס: הדמות מתרוממת ואין יותר חיכוך או מגע", "כי החבל נקרע", "כי החיכוך נהיה שלילי"], right: () => 0,
+        learn: "בלי מגע אין נורמל ואין חיכוך. צריך מודל מעוף דו-ממדי, לא מסילה." })
+    ]
+  });
+
+  // ---------------- S07 ----------------
+  add({
+    id: "S07", tier: 2, title: "לחיצה לתוך המשטח", rig: "ramp", icon: "press", desc: "דוחפים בניצב: שולטים בנורמל ובחיכוך.",
+    defaults: { th: 30, load: 0, muS: 0.5, muK: 0.3, Q: 0 }, controls: [{ k: "Q", he: "לחיצה ניצבת Q", min: 0, max: (mc) => Math.ceil(2 * mc * g / 5) * 5, step: 0.5, unit: "N", d: 1 }, C.th(5, 50)], surface: "wood", press: true,
+    build: (P, mc) => single(P, mc, { s0: RAMP_L - 0.3, Q: P.Q }),
+    missions: [
+      auto({ type: "experiment", skills: ["normal", "kinetic"], text: "שחרר בלי לחיצה, ואז עם לחיצה. השווה.",
+        check: (L) => { const rs = runs(L).filter((r) => r.t > 0.4); return rs.some((a) => a.P.Q === 0) && rs.some((b) => b.P.Q > 0); },
+        learn: "הלחיצה מוסיפה לנורמל ולכן לחיכוך. במורד היא לא דוחפת." }),
+      numeric({ type: "prediction", skills: ["normal"], text: "עם הלחיצה שעכשיו: מה הנורמל?",
+        gate: (L) => L.P.Q > 0, gateHint: "הגדל את Q.",
+        fields: [{ k: "N", he: "N", unit: "N", value: (L) => mOf(L) * g * cos(L.P.th) + L.P.Q }], learn: "N = mg·cosθ + Q." }),
+      predict({ type: "manipulation", skills: ["kinetic"], text: "נבא: בזמן החלקה, לחיצה חזקה יותר עושה לחיכוך הקינטי…",
+        options: ["מגדילה אותו", "מקטינה אותו", "לא משנה"],
+        needs: (L, i) => { const rs = after(L, i).filter((r) => r.aFirst !== null); return rs.some((a) => rs.some((b) => b.P.Q > a.P.Q + 0.5)); },
+        needHint: "הרץ שתי החלקות עם Q שונה (ששתיהן עדיין מחליקות).", truth: () => 0, learn: "f_k = μk(mg·cosθ + Q)." }),
+      auto({ type: "force_diagram", skills: ["static", "normal"], text: "מצא לחיצה שמונעת את תחילת ההחלקה.",
+        hint: "התחל מ-0 והגדל עד שהדמות נשארת אחרי השחרור.",
+        check: (L) => runs(L).some((r) => r.P.Q > 0 && r.static0 && r.t > 0.8 && tan(r.P.th) > r.P.muS),
+        learn: "צריך μs(mg·cosθ + Q) ≥ mg·sinθ, כלומר Q ≥ mg(sinθ/μs − cosθ)." }),
+      numeric({ type: "calculation", skills: ["normal", "components"], text: "הוספת Q: בכמה גדל N, ובכמה השתנה רכיב המשקל במורד?",
+        gate: (L) => L.P.Q > 0, gateHint: "שים Q גדול מ-0.",
+        fields: [{ k: "dN", he: "ΔN", unit: "N", value: (L) => L.P.Q }, { k: "dpar", he: "Δ(mg·sinθ)", unit: "N", value: () => 0, tol: 0.01 }],
+        learn: "Q ניצב למשטח: הוא נכנס רק ל-N. mg·sinθ לא זז." })
+    ]
+  });
+
+  // ---------------- S08 ----------------
+  const motorPeak = (L) => { const m = mOf(L), a1 = (L.P.F - m * g * (sin(L.P.th) + L.P.muK * cos(L.P.th))) / m, v = a1 * L.P.tOff, d1 = 0.5 * a1 * L.P.tOff ** 2, dec = g * (sin(L.P.th) + L.P.muK * cos(L.P.th)); return { a1, v, d1, t2: v / dec, d2: v * v / (2 * dec), a2: -dec }; };
+  add({
+    id: "S08", tier: 2, title: "המנוע שנכבה", rig: "ramp", icon: "motor", desc: "כוח שפועל רק חלק מהזמן: תנועה בשני שלבים.",
+    defaults: { th: 37, load: 0, muS: 0, muK: 0, F: 45, tOff: 4 }, defaultsFn: (mc) => ({ F: Math.round(mc * (g * sin(37) + 1.5) * 2) / 2 }), controls: [C.F(2), { k: "tOff", he: "כיבוי אחרי", min: 0.5, max: 6, step: 0.1, unit: "s", d: 1 }, C.th(5, 45)],
+    surface: "ice", motor: true, L: 30, ensure: (L) => motorPeak(L).a1 > 0,
+    build: (P, mc) => single(P, mc, { s0: 0.2, F: P.F, forceOffAt: P.tOff, L: 30 }),
+    missions: [
+      auto({ type: "experiment", skills: ["external", "newton2"], text: "הפעל את המנוע ועקוב אחרי התאוצה במעלה.", hint: "הכוח צריך להיות גדול מ-mg·sinθ. לחץ ▶.",
+        check: (L) => runs(L).some((r) => r.aFirst > 0 && r.t > 0.5), learn: "F − mg·sinθ = ma: כל עוד המנוע פועל." }),
+      predict({ type: "prediction", skills: ["kinematics", "inference"], text: "נבא לפני ההרצה: מה יקרה למהירות כשהמנוע ייכבה?",
+        options: ["תיפול מיד לאפס", "תמשיך במעלה ותאט", "תתחיל מיד לרדת"],
+        needs: (L, i) => after(L, i).some((r) => r.vOff !== null && r.t > r.P.tOff + 0.3), needHint: "הרץ עד אחרי הכיבוי.",
+        truth: (L, i) => { const r = after(L, i).find((x) => x.vOff !== null); return r.vOff > 1e-6 ? 1 : 0; },
+        learn: "המהירות רציפה. רק התאוצה קופצת: מ-+ ל-−g·sinθ." }),
+      numeric({ type: "manipulation", skills: ["graphs", "kinematics"], text: "כבה אחרי 4 שניות, ופתח את גרף v(t). קרא את שני השיפועים.",
+        gate: (L) => runs(L).some((r) => Math.abs(r.P.tOff - 4) < 0.05 && r.t > 4.5 && sameP(r.P, L.P, ["F", "th", "tOff"])), gateHint: "שים כיבוי ב-4.0 s והרץ עד אחרי הכיבוי.",
+        fields: [{ k: "a1", he: "שיפוע לפני", unit: "m/s²", value: (L) => motorPeak(L).a1, tol: 0.05 }, { k: "a2", he: "שיפוע אחרי", unit: "m/s²", value: (L) => motorPeak(L).a2, tol: 0.05 }],
+        graph: "v", learn: "השבר בגרף הוא בדיוק ברגע הכיבוי." }),
+      numeric({ type: "force_diagram", skills: ["kinematics"], text: "חשב כמה זמן אחרי הכיבוי היא מגיעה לשיא.",
+        fields: [{ k: "t2", he: "זמן עד השיא", unit: "s", value: (L) => motorPeak(L).t2 }],
+        confirm: { check: (L, i) => after(L, i).some((r) => r.tPeak !== null && sameP(r.P, L.P, ["F", "th", "tOff"])), hint: "הרץ ובדוק בסימון השיא." },
+        learn: "t = v_כיבוי / (g·sinθ)." }),
+      numeric({ type: "calculation", skills: ["kinematics", "inference"], text: "חשב את המרחק הכולל עד העצירה הרגעית (שני השלבים).",
+        fields: [{ k: "d", he: "מרחק כולל", unit: "m", value: (L) => motorPeak(L).d1 + motorPeak(L).d2 }],
+        learn: "d = ½·a₁·t₁² + v²/(2g·sinθ). אסור לשכוח את השלב השני." })
+    ]
+  });
+
+  // ---------------- S09 ----------------
+  const segsOf = (P) => [{ length: 3, angleDeg: P.th1, muS: 0.3, muK: 0.15 }, { length: P.flat, angleDeg: 0, muS: MATS[P.mat].s, muK: MATS[P.mat].k }, { length: 3, angleDeg: -P.th3, muS: 0.3, muK: 0.2 }];
+  add({
+    id: "S09", tier: 2, title: "מדרון, מישור, מדרון", rig: "track", icon: "track", desc: "הזווית והמשטח משתנים לאורך הדרך.",
+    defaults: { th1: 25, flat: 2, th3: 15, mat: "wood", v0: 0.3, load: 0 },
+    controls: [{ k: "th1", he: "ירידה בקטע 1", min: 10, max: 45, step: 1, unit: "°", d: 0 }, { k: "flat", he: "אורך המישור", min: 0.5, max: 4, step: 0.1, unit: "m", d: 1 }, { k: "th3", he: "עלייה בקטע 3", min: 5, max: 35, step: 1, unit: "°", d: 0 }, { k: "v0", he: "מהירות התחלתית", min: 0, max: 4, step: 0.1, unit: "m/s", d: 1 }],
+    mats: ["ice", "wood", "rubber"], matLabel: "משטח המישור",
+    build: (P, mc) => RP.makePiecewise({ m: mc + (P.load || 0), segments: segsOf(P), v0: P.v0 }),
+    missions: [
+      predict({ type: "experiment", skills: ["kinematics", "kinetic"], text: "נבא לכל קטע: הדמות מאיצה או מאטה? (בחר שלוש)",
+        multi: [{ he: "קטע 1 (ירידה)" }, { he: "קטע 2 (מישור)" }, { he: "קטע 3 (עלייה)" }], options: ["מאיצה", "מאטה"],
+        needs: (L, i) => after(L, i).some((r) => r.settled), needHint: "הרץ עד הסוף.",
+        truth: (L) => { const s = segsOf(L.P); return [g * (sin(s[0].angleDeg) - s[0].muK * cos(s[0].angleDeg)) > 0 ? 0 : 1, 1, 1]; },
+        learn: "בירידה מאיצה אם tanθ > μk; במישור החיכוך מאט; בעלייה גם הכובד וגם החיכוך מאטים." }),
+      choice({ type: "prediction", skills: ["kinematics"], text: "העבר את הדמות מהשיפוע למישור.",
+        gate: (L) => runs(L).some((r) => r.joints.includes("j1")), gateHint: "הרץ עד שהיא חוצה את המעבר הראשון.",
+        q: "ברגע המעבר מהשיפוע למישור…", options: ["המהירות קופצת", "המהירות רציפה, התאוצה קופצת", "שתיהן לא משתנות"], right: () => 1,
+        learn: "בחיבור מעוגל (בלי איבוד בפנייה) v רציפה. N ו-μ מתחלפים בבת אחת, ואיתם a." }),
+      fbd({ type: "manipulation", skills: ["kinetic", "normal"], text: "כוחות בכל קטע, כשהדמות נעה קדימה: לאן החיכוך?",
+        rows: [{ label: "חיכוך בקטע 1", opts: ["against", "with", "none"], truth: () => "against" }, { label: "חיכוך בקטע 2", opts: ["against", "with", "none"], truth: () => "against" }, { label: "חיכוך בקטע 3", opts: ["against", "with", "none"], truth: () => "against" }],
+        then: choice({ q: "ובמישור, N שווה ל…", options: ["mg", "mg·cosθ₁", "0"], right: () => 0 }),
+        learn: "החיכוך הקינטי תמיד נגד התנועה. N = mg·cos(הזווית של הקטע שבו היא נמצאת)." }),
+      predict({ type: "force_diagram", skills: ["energy", "inference"], text: "נבא: עם הערכים שעכשיו, הדמות תגיע לקצה הקטע השלישי?",
+        options: ["מגיעה לקצה", "נעצרת בדרך"],
+        needs: (L, i) => after(L, i).some((r) => r.settled), needHint: "הרץ עד הסוף.",
+        truth: (L, i) => (after(L, i).find((r) => r.settled).barrier === "top" ? 0 : 1),
+        learn: "אפשר לחשב מראש: ½mv² בסוף = ½mv₀² + mgh − (חום מכל הקטעים)." }),
+      numeric({ type: "calculation", skills: ["graphs", "kinetic"], text: "פתח גרף a(x). מה התאוצה במישור, ומה בעלייה?",
+        gate: (L) => runs(L).some((r) => r.segA[1] !== undefined && r.segA[2] !== undefined && sameP(r.P, L.P, ["th1", "flat", "th3"]) && r.P.mat === L.P.mat), gateHint: "הרץ כך שהדמות מגיעה לקטע השלישי.",
+        fields: [{ k: "a2", he: "a במישור", unit: "m/s²", value: (L) => -segsOf(L.P)[1].muK * g, tol: 0.05 }, { k: "a3", he: "a בעלייה", unit: "m/s²", value: (L) => -g * (sin(L.P.th3) + 0.2 * cos(L.P.th3)), tol: 0.05 }],
+        graph: "ax", learn: "a(x) קבועה בכל קטע וקופצת בדיוק במעברים." })
+    ]
+  });
+
+  // ---------------- S10 ----------------
+  const hang = (L, over = {}) => { const P = { ...L.P, ...over }; return { mA: mOf(L, P), mB: P.mB, angleDeg: P.th, muS: P.muS, muK: Math.min(P.muK, P.muS), g }; };
+  add({
+    id: "S10", tier: 2, title: "משקולת מן התקרה", rig: "hang", icon: "pulley", desc: "משקולת תלויה מושכת את הדמות דרך גלגלת.",
+    defaults: { th: 30, load: 0, mB: 1, muS: 0.25, muK: 0.2 }, defaultsFn: (mc) => ({ mB: Math.round(mc * 0.75 * 10) / 10 }), controls: [{ k: "mB", he: "המשקולת התלויה", min: 0.1, max: (mc) => Math.ceil(mc * 3), step: 0.1, unit: "kg", d: 1 }, C.th(0, 60), C.muS(), C.muK()],
+    surface: "wood",
+    build: (P, mc, L) => RP.makeHanging({ mA: mc + (P.load || 0), mB: P.mB, angleDeg: P.th, muS: P.muS, muK: Math.min(P.muK, P.muS), g, sMin: -1.3, sMax: 1.3 }),
+    missions: [
+      predict({ type: "experiment", skills: ["systems", "static"], text: "קבע משקולת ונבא: לאן המערכת תזוז?",
+        options: ["הדמות עולה", "הדמות יורדת", "נשארת במנוחה"],
+        needs: (L, i) => after(L, i).some((r) => r.t > 0.6), needHint: "שחרר (▶).",
+        truth: (L, i) => { const r = after(L, i).find((x) => x.t > 0.6); return !r.moved ? 2 : r.startDir > 0 ? 0 : 1; },
+        learn: "משווים mB·g מול mA·g·sinθ, ובודקים אם ההפרש עובר את μs·N." }),
+      auto({ type: "prediction", skills: ["static", "systems"], text: "מצא משקולת שמשאירה את המערכת במנוחה.",
+        check: (L) => runs(L).some((r) => !r.moved && r.t > 1 && r.P.mB > 0),
+        learn: "במנוחה: mA·g·sinθ − μs·N ≤ mB·g ≤ mA·g·sinθ + μs·N." }),
+      numeric({ type: "manipulation", skills: ["systems", "newton2"], text: "שחרר כך שהמערכת זזה, ומדוד את התאוצה המשותפת.",
+        gate: (L) => runs(L).some((r) => r.aFirst !== null && sameP(r.P, L.P, ["mB", "th", "muK", "load"])), gateHint: "בחר משקולת שמזיזה, ושחרר.",
+        fields: [{ k: "a", he: "|a|", unit: "m/s²", value: (L) => Math.abs(RP.hangingPulley(hang(L), 0).a || 0) }],
+        learn: "אותו חבל, אותו גודל תאוצה לשני הגופים." }),
+      fbd({ type: "force_diagram", skills: ["systems", "kinetic"], text: "כשהדמות עולה: הכוחות על כל גוף בנפרד.",
+        rows: [{ label: "מתיחות על הדמות", opts: ["upslope", "downslope", "up", "down"], truth: () => "upslope" }, { label: "חיכוך על הדמות", opts: ["upslope", "downslope", "none"], truth: () => "downslope" },
+               { label: "מתיחות על המשקולת", opts: ["up", "down"], truth: () => "up" }, { label: "כובד על המשקולת", opts: ["up", "down"], truth: () => "down" }],
+        learn: "החבל מושך כל גוף לכיוון הגלגלת. החיכוך על הדמות נגד התנועה." }),
+      numeric({ type: "calculation", skills: ["systems", "newton2"], text: "משתי משוואות ניוטון: חשב את התאוצה ואת המתיחות (המערכת בתנועה).",
+        gate: (L) => RP.hangingPulley(hang(L), 0).mode === "kinetic", gateHint: "בחר משקולת שמזיזה את המערכת.",
+        fields: [{ k: "a", he: "|a|", unit: "m/s²", value: (L) => Math.abs(RP.hangingPulley(hang(L), 0).a) }, { k: "T", he: "T", unit: "N", value: (L) => RP.hangingPulley(hang(L), 0).T }],
+        learn: "mB·g − T = mB·a ;  T − mA·g·sinθ ∓ μk·N = mA·a." })
+    ]
+  });
+
+  // ---------------- S11 ----------------
+  const dbl = (L) => ({ mA: mOf(L), mB: L.P.mB, angleA: L.P.thA, angleB: L.P.thB, muSA: L.P.mu + 0.05, muSB: L.P.mu + 0.05, muKA: L.P.mu, muKB: L.P.mu, g });
+  add({
+    id: "S11", tier: 2, title: "שתי פסגות וגלגלת", rig: "double", icon: "peaks", desc: "שני גופים על שני שיפועים, חבל אחד.",
+    defaults: { thA: 20, thB: 45, mB: 2, mu: 0.05, load: 0 }, defaultsFn: (mc) => ({ mB: Math.round(mc * 1.5 * 10) / 10 }), controls: [{ k: "thA", he: "שיפוע הדמות θA", min: 5, max: 70, step: 1, unit: "°", d: 0 }, { k: "thB", he: "שיפוע המשקולת θB", min: 5, max: 70, step: 1, unit: "°", d: 0 }, { k: "mB", he: "המשקולת", min: 0.2, max: 8, step: 0.1, unit: "kg", d: 1 }, { k: "mu", he: "μk בשני הצדדים", min: 0, max: 0.6, step: 0.01, unit: "", d: 2 }],
+    build: (P, mc, L) => RP.makeDouble({ mA: mc + (P.load || 0), mB: P.mB, angleA: P.thA, angleB: P.thB, muSA: P.mu + 0.05, muSB: P.mu + 0.05, muKA: P.mu, muKB: P.mu, g }),
+    missions: [
+      predict({ type: "experiment", skills: ["systems", "components"], text: "נבא: לאיזה צד המערכת תזוז?",
+        options: ["לצד הדמות", "לצד המשקולת", "לא תזוז"], needs: (L, i) => after(L, i).some((r) => r.t > 0.6), needHint: "שחרר (▶).",
+        truth: (L, i) => { const r = after(L, i).find((x) => x.t > 0.6); return !r.moved ? 2 : r.startDir > 0 ? 1 : 0; },
+        learn: "משווים mB·g·sinθB מול mA·g·sinθA, לא את המסות עצמן." }),
+      auto({ type: "prediction", skills: ["components", "inference"], text: "שנה רק שיפוע אחד, ומצא מצב שבו כיוון התנועה מתהפך.",
+        check: (L) => { const rs = runs(L).filter((r) => r.moved); return rs.some((a) => rs.some((b) => a.startDir !== b.startDir && a.P.mB === b.P.mB && a.P.mu === b.P.mu && (a.P.thA === b.P.thA) !== (a.P.thB === b.P.thB))); },
+        learn: "הכיוון נקבע מסימן ההפרש mB·sinθB − mA·sinθA." }),
+      auto({ type: "manipulation", skills: ["static", "rest"], text: "מצא צירוף שבו המערכת בשיווי משקל.",
+        check: (L) => runs(L).some((r) => !r.moved && r.t > 1), learn: "שיווי משקל: |הפרש רכיבי המשקל| ≤ סכום שני החיכוכים הסטטיים." }),
+      fbd({ type: "force_diagram", skills: ["systems", "kinetic"], text: "כשהמשקולת יורדת: לאן החיכוך והמתיחות על כל גוף?",
+        rows: [{ label: "חיכוך על הדמות", opts: ["upslope", "downslope", "none"], truth: () => "downslope" }, { label: "מתיחות על הדמות", opts: ["upslope", "downslope"], truth: () => "upslope" },
+               { label: "חיכוך על המשקולת", opts: ["upslope", "downslope", "none"], truth: (L) => (L.P.mu > 0 ? "upslope" : "none") }, { label: "מתיחות על המשקולת", opts: ["upslope", "downslope"], truth: () => "upslope" }],
+        learn: "על כל צד החיכוך נגד תנועת אותו גוף; המתיחות מושכת כל גוף אל הפסגה." }),
+      numeric({ type: "calculation", skills: ["systems", "newton2", "kinetic"], text: "חשב את התאוצה המשותפת (המערכת בתנועה; + = המשקולת יורדת).",
+        gate: (L) => RP.doubleInclinePulley(dbl(L), 0).mode === "kinetic", gateHint: "בחר ערכים שבהם המערכת זזה.",
+        fields: [{ k: "a", he: "a", unit: "m/s²", value: (L) => RP.doubleInclinePulley(dbl(L), 0).a }],
+        learn: "a = [mB·g·sinθB − mA·g·sinθA − μk(N_A + N_B)] / (mA + mB)." })
+    ]
+  });
+
+  // ---------------- S12 ----------------
+  const lk = (L) => ({ A: { m: mOf(L), muS: MATS[L.P.matA].s, muK: MATS[L.P.matA].k }, B: { m: L.P.mB, muS: MATS[L.P.matB].s, muK: MATS[L.P.matB].k } });
+  const linkedSolve = (L) => { const { A, B } = lk(L), up = L.P.swap ? B : A, dn = L.P.swap ? A : B; const th = L.P.th * DEG, M = up.m + dn.m; const a = g * Math.sin(th) - g * Math.cos(th) * (up.m * up.muK + dn.m * dn.muK) / M; const T = dn.m * g * Math.sin(th) - dn.muK * dn.m * g * Math.cos(th) - dn.m * a; return { a, T, up, dn }; };
+  add({
+    id: "S12", tier: 3, title: "שני חברים על הרמפה", rig: "linked", icon: "pair", desc: "שני גופים בחבל אחד, חיכוך שונה לכל אחד.",
+    defaults: { th: 30, mB: 2, matA: "sand", matB: "ice", swap: 0, load: 0 }, defaultsFn: (mc) => ({ mB: Math.round(mc * 10) / 10 }), controls: [C.th(15, 60), { k: "mB", he: "מסת הקופסה", min: 0.5, max: 6, step: 0.1, unit: "kg", d: 1 }],
+    pairMats: true, swapBtn: true,
+    build: (P, mc, L) => { const A = { m: mc + (P.load || 0), muS: MATS[P.matA].s, muK: MATS[P.matA].k }, B = { m: P.mB, muS: MATS[P.matB].s, muK: MATS[P.matB].k }; const s = RP.makeLinked({ angleDeg: P.th, A, B, rope: 0.7, swap: !!P.swap, L: 3.6 }); s.xUp = 0.3; s.xDn = 1.0; return s; },
+    missions: [
+      auto({ type: "experiment", skills: ["systems"], text: "שחרר את שני הגופים הקשורים (המחוספס למעלה) ותאר: הם זזים יחד?",
+        check: (L) => runs(L).some((r) => r.taut > 0.8), then: choice({ q: "כשהחבל מתוח, שני הגופים…", options: ["באותה מהירות ובאותה תאוצה", "העליון מהיר יותר", "התחתון מהיר יותר"], right: () => 0 }),
+        learn: "חבל מתוח ולא נמתח: אותה תנועה." }),
+      fbd({ type: "prediction", skills: ["systems"], text: "החבל מתוח: לאן המתיחות על כל גוף?",
+        rows: [{ label: "T על הגוף העליון", opts: ["upslope", "downslope", "none"], truth: () => "downslope" }, { label: "T על הגוף התחתון", opts: ["upslope", "downslope", "none"], truth: () => "upslope" }],
+        learn: "אותו T, בכיוונים מנוגדים: החבל מושך כל גוף לעבר השני." }),
+      numeric({ type: "manipulation", skills: ["systems", "newton2"], text: "חשב את התאוצה המשותפת (חבל מתוח; + = במורד).",
+        gate: (L) => linkedSolve(L).T > 0 && linkedSolve(L).a > 0, gateHint: "שים את המחוספס למעלה ובחר זווית שבה הם מחליקים.",
+        fields: [{ k: "a", he: "a", unit: "m/s²", value: (L) => linkedSolve(L).a }], learn: "a = g·sinθ − g·cosθ·(m₁μ₁ + m₂μ₂)/(m₁ + m₂)." }),
+      numeric({ type: "force_diagram", skills: ["systems"], text: "חשב את מתיחות החבל.",
+        gate: (L) => linkedSolve(L).T > 0 && linkedSolve(L).a > 0, gateHint: "החבל צריך להיות מתוח והגופים בתנועה.",
+        fields: [{ k: "T", he: "T", unit: "N", value: (L) => linkedSolve(L).T }], learn: "מהמשוואה של גוף אחד: T = m·g·sinθ − f − m·a." }),
+      auto({ type: "calculation", skills: ["systems", "inference"], text: "החלף את סדר הגופים (החלק למעלה) ושחרר: מה קורה לחבל?",
+        check: (L) => runs(L).some((r) => r.slack), then: choice({ q: "החבל עכשיו…", options: ["דוחף את הגוף התחתון", "רפוי: חבל לא יכול לדחוף", "מתוח יותר"], right: () => 1 }),
+        learn: "אם החישוב נותן T < 0 החבל מתרופף. כל גוף לבד, עד שהם נוגעים." })
+    ]
+  });
+
+  // ---------------- S13 ----------------
+  add({
+    id: "S13", tier: 2, title: "מסה כפולה, אותה פיזיקה?", rig: "ramp", icon: "scale", desc: "מסה משנה כוחות, לא בהכרח תאוצה.",
+    defaults: { th: 30, load: 0, muS: 0.3, muK: 0.2, Fx: 0 }, controls: [C.load(8), C.th(10, 55), { k: "Fx", he: "כוח קבוע במעלה", min: 0, max: (mc) => Math.ceil(mc * g * 0.6), step: 0.5, unit: "N", d: 1 }], surface: "wood", backpack: true,
+    build: (P, mc) => single(P, mc, { s0: RAMP_L - 0.3, F: P.Fx }),
+    missions: [
+      auto({ type: "experiment", skills: ["newton2"], text: "השווה: שחרר בלי תרמיל ועם תרמיל (פי 2 במסה לפחות), בלי כוח חיצוני.",
+        check: (L) => { const rs = runs(L).filter((r) => r.aFirst !== null && !r.P.Fx); return rs.some((a) => rs.some((b) => b.m >= 2 * a.m - 1e-9 && sameP(a.P, b.P, ["th", "muK"]))); },
+        learn: "המדידות שוות: אותה זווית, אותו μ, אותה תאוצה." }),
+      numeric({ type: "prediction", skills: ["components", "normal"], text: "עם המסה שעכשיו: כמה המשקל וכמה הנורמל?",
+        fields: [{ k: "W", he: "W", unit: "N", value: (L) => mOf(L) * g }, { k: "N", he: "N", unit: "N", value: (L) => mOf(L) * g * cos(L.P.th) }], learn: "שניהם פרופורציוניים למסה." }),
+      predict({ type: "manipulation", skills: ["newton2", "inference"], text: "נבא: אם מגדילים מסה (בלי כוח חיצוני), התאוצה…",
+        options: ["גדלה", "קטנה", "לא משתנה"], needs: (L, i) => { const rs = after(L, i).filter((r) => r.aFirst !== null && !r.P.Fx); return rs.some((a) => rs.some((b) => b.m > a.m + 0.4 && sameP(a.P, b.P, ["th"]))); },
+        needHint: "הרץ פעמיים עם מסות שונות.", truth: () => 2, learn: "ma = mg·sinθ − μk·mg·cosθ: m מצטמצמת." }),
+      auto({ type: "force_diagram", skills: ["external", "newton2"], text: "הוסף כוח קבוע במעלה, והשווה שוב בין שתי מסות.",
+        check: (L) => { const rs = runs(L).filter((r) => r.aFirst !== null && r.P.Fx > 0); return rs.some((a) => rs.some((b) => b.m > a.m + 0.4 && a.P.Fx === b.P.Fx && sameP(a.P, b.P, ["th"]) && Math.abs(a.aFirst - b.aFirst) > 0.01)); },
+        learn: "עכשיו התאוצות שונות: F/m משתנה עם המסה." }),
+      choice({ type: "calculation", skills: ["inference", "external"], text: "הסבר את ההבדל.", gate: (L) => L.done("S13-M04"), gateHint: "קודם השלם את המשימה הקודמת.",
+        q: "למה עם כוח קבוע התוצאה תלויה במסה?", options: ["כי הכוח הקבוע לא גדל עם המסה, אז F/m קטן בגוף הכבד", "כי החיכוך גדל רק בגוף הכבד", "כי g תלוי במסה"], right: () => 0,
+        learn: "כובד וחיכוך פרופורציוניים ל-m, והם מצטמצמים. כוח חיצוני קבוע לא." })
+    ]
+  });
+
+  // ---------------- S14 ----------------
+  const brakeMu = (P) => ({ s: Math.min(1.2, P.brake + 0.2), k: P.brake });
+  add({
+    id: "S14", tier: 3, title: "בלמי חירום", rig: "ramp", icon: "brake", desc: "החיכוך משתנה ברגע שלוחצים בלם.",
+    defaults: { th: 15, load: 0, muS: 0.2, muK: 0.1, brake: 0.65 }, controls: [{ k: "brake", he: "עוצמת הבלם μk", min: 0.05, max: 1, step: 0.01, unit: "", d: 2 }, C.th(8, 40)], surface: "ice", brakeBtn: true, obstacle: 1.0, L: 9,
+    build: (P, mc) => single(P, mc, { s0: 8.7, L: 9, sMin: 1.0, brake: { on: false, muS: brakeMu(P).s, muK: brakeMu(P).k } }),
+    missions: [
+      auto({ type: "experiment", skills: ["kinematics"], text: "תן לדמות לצבור מהירות במורד (לפחות 2 m/s).", check: (L) => runs(L).some((r) => r.vMax >= 2),
+        learn: "μk·cosθ < sinθ: הכובד מנצח והמהירות גדלה." }),
+      predict({ type: "prediction", skills: ["kinetic", "inference"], text: "לפני הלחיצה: אחרי הבלם, הדמות…",
+        options: ["מאטה", "ממשיכה להאיץ, אבל פחות", "נעצרת מיד"],
+        needs: (L, i) => after(L, i).some((r) => r.braked && r.t > r.braked.t + 0.3), needHint: "הרץ ולחץ על הבלם בזמן התנועה.",
+        truth: (L, i) => { const r = after(L, i).find((x) => x.braked); return r.P.brake > tan(r.P.th) ? 0 : 1; },
+        learn: "אם μk·cosθ < sinθ גם עם הבלם, התאוצה עדיין במורד: המהירות ממשיכה לגדול." }),
+      auto({ type: "manipulation", skills: ["kinetic", "kinematics"], text: "עצור את הדמות לפני הסלע: בחר בלם ותזמון.",
+        check: (L) => runs(L).some((r) => r.braked && r.endMode === "static" && r.barrier === null && r.settled),
+        learn: "מרחק עצירה v²/(2|a|) עם a = g(μk·cosθ − sinθ)." }),
+      choice({ type: "force_diagram", skills: ["graphs"], text: "הרץ עם בלם ופתח את גרף v(t).", graph: "v",
+        gate: (L) => runs(L).some((r) => r.braked && r.t > r.braked.t + 0.3), gateHint: "הרץ, לחץ בלם, ופתח גרפים.",
+        q: "ברגע הבלימה, בגרף v(t)…", options: ["v רציפה והשיפוע משתנה", "v קופצת לאפס", "v קופצת למטה ונשארת שם"], right: () => 0,
+        learn: "μ משתנה בבת אחת, אז a קופצת; המהירות לא יכולה לקפוץ." }),
+      predict({ type: "calculation", skills: ["static"], text: "נבא: אחרי שנעצרה עם הבלם, תישאר?", options: ["תישאר", "תחליק שוב"],
+        needs: (L, i) => after(L, i).some((r) => r.braked && r.endMode === "static" && r.settled), needHint: "עצור אותה עם הבלם.",
+        truth: (L, i) => { const r = after(L, i).find((x) => x.braked && x.endMode === "static"); return tan(r.P.th) <= brakeMu(r.P).s ? 0 : 1; },
+        learn: "בעצירה בודקים μs של הבלם מול tanθ." })
+    ]
+  });
+
+  // ---------------- S15 ----------------
+  add({
+    id: "S15", tier: 3, title: "לאן נעלמה האנרגיה?", rig: "ramp", icon: "energy", desc: "גובה, תנועה וחום.",
+    defaults: { th: 30, load: 0, len: 4, muS: 0.25, muK: 0.2 }, controls: [C.th(10, 60), { k: "len", he: "אורך המסלול", min: 1, max: 6, step: 0.1, unit: "m", d: 1 }, { k: "muK", he: "μk", min: 0, max: 0.5, step: 0.01, unit: "", d: 2 }, C.load(6)],
+    surface: "wood", energy: true, L: 6.2,
+    build: (P, mc) => single({ ...P, muS: Math.max(P.muK, Math.min(1, P.muK + 0.05)) }, mc, { s0: P.len, L: 6.2 }),
+    missions: [
+      auto({ type: "experiment", skills: ["energy"], text: "בלי חיכוך (μk = 0): שחרר וצפה בעמודות הגובה והתנועה.",
+        check: (L) => runs(L).some((r) => r.P.muK === 0 && r.barrier === "bottom"), learn: "בלי חיכוך: כל U הופכת ל-K." }),
+      choice({ type: "prediction", skills: ["energy"], text: "עכשיו עם חיכוך: שחרר עד למטה.",
+        gate: (L) => runs(L).some((r) => r.P.muK > 0 && r.barrier === "bottom"), gateHint: "הגדל μk ושחרר.",
+        q: "חלק מאנרגיית הגובה לא הפך לתנועה. לאן הוא הלך?", options: ["לחום", "נעלם", "חזר לגובה"], right: () => 0, learn: "חיכוך הופך אנרגיה לחום. הסכום נשמר." }),
+      numeric({ type: "manipulation", skills: ["energy"], text: "בנה את עמודות הריצה האחרונה (עם חיכוך): U בהתחלה, K בסוף, ואנרגיה שהתפזרה.",
+        gate: (L) => runs(L).some((r) => r.P.muK > 0 && r.barrier === "bottom" && sameP(r.P, L.P, ["th", "len", "muK", "load"])), gateHint: "הרץ עד למטה עם חיכוך (בערכים שעכשיו).",
+        fields: [{ k: "U", he: "U התחלה", unit: "J", value: (L) => mOf(L) * g * L.P.len * sin(L.P.th) }, { k: "K", he: "K סוף", unit: "J", value: (L) => RP.descentEnergy({ m: mOf(L), angleDeg: L.P.th, muK: L.P.muK, s: L.P.len }).deltaK }, { k: "Q", he: "חום", unit: "J", value: (L) => RP.descentEnergy({ m: mOf(L), angleDeg: L.P.th, muK: L.P.muK, s: L.P.len }).dissipated }],
+        learn: "U = K + Q." }),
+      numeric({ type: "force_diagram", skills: ["energy", "kinetic"], text: "חשב את עבודת החיכוך על כל המסלול (שים לב לסימן).",
+        fields: [{ k: "W", he: "W_f", unit: "J", value: (L) => -RP.descentEnergy({ m: mOf(L), angleDeg: L.P.th, muK: L.P.muK, s: L.P.len }).dissipated }],
+        learn: "W_f = −μk·mg·cosθ·d: שלילית, כי החיכוך נגד התנועה." }),
+      auto({ type: "calculation", skills: ["energy", "inference"], text: "השווה שני מדרונות באותו גובה, באורכים שונים (עם חיכוך).",
+        hint: "גובה = אורך × sinθ. למשל 2 m ב-60° ו-3.46 m ב-30°.",
+        check: (L) => { const rs = runs(L).filter((r) => r.P.muK > 0 && r.barrier === "bottom"); const h = (r) => r.P.len * sin(r.P.th); return rs.some((a) => rs.some((b) => Math.abs(h(a) - h(b)) < 0.05 && Math.abs(a.P.len - b.P.len) > 0.5 && a.P.muK === b.P.muK)); },
+        then: choice({ q: "באותו גובה ואותו μk, המסלול הארוך…", options: ["מגיע עם פחות K, יותר חום", "מגיע עם אותה K", "מגיע עם יותר K"], right: () => 0 }),
+        learn: "Q = μk·mg·cosθ·d = μk·mg·(אורך אופקי). מדרון ארוך ומתון מתפזר יותר." })
+    ]
+  });
+
+  // ---------------- S16 ----------------
+  const springMax = (L) => { const s = fresh(L); RP.simulate(s, { tMax: 8, until: (t) => t.events.some((e) => e.type === "v_zero" && e.s < L.P.at) }); const e = s.events.find((x) => x.type === "v_zero" && x.s < L.P.at); return e ? L.P.at - e.s : 0; };
+  add({
+    id: "S16", tier: 4, title: "קפיץ בקצה הרמפה", rig: "ramp", icon: "spring", desc: "העשרה: דחיסת קפיץ, כוחות ואנרגיה.",
+    defaults: { th: 25, load: 0, muS: 0.4, muK: 0.2, k: 100, d: 2.5, at: 0.8 }, controls: [{ k: "k", he: "קבוע הקפיץ k", min: 30, max: 500, step: 5, unit: "N/m", d: 0 }, { k: "d", he: "מרחק מהקפיץ", min: 0.3, max: 3, step: 0.1, unit: "m", d: 1 }, C.muK(), C.th(10, 45)],
+    surface: "wood", spring: true, L: 4.2, enrichment: true,
+    build: (P, mc) => single({ ...P, muS: Math.max(P.muS, P.muK) }, mc, { s0: P.at + P.d, L: 4.2, spring: { k: P.k, at: P.at } }),
+    missions: [
+      auto({ type: "experiment", skills: ["energy"], text: "שחרר כך שהדמות מגיעה לקפיץ.", check: (L) => runs(L).some((r) => r.contact), learn: "הקפיץ דוחף רק כשהוא נדחס." }),
+      numeric({ type: "prediction", skills: ["graphs", "energy"], text: "מדוד בסרגל את הדחיסה המרבית בריצה האחרונה.",
+        gate: (L) => runs(L).some((r) => r.contact && r.settled && sameP(r.P, L.P, ["k", "d", "muK", "th"])), gateHint: "הרץ עד שהדמות נעצרת.",
+        fields: [{ k: "x", he: "x מרבי", unit: "m", value: (L) => springMax(L), tol: 0.05 }], learn: "בדחיסה המרבית v = 0 לרגע, וזה לא בהכרח שיווי משקל." }),
+      choice({ type: "manipulation", skills: ["graphs"], text: "פתח את גרף F(x) של הקפיץ בריצה עם מגע.", graph: "Fx",
+        gate: (L) => runs(L).some((r) => r.contact), gateHint: "הרץ כך שהדמות דוחסת את הקפיץ, ופתח גרפים.",
+        q: "כשהדחיסה גדלה פי 2, כוח הקפיץ…", options: ["גדל פי 2", "גדל פי 4", "לא משתנה"], right: () => 0, learn: "F = k·x: קו ישר." }),
+      numeric({ type: "force_diagram", skills: ["energy", "kinetic"], text: "מאזן אנרגיה עד הדחיסה המרבית: כמה אנרגיה בקפיץ, וכמה הפכה לחום?",
+        gate: (L) => runs(L).some((r) => r.contact && sameP(r.P, L.P, ["k", "d", "muK", "th"])), gateHint: "הרץ בערכים שעכשיו.",
+        fields: [{ k: "Es", he: "½kx²", unit: "J", value: (L) => 0.5 * L.P.k * springMax(L) ** 2 }, { k: "Q", he: "חום", unit: "J", value: (L) => L.P.muK * mOf(L) * g * cos(L.P.th) * (L.P.d + springMax(L)) }],
+        learn: "mg(d + x)·sinθ = ½kx² + μk·mg·cosθ·(d + x)." }),
+      predict({ type: "calculation", skills: ["static", "inference"], text: "נבא: הקפיץ יצליח לדחוף את הדמות חזרה במעלה?", options: ["כן", "לא, היא נתקעת דחוסה"],
+        needs: (L, i) => after(L, i).some((r) => r.contact && r.settled), needHint: "הרץ עד הסוף.",
+        truth: (L, i) => (after(L, i).find((r) => r.contact && r.settled).bounced ? 0 : 1),
+        learn: "בדחיסה המרבית: אם k·x > mg·sinθ + μs·N היא חוזרת; אחרת החיכוך הסטטי מחזיק אותה." })
+    ]
+  });
+
+  // ---------------- S17 ----------------
+  const est = (r, P) => { const a = Math.abs(r.meas.a), th = r.P.th; const mu = (sin(th) - a / g) / cos(th), du = (a * 0.02 / g) / cos(th); return { mu, du }; };
+  add({
+    id: "S17", tier: 3, title: "המעבדה הסודית", rig: "ramp", icon: "envelope", desc: "μk מוסתר במעטפה. גלה אותו ממדידות.",
+    defaults: { th: 30, load: 0 }, controls: [C.th(15, 60)], surface: "secret", secret: true,
+    build: (P, mc, L) => single({ ...P, muS: L.secret.muS, muK: L.secret.muK }, mc, { s0: RAMP_L - 0.3 }),
+    missions: [
+      auto({ type: "experiment", skills: ["inference", "kinematics"], text: "מדוד תאוצה במורד (הדמות צריכה להחליק).", check: (L) => runs(L).some((r) => r.meas),
+        learn: "המדידה כוללת ±2% רעש מכשיר. היא נרשמת בטבלה." }),
+      numeric({ type: "prediction", skills: ["inference", "kinetic"], text: "מהמדידה האחרונה: הערך את μk.", gate: (L) => runs(L).some((r) => r.meas), gateHint: "קודם מדידה.",
+        fields: [{ k: "mu", he: "μk", unit: "", value: (L) => est(runs(L).filter((r) => r.meas).slice(-1)[0]).mu, tolAbs: (L) => Math.max(0.01, 1.5 * est(runs(L).filter((r) => r.meas).slice(-1)[0]).du) }],
+        learn: "μk = (sinθ − |a|/g) / cosθ." }),
+      auto({ type: "manipulation", skills: ["inference"], text: "מדוד שוב בזווית אחרת (הפרש של 8° לפחות) והצלב.",
+        check: (L) => { const ms = runs(L).filter((r) => r.meas); return ms.some((a) => ms.some((b) => Math.abs(a.P.th - b.P.th) >= 8 && Math.abs(est(a).mu - est(b).mu) <= est(a).du + est(b).du + 0.01)); },
+        learn: "שתי זוויות, אותו μk בתוך אי-הוודאות: המודל עובד." }),
+      choice({ type: "force_diagram", skills: ["newton2", "inference"], text: "שאלה למעבדה.", q: "למה לא צריך לדעת את המסה כדי למצוא את μk?",
+        options: ["כי a = g(sinθ − μk·cosθ) לא תלויה במסה", "כי המסה תמיד 1 kg", "כי החיכוך לא תלוי בנורמל"], right: () => 0, learn: "כל הכוחות פרופורציוניים ל-m." }),
+      numeric({ type: "calculation", skills: ["inference", "graphs"], text: "אחרי 3 מדידות לפחות: מה התשובה הסופית? (הממוצע נבדק מול אי-הוודאות)",
+        gate: (L) => runs(L).filter((r) => r.meas).length >= 3, gateHint: "צריך שלוש מדידות.",
+        fields: [{ k: "mu", he: "μk", unit: "", value: (L) => L.secret.muK, tolAbs: (L) => { const ms = runs(L).filter((r) => r.meas); return Math.max(0.01, ms.reduce((s, r) => s + est(r).du, 0) / ms.length * 1.5); } }],
+        reveal: true, learn: "המעטפה נפתחת. מדידה עם רעש נותנת תחום, לא מספר מדויק." })
+    ]
+  });
+
+  // ---------------- S18 ----------------
+  add({
+    id: "S18", tier: 5, title: "בגרות: שינוי סיטואציה", rig: "phases", icon: "exam", desc: "שאלה אחת, שלוש תצורות. כל פעם מחדש.",
+    phases: { A: "מנוע שנכבה", B: "גוף תלוי", C: "כוח במנוחה" },
+    defaults: { phase: "A", th: 37, load: 0, muS: 0, muK: 0, F: 45, tOff: 4, mB: 3, muS2: 0.5, muK2: 0.3, F2: 10 },
+    defaultsFn: (mc) => ({ F: Math.round(mc * (g * sin(37) + 1.5) * 2) / 2, mB: Math.round(mc * 1.2 * 10) / 10, F2: Math.round(mc * g * sin(37) * 0.5 * 2) / 2 }),
+    controlsFor: (P) => P.phase === "A" ? [C.F(2), { k: "tOff", he: "כיבוי אחרי", min: 1, max: 6, step: 0.1, unit: "s", d: 1 }] : P.phase === "B" ? [{ k: "mB", he: "המשקולת", min: 0.2, max: (mc) => Math.ceil(mc * 3), step: 0.1, unit: "kg", d: 1 }] : [{ k: "F2", he: "כוח מקביל F", min: 0, max: (mc) => Math.ceil(mc * g * 1.6), step: 0.5, unit: "N", d: 1 }],
+    build: (P, mc) => {
+      const m = mc + (P.load || 0);
+      if (P.phase === "B") return RP.makeHanging({ mA: m, mB: P.mB, angleDeg: P.th, muS: 0, muK: 0, g, sMin: -1.3, sMax: 1.3 });
+      if (P.phase === "C") return RP.makeSingle({ m, angleDeg: P.th, muS: P.muS2, muK: P.muK2, g, L: RAMP_L, s0: 1.2, F: P.F2 });
+      return RP.makeSingle({ m, angleDeg: P.th, muS: 0, muK: 0, g, L: 30, s0: 0.2, F: P.F, forceOffAt: P.tOff });
+    },
+    measure: true, measureRow: (L, sim) => { const R = sim.resolve(); return { phase: L.P.phase, F: L.P.F2, f: R.f, mode: R.mode }; },
+    missions: [
+      numeric({ type: "experiment", skills: ["external", "kinematics"], text: "תצורה א: מנוע עד זמן הכיבוי. חשב את התאוצה ואת המהירות ברגע הכיבוי.", phase: "A",
+        gate: (L) => L.P.phase === "A" && motorPeak(L).a1 > 0, gateHint: "תצורה א, עם כוח שמעלה.",
+        fields: [{ k: "a", he: "a₁", unit: "m/s²", value: (L) => motorPeak(L).a1 }, { k: "v", he: "v בכיבוי", unit: "m/s", value: (L) => motorPeak(L).v }],
+        learn: "a₁ = (F − mg·sinθ)/m, v = a₁·t." }),
+      numeric({ type: "prediction", skills: ["kinematics", "energy"], text: "תצורה א: כמה גבוה (אנכית) מעל נקודת ההתחלה היא מגיעה?", phase: "A",
+        gate: (L) => L.P.phase === "A" && motorPeak(L).a1 > 0, gateHint: "תצורה א.",
+        fields: [{ k: "h", he: "גובה שיא", unit: "m", value: (L) => (motorPeak(L).d1 + motorPeak(L).d2) * sin(L.P.th) }],
+        confirm: { check: (L, i) => after(L, i).some((r) => r.phase === "A" && r.tPeak !== null), hint: "הרץ ובדוק." },
+        learn: "h = (d₁ + d₂)·sinθ. אחרי הכיבוי a = −g·sinθ." }),
+      numeric({ type: "manipulation", skills: ["systems", "newton2"], text: "תצורה ב: המנוע הוחלף במשקולת תלויה (בלי חיכוך). חשב את התאוצה.", phase: "B",
+        gate: (L) => L.P.phase === "B" && runs(L).some((r) => r.phase === "B" && r.t > 0.5), gateHint: "עבור לתצורה ב ושחרר.",
+        fields: [{ k: "a", he: "a (+ = הדמות עולה)", unit: "m/s²", value: (L) => (L.P.mB * g - mOf(L) * g * sin(L.P.th)) / (mOf(L) + L.P.mB) }],
+        learn: "עכשיו המסה הנגררת היא mA + mB, וה'כוח' משתנה: T = mB(g − a), לא קבוע." }),
+      auto({ type: "force_diagram", skills: ["static", "external"], text: "תצורה ג: 📌 רשום שתי מדידות במנוחה שבהן החיכוך בכיוונים הפוכים.", phase: "C",
+        hint: "עבור לתצורה ג. כוח חלש: רשום. כוח חזק (אבל עדיין במנוחה): רשום.",
+        check: (L) => { const m = (L.meas || []).filter((r) => r.phase === "C" && r.mode === "static"); return m.some((a) => a.f > 1e-6) && m.some((b) => b.f < -1e-6); },
+        learn: "החיכוך הסטטי משנה גם גודל וגם כיוון לפי F." }),
+      fbd({ type: "calculation", skills: ["inference", "components", "static"], text: (L) => `פתרון מלא לתצורה ג עם F = ${examF(L)} N: לאן כל כוח, ומה גודל החיכוך?`, phase: "C",
+        rows: [{ label: "mg", opts: SLOPE_DIRS, truth: () => "down" }, { label: "N", opts: SLOPE_DIRS, truth: () => "out" }, { label: "F", opts: SLOPE_DIRS, truth: () => "upslope" },
+               { label: "f", opts: SLOPE_DIRS, truth: (L) => dirOf(R0(L, { phase: "C", F2: examF(L) }).f) }],
+        then: numeric({ fields: [{ k: "f", he: "|f|", unit: "N", value: (L) => Math.abs(R0(L, { phase: "C", F2: examF(L) }).f) }], gate: (L) => R0(L, { phase: "C", F2: examF(L) }).mode === "static" }),
+        learn: "במנוחה: f = mg·sinθ − F (אם יוצא שלילי, החיכוך במורד). בודקים מול μs·N." })
+    ]
+  });
+
+
+  // ======================================================================
+  //  running a lab (shared by the screen and the tests)
+  // ======================================================================
+  const isLive = (L) => !!L.scene.live;
+  function rebuild(L, keep) {
+    const old = L.sim, sim = L.scene.build(L.P, L.mc, L);
+    if (keep && old && old.s !== undefined) { sim.s = Math.max(sim.lo, Math.min(sim.hi, old.s)); sim.v = old.v; sim.t = old.t; sim.heat = old.heat; sim.events = old.events.slice(); sim.peak = old.peak; sim.trough = old.trough; sim.stopped = old.stopped; }
+    L.sim = sim; return sim;
+  }
+  function idle(L) { if (L.cur) finishRun(L); rebuild(L, false); L.running = false; if (isLive(L)) startRun(L, true); }
+  function startRun(L, keep) {
+    if (L.cur) finishRun(L);
+    if (!keep || !L.sim) rebuild(L, false);
+    L.cur = newRun(L, L.sim, L.nextId = (L.nextId || 0) + 1);
+    L.running = true;
+    return L.cur;
+  }
+  function finishRun(L) { if (!L.cur) return; L.cur.done = true; L.runs.push(L.cur); if (L.runs.length > 40) L.runs.shift(); L.cur = null; }
+  // advance simulation time (slow motion = smaller dt: the same physics)
+  function stepRun(L, dt) {
+    if (!L.running || !L.sim) return null;
+    L.sim.advance(dt);
+    const R = track(L.cur, L.sim, L);
+    if (L.sim.lost) L.lostSeen = true;
+    if (!isLive(L) && L.cur.settled && L.cur.t > 0.6) { finishRun(L); L.running = false; }
+    return R;
+  }
+  function setParam(L, k, v) {
+    if (L.P[k] === v) return;
+    L.P[k] = v;
+    if (k === "muS" && L.P.muK > v) L.P.muK = v;
+    if (k === "muK" && L.P.muS !== undefined && L.P.muS < v) L.P.muS = v;
+    if (k === "mat") L.matSeen.add(v);
+    if (isLive(L)) {
+      const moved = L.cur && L.cur.moved;
+      rebuild(L, true);
+      if (L.cur && !moved) { L.cur.P = { ...L.P }; L.cur.m = mOf(L); L.cur.static0 = L.sim.resolve().mode === "static"; }
+      else startRun(L, true);
+      L.running = true;
+    } else idle(L);
+  }
+  function addMeasure(L) { if (!L.scene.measureRow || !L.sim) return null; const row = L.scene.measureRow(L, L.sim); row.n = L.measCount = (L.measCount || 0) + 1; (L.meas = L.meas || []).push(row); if (L.meas.length > 12) L.meas.shift(); return row; }
+
+  // ---------- checking missions ----------
+  const okField = (L, f, v) => {
+    const t = f.value(L);
+    const abs = typeof f.tolAbs === "function" ? f.tolAbs(L) : f.tolAbs !== undefined ? f.tolAbs : 0.02;
+    return { ok: Number.isFinite(v) && Math.abs(v - t) <= Math.max(abs, (f.tol || 0.02) * Math.abs(t)), truth: t };
+  };
+  const gateOk = (L, m) => !m.gate || !!m.gate(L);
+  function checkNumeric(L, m, vals) { const res = m.fields.map((f) => okField(L, f, vals[f.k])); return { ok: res.every((r) => r.ok), res }; }
+  function checkFbd(L, m, picks) { const res = m.rows.map((r, i) => ({ ok: picks[i] === r.truth(L), truth: r.truth(L) })); return { ok: res.every((r) => r.ok), res }; }
+  function checkChoice(L, m, i) { const r = m.right(L); return { ok: i === r, right: r }; }
+  // a prediction is locked before the experiment; afterwards the runs decide
+  function lockPrediction(L, m, pick) { L.pred[m.id] = { pick, at: (L.nextId || 0) + (L.cur && !L.cur.moved && isLive(L) ? 0 : 1) }; if (L.cur && isLive(L) && !L.cur.moved) L.pred[m.id].at = L.cur.id; }
+  function predictionResult(L, m) {
+    const pr = L.pred[m.id]; if (!pr) return null;
+    if (!m.needs(L, pr.at)) return { ready: false };
+    const t = m.truth(L, pr.at);
+    const ok = Array.isArray(t) ? t.every((x, i) => x === pr.pick[i]) : t === pr.pick;
+    return { ready: true, ok, truth: t, pick: pr.pick };
+  }
+  function confirmResult(L, m) { const c = L.confirm && L.confirm[m.id]; if (c === undefined) return null; return m.confirm.check(L, c) ? { ok: true } : { ok: false }; }
+  function armConfirm(L, m) { (L.confirm = L.confirm || {})[m.id] = (L.nextId || 0) + (L.cur && isLive(L) ? 0 : 1); }
+
+  // a force for the exam question that keeps the body at rest with friction DOWN the slope (so the sign matters)
+  function examF(L) { const m = mOf(L), th = L.P.th; return Math.round((m * g * sin(th) + 0.6 * L.P.muS2 * m * g * cos(th)) * 2) / 2; }
+  // an "auto" mission only counts what the player does while it is the current mission
+  function activate(L, m) { (L.since = L.since || {}); if (L.since[m.id] === undefined) L.since[m.id] = { run: L.cur && !L.cur.moved ? L.cur.id : (L.nextId || 0) + 1, meas: (L.measCount || 0) }; }
+  function viewSince(L, m) {
+    const sn = (L.since || {})[m.id]; if (!sn) return L;
+    const V = Object.create(L);
+    V.runs = L.runs.filter((r) => r.id >= sn.run); V.cur = L.cur && L.cur.id >= sn.run ? L.cur : (L.cur && S_LIVE(L) ? L.cur : null);
+    V.meas = (L.meas || []).filter((r) => r.n > sn.meas);
+    return V;
+  }
+  const S_LIVE = (L) => !!L.scene.live;
+  function autoCheck(L, m) { return !!m.check(viewSince(L, m)); }
+  const textOf = (L, m) => (typeof m.text === "function" ? m.text(L) : m.text);
+  function startValues(scene, mc) { return { ...scene.defaults, ...(scene.defaultsFn ? scene.defaultsFn(mc) : {}) }; }
+  const maxOf = (c, mc) => (typeof c.max === "function" ? c.max(mc) : c.max);
+
+  function sameRunsP(rs, keys) { const ice = rs.filter((r) => r.P.mat === "ice").slice(-1)[0], wood = rs.filter((r) => r.P.mat === "wood").slice(-1)[0]; return ice && wood && sameP(ice.P, wood.P, keys); }
+  function dirOf(f) { return f > 1e-9 ? "upslope" : f < -1e-9 ? "downslope" : "none"; }
+
+  // mission ids, the pack's prompt type, and skill weights
+  for (const s of SCENES) s.missions.forEach((m, i) => { m.id = s.id + "-M0" + (i + 1); m.scene = s.id; });
+  const ALL = SCENES.flatMap((s) => s.missions);
+  const TIERS = { 1: "יסודות", 2: "ביניים", 3: "מתקדם", 4: "העשרה", 5: "אתגר בגרות" };
+
+  // ---------- the topic meter: first mastery per skill, weighted, not a click count ----------
+  function skillPoints(completed, legacyDone) {
+    const have = {}, avail = {};
+    for (const k in SKILLS) { have[k] = 0; avail[k] = 0; }
+    for (const m of ALL) { const w = 1 / m.skills.length; for (const k of m.skills) { avail[k] += w; if (completed.includes(m.id)) have[k] += w; } }
+    // a legacy stage mapped onto a mission counts through that mission only (never twice)
+    for (const id in LEGACY) { const l = LEGACY[id]; if (l.mission) continue; for (const k of l.skills) { avail[k] += 1; if (legacyDone.includes(id)) have[k] += 1; } }
+    return { have, avail };
+  }
+  // a skill is mastered at 80% of what the chapter offers for it
+  function coverage(completed, legacyDone) {
+    const { have, avail } = skillPoints(completed, legacyDone);
+    let s = 0; const per = {};
+    for (const k in SKILLS) { per[k] = Math.min(1, have[k] / (0.8 * avail[k])); s += per[k]; }
+    return { total: s / Object.keys(SKILLS).length, per };
+  }
+  // which tiers are open
+  function unlocked(tier, completed) {
+    const n = completed.length;
+    return tier === 1 || (tier === 2 && n >= 4) || ((tier === 3 || tier === 4) && n >= 12) || (tier === 5 && n >= 25);
+  }
+  const UNLOCK_HE = { 2: "נפתח אחרי 4 משימות", 3: "נפתח אחרי 12 משימות", 4: "נפתח אחרי 12 משימות", 5: "נפתח אחרי 25 משימות" };
+
+  // ---------- a lab: the state one situation screen works with ----------
+  function newLab(scene, mc, saved = {}, secret) {
+    const L = {
+      scene, mc, P: { ...startValues(scene, mc), ...(saved.P || {}) }, runs: [], cur: null, pred: {}, meas: [], phase: null,
+      secret: secret || { muK: 0.25, muS: 0.4 }, lostSeen: false, liveMoved: 0, matSeen: new Set(), completed: saved.completed || [],
+      done(id) { return this.completed.includes(id); }
+    };
+    if (scene.defaults.mat) L.matSeen.add(L.P.mat);
+    return L;
+  }
+  // a secret μ for the closed lab, from the player's id (same until "ניסוי חדש")
+  function makeSecret(seed) {
+    let h = 2166136261; for (const c of String(seed)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+    const r = ((h >>> 0) % 10000) / 10000, muK = Math.round((0.12 + r * 0.33) * 100) / 100;
+    return { muK, muS: Math.round((muK + 0.15) * 100) / 100 };
+  }
+  // a measured acceleration with honest ±2% instrument noise (deterministic per run)
+  function noisy(a, runId, seed) { let h = 2166136261; for (const c of seed + ":" + runId) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } const e = (((h >>> 0) % 2001) / 1000 - 1) * 0.02; return a * (1 + e); }
+
+  return { SKILLS, LEGACY, MATS, DIRS, SCENES, ALL, TIERS, UNLOCK_HE, newRun, track, rebuild, idle, startRun, finishRun, stepRun, setParam, addMeasure, gateOk, checkNumeric, checkFbd, checkChoice, lockPrediction, activate, autoCheck, textOf, startValues, maxOf, examF, predictionResult, confirmResult, armConfirm, isLive, coverage, skillPoints, unlocked, newLab, makeSecret, noisy, runs, mOf, near, motorPeak, segsOf, brakeMu, linkedSolve, springMax };
 })();
 
 // ======================================================================
@@ -4244,12 +5537,25 @@ const EggExplain = (() => {
   const INCLINE_UNITS = SPR.inclineStages.map((st) => ({ id: "newton.s" + st.stage, stage: st.stage, he: st.title_he, insight: st.takeaway_he, eq: INCLINE_EQ[st.stage], coins: st.unique_reward_coins, task: st.interaction_he }));
   const MOTION_UNITS = KIN_DATA.units.map((u) => ({ id: u.id, level: u.level, he: u.he, concept: u.concept, insight: u.insight, eq: u.eq, coins: u.level === 8 ? 25 : 10 }));
   const FAMILY_UNITS = { springs: SPRING_UNITS, newton: INCLINE_UNITS, motion: MOTION_UNITS };
-  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מי מושך אותי?!", motion: "העוגייה בורחת!" };
-  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + (FAMILY_UNITS[t.id] ? FAMILY_UNITS[t.id].length : t.subtopics_he.length), 0);
+  const FAMILY_TITLE = { springs: "קפיצים ואלסטיות", newton: "מישור משופע וחיכוך", motion: "העוגייה בורחת!" };
+  // the inclined plane is now 18 situations measured by 12 skills (RampScenes.coverage); it weighs 12 units
+  // in the overall meter. The seven original stages still count, once, inside that skill meter.
+  const FAMILY_WEIGHT = { newton: 12 };
+  const weightOf = (id, t) => FAMILY_WEIGHT[id] || (FAMILY_UNITS[id] ? FAMILY_UNITS[id].length : t ? t.subtopics_he.length : 0);
+  const TOTAL_UNITS = TOPICS.reduce((n, t) => n + weightOf(t.id, t), 0);
   const done = () => P.data.physics.completed_subtopic_ids;
-  const ALL_UNITS = Object.values(FAMILY_UNITS).flat();
-  const doneUnits = () => ALL_UNITS.filter((u) => done().includes(u.id)).length;
-  const familyCoverage = (id) => FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
+  const rampState = () => {
+    const ph = P.data.physics;
+    if (!ph.ramp) { ph.ramp = { v: 1, completed: [], params: {}, seed: P.data.player_id, legacy_mapped: [] }; P.save(); }
+    // the old stages that match a new mission count as done there (no coins a second time)
+    let changed = false;
+    for (const id in RampScenes.LEGACY) { const l = RampScenes.LEGACY[id]; if (l.mission && done().includes(id) && !ph.ramp.completed.includes(l.mission)) { ph.ramp.completed.push(l.mission); ph.ramp.legacy_mapped.push(l.mission); changed = true; } }
+    if (changed) P.save();
+    return ph.ramp;
+  };
+  const familyCoverage = (id) => id === "newton" ? RampScenes.coverage(rampState().completed, done()).total
+    : FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
+  const doneUnits = () => Object.keys(FAMILY_UNITS).reduce((n, id) => n + familyCoverage(id) * weightOf(id), 0);
   const overallCoverage = () => doneUnits() / TOTAL_UNITS;
   const pct = (x) => Math.round(x * 100) + "%";
 
@@ -4390,7 +5696,7 @@ const EggExplain = (() => {
     ui.hidden = false; G.covered = true;
     screenEl.className = ""; void screenEl.offsetWidth; screenEl.className = "screen-in";
     screenEl.scrollTop = 0;
-    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
+    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", ramps: "physics", rscene: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
@@ -4479,7 +5785,7 @@ const EggExplain = (() => {
           <span class="btn secondary">להמשיך במסלול</span>
         </button>
         <div class="card">
-          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${doneUnits()}/${TOTAL_UNITS}</span></div>
+          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${Math.round(doneUnits())}/${TOTAL_UNITS}</span></div>
           <div class="meter-row"><span class="meter teal"><i style="width:0"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         </div>
       </div>`;
@@ -4590,13 +5896,14 @@ const EggExplain = (() => {
       art: `<svg viewBox="0 0 90 210"><path d="M4 196h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="14" y="176" width="44" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="22" cy="190" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="50" cy="190" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="74" cy="182" r="9" fill="#E3B26A" stroke="currentColor" stroke-width="2"/><path d="M8 150h40" stroke="#2785C7" stroke-width="3" stroke-linecap="round"/><path d="M42 144l8 6-8 6" fill="none" stroke="#2785C7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
     springs: { title: "קפיצים ואלסטיות", name: "קפיץ־קפוץ", bubble: "תמשוך אותי בעדינות… או שלא!", screen: "lab",
       art: `<svg viewBox="0 0 90 210"><path d="M10 6h70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M45 6v14l-22 7 44 9-44 9 44 9-44 9 44 9-44 9 44 9-22 7v14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="45" cy="138" r="5" fill="none" stroke="#F49A35" stroke-width="2.6"/></svg>` },
-    newton: { title: "מישור משופע, כוחות וחיכוך", name: "מי מושך אותי?!", bubble: "אני רק יושב פה. מה כבר יכול לקרות?", screen: "incline",
+    newton: { title: "מישור משופע, כוחות וחיכוך", name: "הרפתקאות על המדרון", bubble: "18 מדרונות. אחד מהם בטח מחליק.", screen: "ramps",
       art: `<svg viewBox="0 0 90 210"><path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 196L84 120v76z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M28 196a20 20 0 0 0-4-12" fill="none" stroke="#F49A35" stroke-width="2.4"/><circle cx="84" cy="120" r="6" fill="#F49A35" stroke="currentColor" stroke-width="2"/></svg>` }
   };
   SCREENS.card = ({ topic = "springs", ordered = false }) => {
     const t = TOPICS.find((x) => x.id === topic), g = GAMES[topic] || GAMES.springs, units = FAMILY_UNITS[topic] || SPRING_UNITS;
     setTitle(g.title, ordered ? "לפי הסדר" : t ? t.world_he : "");
-    const sp = activeSpecies(), cov = familyCoverage(topic), n = units.filter((u) => done().includes(u.id)).length;
+    const sp = activeSpecies(), cov = familyCoverage(topic);
+    const isRamp = topic === "newton", n = isRamp ? rampState().completed.length : units.filter((u) => done().includes(u.id)).length, of = isRamp ? RampScenes.ALL.length : units.length;
     screenEl.innerHTML = `
       <div class="stack intro">
         <div class="scene">
@@ -4605,9 +5912,9 @@ const EggExplain = (() => {
           ${creatureImg(sp)}
         </div>
         <h2>${esc(g.name)}${g.name.endsWith("!") ? "" : "!"}</h2>
-        ${ordered ? `<p class="path-line">המסלול: ${esc(t.world_he)} ‹ ${esc(t.title_he)} ‹ שלב ${Math.min(n + 1, units.length)} מתוך ${units.length}</p>` : ""}
+        ${ordered ? `<p class="path-line">המסלול: ${esc(t.world_he)} ‹ ${esc(t.title_he)} ‹ ${isRamp ? "משימה" : "שלב"} ${Math.min(n + 1, of)} מתוך ${of}</p>` : ""}
         <div class="card" style="text-align:right">
-          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${units.length}</span></div>
+          <div class="meter-label"><span>ההתקדמות שלך בנושא</span><span class="ltr">${n}/${of}</span></div>
           <div class="meter-row"><span class="meter violet"><i style="width:${Math.max(2, cov * 100)}%"></i></span><span class="pct">${pct(cov)}</span></div>
         </div>
         <button class="btn primary block" id="go" type="button">בוא ננסה</button>
@@ -4673,7 +5980,7 @@ const EggExplain = (() => {
     const mast = P.data.physics.mastery, attempts = Object.values(mast).reduce((n, m) => n + m.attempts, 0), correct = Object.values(mast).reduce((n, m) => n + m.correct, 0);
     screenEl.innerHTML = `
       <div class="card">
-        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${doneUnits()}/${TOTAL_UNITS}</span></div>
+        <div class="meter-label"><span>כיסוי לימודי בפיזיקה</span><span class="ltr">${Math.round(doneUnits())}/${TOTAL_UNITS}</span></div>
         <div class="meter-row"><span class="meter teal"><i style="width:${Math.max(2, overallCoverage() * 100)}%"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         <p class="fine" style="margin:10px 0 0">זה מד של חומר שפגשת, לא ציון בגרות. ${attempts >= 3 ? `שאלות קטנות: ${correct} נכונות מתוך ${attempts}.` : ""}</p>
       </div>
@@ -8052,6 +9359,907 @@ const EggExplain = (() => {
   paintCoins();
   syncHud();
   window.eggPhysics = { open: openUI, reward, units: UNITS };
+  // the inclined-plane situations (ramp-ui.js) build on the same shell, coins, meters and drawing helpers
+  window.eggPhysics.kit = {
+    G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, back, setTitle, sheet, isSheetOpen, reward, forceArrow, paintCoins,
+    activeSpecies, phys, nameOf, artOf, creatureImg, familyCoverage, overallCoverage, pct, rampState, done,
+    onCleanup: (fn) => { cleanup = fn; }, closeInfo, icon
+  };
+})();
+
+// ======================================================================
+//  "הרפתקאות על המדרון": the 18-situation inclined-plane chapter.
+//  Screens: ramps (the map of situations) and rscene (one situation).
+//  Physics: RampPhys (ramp-engine.js). Situations and missions: RampScenes.
+//  Shell, coins, meters, sheets and force arrows come from ui.js (kit), so
+//  the economy, the two progress meters and the look stay the same.
+//  What moves on screen is the simulation state; reactions are only words.
+// ======================================================================
+(() => {
+  "use strict";
+  const K = window.eggPhysics && window.eggPhysics.kit;
+  if (!K) return;
+  const { G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, setTitle, sheet, isSheetOpen, reward, forceArrow, activeSpecies, phys, nameOf, artOf, creatureImg } = K;
+  const S = RampScenes, RP = RampPhys;
+  const COL = { g: "#2785C7", N: "#8969C6", f: "#CC5794", F: "#E0702F", T: "#3A9E6E", Q: "#B8741A", k: "#6A7F2A", par: "#E39B28", perp: "#42A47A", v: "#20232A" };
+  const MISSION_COINS = 5, SCENE_BONUS = 15;
+  const TYPE_HE = { experiment: "ניסוי", prediction: "תחזית", manipulation: "שינוי מכוון", force_diagram: "כוחות", calculation: "חישוב" };
+  const KIND_HE = { auto: "ניסוי", choice: "הסבר", numeric: "חישוב", fbd: "תרשים כוחות", predict: "תחזית" };
+  const st = () => K.rampState();
+  const isDone = (id) => st().completed.includes(id);
+  const sceneDone = (sc) => sc.missions.filter((m) => isDone(m.id)).length;
+  const num = (s) => { const t = String(s).trim().replace(/[−–]/g, "-").replace(",", "."); return t === "" ? NaN : Number(t); };
+
+  // ---------------- pictograms for the tiles (pencil line, one accent) ----------------
+  const ICONS = (() => {
+    const s = `fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`, a = `fill="none" stroke="#8A60E8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"`;
+    const ramp = `<path ${s} d="M4 44h44M6 44L46 18v26"/>`;
+    return {
+      ramp: `${ramp}<rect ${s} x="24" y="22" width="9" height="9" transform="rotate(-33 28 26)"/><path ${a} d="M18 22l-6 4"/>`,
+      gauge: `${ramp}<path ${a} d="M14 12h22"/><path ${s} d="M14 12h12"/><path ${s} d="M14 9v6M36 9v6"/>`,
+      swatch: `${ramp}<path ${a} d="M14 38l8-5M24 32l8-5M34 25l8-5"/>`,
+      launch: `${ramp}<circle ${s} cx="18" cy="35" r="3"/><path ${a} d="M22 30l10-6M28 22l4 2-2 4"/>`,
+      rope: `${ramp}<rect ${s} x="16" y="28" width="8" height="8" transform="rotate(-33 20 32)"/><path ${a} d="M24 28l16-10"/><circle ${s} cx="42" cy="16" r="3"/>`,
+      angle: `${ramp}<rect ${s} x="16" y="28" width="8" height="8" transform="rotate(-33 20 32)"/><path ${a} d="M24 28l12-18"/><path ${s} stroke-dasharray="2 3" d="M24 28l14-9"/>`,
+      press: `${ramp}<rect ${s} x="22" y="25" width="8" height="8" transform="rotate(-33 26 29)"/><path ${a} d="M20 14l4 7M17 15l6-3"/>`,
+      motor: `${ramp}<rect ${s} x="38" y="8" width="10" height="8" rx="2"/><path ${a} d="M20 30l18-14"/><circle ${s} cx="19" cy="31" r="3"/>`,
+      track: `<path ${s} d="M4 44h44"/><path ${a} d="M4 12l14 16h14l14-8"/>`,
+      pulley: `${ramp}<circle ${s} cx="46" cy="16" r="4"/><path ${a} d="M50 16v16"/><rect ${s} x="46" y="32" width="8" height="8"/>`,
+      peaks: `<path ${s} d="M4 44l22-30 22 30z"/><circle ${s} cx="26" cy="11" r="3"/><rect ${a} x="10" y="28" width="7" height="7"/><rect ${s} x="34" y="26" width="7" height="7"/>`,
+      pair: `${ramp}<rect ${s} x="14" y="32" width="7" height="7" transform="rotate(-33 18 35)"/><rect ${a} x="30" y="22" width="7" height="7" transform="rotate(-33 33 25)"/><path ${s} d="M21 31l9-6"/>`,
+      scale: `<path ${s} d="M4 44h44"/><rect ${s} x="12" y="34" width="28" height="6" rx="2"/><circle ${a} cx="26" cy="26" r="7"/><path ${s} d="M26 22v4"/>`,
+      brake: `${ramp}<path ${a} stroke-width="4" d="M14 39l10-6"/><circle ${s} cx="32" cy="27" r="3"/>`,
+      energy: `<path ${s} d="M4 44h44"/><path ${a} d="M10 40V24"/><path ${s} d="M22 40V14M34 40V30"/><path ${s} stroke-dasharray="2 3" d="M40 40V20"/>`,
+      spring: `${ramp}<path ${a} d="M8 42l3-4 3 1 3-4 3 1 3-4"/>`,
+      envelope: `<rect ${s} x="8" y="14" width="36" height="24" rx="3"/><path ${s} d="M8 16l18 13 18-13"/><path ${a} d="M24 34h4"/>`,
+      exam: `<rect ${s} x="12" y="6" width="28" height="38" rx="3"/><path ${s} d="M18 16h16M18 23h16M18 30h10"/><path ${a} d="M30 34l3 3 7-8"/>`
+    };
+  })();
+  const pict = (k) => `<svg viewBox="0 0 52 52" aria-hidden="true">${ICONS[k] || ICONS.ramp}</svg>`;
+
+  // ======================================================================
+  //  THE MAP OF SITUATIONS
+  // ======================================================================
+  SCREENS.ramps = () => {
+    setTitle("הרפתקאות על המדרון", "מישור משופע וחיכוך · 18 מצבים");
+    const done = st().completed, cov = K.familyCoverage("newton");
+    const tutDone = [1, 2, 3, 4, 5, 6, 7].filter((n) => K.done().includes("newton.s" + n)).length;
+    const groups = [1, 2, 3, 4, 5].map((t) => ({ t, list: S.SCENES.filter((s) => s.tier === t) }));
+    const cov2 = S.coverage(done, K.done());
+    K.$("#screen").innerHTML = `
+      <div class="stack rmap">
+        <div class="card">
+          <div class="meter-label"><span>מישור משופע וחיכוך</span><span class="ltr">${K.pct(cov)}</span></div>
+          <span class="meter violet"><i data-w="${cov}"></i></span>
+          <div class="meter-label" style="margin-top:10px"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${K.pct(K.overallCoverage())}</span></div>
+          <span class="meter teal"><i data-w="${K.overallCoverage()}"></i></span>
+          <details class="skills"><summary class="linkish">לפי מיומנות</summary>
+            <div class="skill-list">${Object.entries(S.SKILLS).map(([k, he]) => `<div><span>${esc(he)}</span><span class="meter thin violet"><i data-w="${cov2.per[k]}"></i></span></div>`).join("")}</div></details>
+        </div>
+        <button class="card rtile tut" type="button" id="tut">
+          <span class="ricon">${pict("ramp")}</span>
+          <span class="rtxt"><b>ההדרכה: מי מושך אותי?!</b><small>7 השלבים המקוריים · ${tutDone}/7</small></span>
+        </button>
+        ${groups.map((gp) => `
+          <h3 class="rgroup">${esc(S.TIERS[gp.t])}${S.unlocked(gp.t, done) ? "" : ` <span class="tag">🔒 ${esc(S.UNLOCK_HE[gp.t])}</span>`}</h3>
+          <div class="rgrid">${gp.list.map((sc) => {
+            const n = sceneDone(sc), open = S.unlocked(sc.tier, done);
+            return `<button class="card rtile ${open ? "" : "locked"} ${n === 5 ? "full" : ""}" type="button" data-sc="${sc.id}" ${open ? "" : 'aria-disabled="true"'}>
+              <span class="ricon">${pict(sc.icon)}</span>
+              <span class="rtxt"><small class="ltr">${sc.id}</small><b>${esc(sc.title)}</b><small>${esc(sc.desc)}</small>
+                <span class="dots" aria-label="${n} מתוך 5">${sc.missions.map((m) => `<i class="${isDone(m.id) ? "on" : ""}"></i>`).join("")}</span></span>
+            </button>`; }).join("")}</div>`).join("")}
+        <p class="fine">המשימות מקוריות, בנויות לפי תחומי התוכן והמיומנויות של בגרות 5 יח״ל (דינמיקה). "קפיץ בקצה הרמפה" הוא העשרה.</p>
+      </div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of document.querySelectorAll("#screen [data-w]")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
+    $("#tut").addEventListener("click", () => { G.sfx.pop(); show("incline", { topic: "newton" }); });
+    for (const b of document.querySelectorAll("#screen [data-sc]")) b.addEventListener("click", () => {
+      const sc = S.SCENES.find((x) => x.id === b.dataset.sc);
+      if (!S.unlocked(sc.tier, st().completed)) { G.sfx.hmph && G.sfx.hmph(0.3); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; }
+      G.sfx.pop(); st().last = sc.id; P.save(); show("rscene", { id: sc.id });
+    });
+  };
+
+  // ======================================================================
+  //  ONE SITUATION
+  // ======================================================================
+  SCREENS.rscene = ({ id }) => {
+    const sc = S.SCENES.find((x) => x.id === id) || S.SCENES[0];
+    setTitle(sc.title, `${sc.id} · ${S.TIERS[sc.tier]}`);
+    let sp = activeSpecies();
+    const prof = () => phys(sp);
+    const mc = () => prof().mass_kg;
+    const R0 = st();
+    R0.params = R0.params || {};
+    R0.secretN = R0.secretN || 0;
+    const secretSeed = () => (R0.seed || "p") + ":" + R0.secretN;
+    let L = S.newLab(sc, mc(), { P: R0.params[sc.id], completed: R0.completed }, S.makeSecret(secretSeed()));
+    L.secretSeed = secretSeed();
+    L.completed = R0.completed;
+    S.idle(L);
+    const hist = []; let histRun = null;
+    let paused = false, slow = false, view = "real", graphOpen = false, graphKind = sc.rig === "track" ? "ax" : sc.spring ? "Fx" : "v";
+    let sayT = 0, raf = 0, lastT = performance.now(), evalT = 0, lastGate = null, cam = null, W = 0, H = 0, DPR = 1, tPaint = 0;
+    let alive = true;
+    const later = (fn, ms) => setTimeout(() => { if (alive) fn(); }, ms);
+    const ui = { mi: firstOpen(), then: false, attempts: {}, fbdPick: {}, multi: [], confirmArmed: {} };
+    function firstOpen() { const i = sc.missions.findIndex((m) => !isDone(m.id)); return i < 0 ? 0 : i; }
+    const curM = () => sc.missions[ui.mi];
+
+    K.$("#screen").innerHTML = `
+      <div class="lab-screen rscene">
+        <div class="mbar" id="mbar" role="tablist" aria-label="משימות">${sc.missions.map((m, i) => `<button type="button" role="tab" data-i="${i}" aria-label="משימה ${i + 1}">${i + 1}</button>`).join("")}</div>
+        <div class="card task mission" id="task" aria-live="polite"></div>
+        <div class="lab" id="lab">
+          <canvas id="labCanvas" aria-label="${esc(sc.title)}"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="toast card" id="toast" hidden></div>
+          <div class="lab-tools">
+            <button class="chip" id="charChip" type="button"></button>
+            <span class="transport">
+              <button class="tbtn" id="tPlay" type="button" aria-label="הפעלה">▶</button>
+              <button class="tbtn" id="tReset" type="button" aria-label="חזרה למצב ההתחלה">⟲</button>
+              <button class="tbtn" id="tSlow" type="button" aria-label="הילוך איטי" aria-pressed="false">🐢</button>
+            </span>
+          </div>
+        </div>
+        <div class="seg viewseg" role="group" aria-label="תצוגה">
+          <button type="button" data-v="real" aria-pressed="true">כוחות</button><button type="button" data-v="comp" aria-pressed="false">רכיבי mg</button>
+          <button type="button" data-v="none" aria-pressed="false">בלי חצים</button><button type="button" data-v="graph" aria-pressed="false">גרפים</button>
+        </div>
+        <div class="card graphcard" id="graph" hidden>
+          <div class="seg gseg" id="gseg"></div>
+          <canvas id="gCanvas" aria-label="גרף"></canvas>
+          <p class="fine" id="gNote"></p>
+        </div>
+        <div class="readouts" id="readouts"></div>
+        <p class="sr" id="srText" aria-live="polite"></p>
+        <div class="card controls" id="controls"></div>
+        <div class="card meas" id="meas" hidden></div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab"), gcv = $("#gCanvas"), gctx = gcv.getContext("2d");
+    const resize = () => {
+      const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      const gr = gcv.getBoundingClientRect(); gcv.width = Math.round(gr.width * DPR); gcv.height = Math.round(gr.height * DPR);
+    };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box); ro.observe(gcv);
+    const img = new Image(); let imgSp = null; const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } }; loadImg();
+
+    // ---------------- controls ----------------
+    const controlsList = () => (sc.controlsFor ? sc.controlsFor(L.P) : sc.controls);
+    function paintControls() {
+      const cs = controlsList();
+      const parts = [];
+      if (sc.phases) parts.push(`<div class="seg" role="group" aria-label="תצורה">${Object.entries(sc.phases).map(([k, he]) => `<button type="button" data-ph="${k}" aria-pressed="${L.P.phase === k}">${k === "A" ? "א" : k === "B" ? "ב" : "ג"}: ${esc(he)}</button>`).join("")}</div>`);
+      for (const c of cs) {
+        const max = S.maxOf(c, mc());
+        parts.push(`<div class="slider-row"><label for="c_${c.k}"><span>${esc(c.he)}</span><span class="val" id="v_${c.k}"></span></label>
+          <div class="srow"><button class="step" type="button" data-step="${c.k}" data-d="-1" aria-label="להקטין">−</button><input id="c_${c.k}" data-k="${c.k}" type="range" min="${c.min}" max="${max}" step="${c.step}"><button class="step" type="button" data-step="${c.k}" data-d="1" aria-label="להגדיל">+</button></div></div>`);
+      }
+      if (sc.mats) { const keys = Array.isArray(sc.mats) ? sc.mats : Object.keys(S.MATS); parts.push(`<div><div class="meter-label"><span>${esc(sc.matLabel || "חומר המשטח")}</span><span class="ltr" id="muVal"></span></div><div class="surfaces">${keys.map((k) => `<button type="button" data-mat="${k}">${esc(S.MATS[k].he)}</button>`).join("")}</div></div>`); }
+      if (sc.pairMats) parts.push(`<div><div class="meter-label"><span>חומר מתחת לדמות</span></div><div class="surfaces">${Object.keys(S.MATS).map((k) => `<button type="button" data-matA="${k}">${esc(S.MATS[k].he)}</button>`).join("")}</div></div>
+        <div><div class="meter-label"><span>חומר מתחת לקופסה</span></div><div class="surfaces">${Object.keys(S.MATS).map((k) => `<button type="button" data-matB="${k}">${esc(S.MATS[k].he)}</button>`).join("")}</div></div>`);
+      const btns = [];
+      if (sc.brakeBtn) btns.push(`<button class="btn primary" id="brakeBtn" type="button" style="flex:1">🛑 בלם!</button>`);
+      if (sc.swapBtn) btns.push(`<button class="btn secondary" id="swapBtn" type="button" style="flex:1">⇅ החלף סדר</button>`);
+      if (sc.measure) btns.push(`<button class="btn secondary" id="measBtn" type="button" style="flex:1">📌 רשום מדידה</button>`);
+      if (sc.secret) btns.push(`<button class="btn quiet" id="secretBtn" type="button">מעטפה חדשה</button>`);
+      if (sc.backpack || controlsList().some((c) => c.k === "load")) btns.push(`<button class="btn quiet" id="dblBtn" type="button">×2 מסה</button>`);
+      if (btns.length) parts.push(`<div class="btnrow">${btns.join("")}</div>`);
+      $("#controls").innerHTML = parts.join("");
+      for (const inp of $("#controls").querySelectorAll("input[type=range]")) {
+        inp.value = L.P[inp.dataset.k];
+        inp.addEventListener("input", () => setP(inp.dataset.k, +inp.value, true));
+        inp.addEventListener("change", saveParams);
+      }
+      for (const b of $("#controls").querySelectorAll("[data-step]")) b.addEventListener("click", () => {
+        const c = controlsList().find((x) => x.k === b.dataset.step), v = clamp(+(L.P[c.k] + c.step * +b.dataset.d).toFixed(4), c.min, S.maxOf(c, mc()));
+        setP(c.k, v); saveParams(); G.sfx.tick && G.sfx.tick();
+      });
+      for (const b of $("#controls").querySelectorAll("[data-mat]")) b.addEventListener("click", () => { setP("mat", b.dataset.mat); G.sfx.pop(); saveParams(); say(`${S.MATS[b.dataset.mat].he}: μs ${fmt(S.MATS[b.dataset.mat].s, 2)}, μk ${fmt(S.MATS[b.dataset.mat].k, 2)}`, 2.6); });
+      for (const b of $("#controls").querySelectorAll("[data-matA]")) b.addEventListener("click", () => { setP("matA", b.dataset.mata || b.getAttribute("data-matA")); G.sfx.pop(); saveParams(); });
+      for (const b of $("#controls").querySelectorAll("[data-matB]")) b.addEventListener("click", () => { setP("matB", b.dataset.matb || b.getAttribute("data-matB")); G.sfx.pop(); saveParams(); });
+      for (const b of $("#controls").querySelectorAll("[data-ph]")) b.addEventListener("click", () => { setP("phase", b.dataset.ph); paintControls(); G.sfx.pop(); saveParams(); });
+      $("#brakeBtn")?.addEventListener("click", () => {
+        if (!L.running || !L.sim.p || !L.sim.p.brake) { say("קודם תן לי לנסוע!", 1.6); return; }
+        if (L.sim.p.brake.on) return;
+        L.sim.p.brake.on = true; G.sfx.thudSoft && G.sfx.thudSoft(); G.buzz && G.buzz(30); say("צייייק!", 1.2);
+      });
+      $("#swapBtn")?.addEventListener("click", () => { setP("swap", L.P.swap ? 0 : 1); G.sfx.whoosh && G.sfx.whoosh(); saveParams(); });
+      $("#measBtn")?.addEventListener("click", () => { const r = S.addMeasure(L); if (r) { G.sfx.pop(); paintMeas(); evaluate(true); } });
+      $("#secretBtn")?.addEventListener("click", () => { R0.secretN++; P.save(); L.secret = S.makeSecret(secretSeed()); L.secretSeed = secretSeed(); L.runs = []; S.idle(L); hist.length = 0; paintMeas(); G.sfx.whoosh && G.sfx.whoosh(); say("מעטפה חדשה. μ אחר, ניסוי חדש.", 2.4); });
+      $("#dblBtn")?.addEventListener("click", () => { const c = controlsList().find((x) => x.k === "load"); setP("load", clamp(Math.round((L.P.load ? 0 : mc()) * 2) / 2, 0, S.maxOf(c, mc()))); saveParams(); G.sfx.pop(); });
+      paintControlValues();
+    }
+    function paintControlValues() {
+      for (const c of controlsList()) {
+        const el = $("#v_" + c.k); if (!el) continue;
+        el.textContent = `${fmt(L.P[c.k], c.d)}${c.unit ? " " + c.unit : ""}`;
+        const inp = $("#c_" + c.k); if (inp && +inp.value !== L.P[c.k]) inp.value = L.P[c.k];
+      }
+      for (const b of $("#controls").querySelectorAll("[data-mat]")) b.setAttribute("aria-pressed", b.dataset.mat === L.P.mat);
+      for (const b of $("#controls").querySelectorAll("[data-matA]")) b.setAttribute("aria-pressed", b.getAttribute("data-matA") === L.P.matA);
+      for (const b of $("#controls").querySelectorAll("[data-matB]")) b.setAttribute("aria-pressed", b.getAttribute("data-matB") === L.P.matB);
+      for (const b of $("#controls").querySelectorAll("[data-ph]")) b.setAttribute("aria-pressed", b.dataset.ph === L.P.phase);
+      if ($("#muVal") && L.P.mat) $("#muVal").textContent = `μs ${fmt(S.MATS[L.P.mat].s, 2)} · μk ${fmt(S.MATS[L.P.mat].k, 2)}`;
+      if ($("#dblBtn")) $("#dblBtn").textContent = L.P.load ? "בלי תרמיל" : "×2 מסה";
+    }
+    function setP(k, v, quiet) {
+      const was = L.running && !S.isLive(L);
+      S.setParam(L, k, v);
+      if (was) { paused = false; }
+      if (!S.isLive(L)) { hist.length = 0; histRun = null; }
+      paintControlValues(); paintTransport();
+    }
+    let saveTimer = 0;
+    function saveParams() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { R0.params[sc.id] = { ...L.P }; P.save(); }, 300); }
+
+    // ---------------- transport ----------------
+    function paintTransport() {
+      const live = S.isLive(L);
+      $("#tPlay").textContent = (live ? !paused : (L.running && !paused)) ? "⏸" : "▶";
+      $("#tPlay").setAttribute("aria-label", (L.running && !paused) ? "השהיה" : "הפעלה");
+      $("#tSlow").setAttribute("aria-pressed", slow);
+    }
+    $("#tPlay").addEventListener("click", () => {
+      G.audio.unlock();
+      if (S.isLive(L)) { paused = !paused; }
+      else if (L.running) paused = !paused;
+      else { S.startRun(L); paused = false; hist.length = 0; histRun = L.cur.id; G.sfx.whoosh && G.sfx.whoosh(); if (sc.launch) say("וווווופ!", 1); }
+      paintTransport();
+    });
+    $("#tReset").addEventListener("click", () => { S.idle(L); paused = false; hist.length = 0; histRun = null; G.sfx.pop(); paintTransport(); say("חזרה להתחלה.", 1.2); });
+    $("#tSlow").addEventListener("click", () => { slow = !slow; G.sfx.pop(); paintTransport(); if (slow) say("הילוך איטי: רק השעון של המסך מאט. הפיזיקה אותה פיזיקה.", 2.6); });
+    for (const b of document.querySelectorAll(".viewseg [data-v]")) b.addEventListener("click", () => {
+      const v = b.dataset.v;
+      if (v === "graph") { graphOpen = !graphOpen; $("#graph").hidden = !graphOpen; b.setAttribute("aria-pressed", graphOpen); if (graphOpen) { resize(); paintGraphSeg(); $("#graph").scrollIntoView({ behavior: "smooth", block: "nearest" }); evaluate(true); } }
+      else { view = v; for (const x of document.querySelectorAll(".viewseg [data-v]")) if (x.dataset.v !== "graph") x.setAttribute("aria-pressed", x.dataset.v === view); if (v === "comp") say("רכיבי mg: פירוק של כוח אחד, לא כוחות נוספים.", 2.6); }
+      G.sfx.pop();
+    });
+    $("#charChip").addEventListener("click", () => {
+      const owned = P.owned();
+      const el = sheet(`<h3>הגוף בניסוי</h3><p>המסה של הדמות היא המסה בניסוי (ועוד תרמיל, אם יש). החיכוך בא מהמשטח.</p>
+        <div class="pick-list">${owned.map((c) => `<button type="button" data-id="${c.instance_id}" aria-pressed="${c.species === sp}">${creatureImg(c.species)}<span>${esc(nameOf(c.species))}</span><small>${fmt(phys(c.species).mass_kg, 1)} kg</small></button>`).join("")}</div>
+        ${owned.length < 2 ? `<p class="fine" style="margin-top:12px">דמות נוספת מגיעה מהחלפה עם חבר. אז רואים מה מסה אחרת משנה.</p>` : ""}
+        <div class="actions"><button class="btn quiet" type="button" data-close>סגור</button></div>`);
+      for (const b of el.querySelectorAll("[data-id]")) b.addEventListener("click", () => {
+        const c = owned.find((x) => x.instance_id === b.dataset.id); el.closest(".sheet-back").remove();
+        if (c && c.species !== sp) { P.setActive(c.instance_id); G.setCreature(c.species); sp = c.species; loadImg(); L.mc = mc(); S.idle(L); hist.length = 0; paintChip(); paintControls(); say(`עכשיו ${nameOf(sp)} על המדרון: ${fmt(mc(), 1)} kg.`, 2.4); }
+      });
+    });
+    function paintChip() { $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><span><bdi>${esc(nameOf(sp))}</bdi> · <span class="ltr">${fmt(S.mOf(L), 1)} kg</span></span>`; }
+
+    // ---------------- missions ----------------
+    function paintBar() {
+      for (const b of document.querySelectorAll("#mbar [data-i]")) {
+        const i = +b.dataset.i, m = sc.missions[i];
+        b.classList.toggle("done", isDone(m.id));
+        if (i === ui.mi) b.setAttribute("aria-selected", "true"); else b.removeAttribute("aria-selected");
+      }
+    }
+    for (const b of document.querySelectorAll("#mbar [data-i]")) b.addEventListener("click", () => { selectMission(+b.dataset.i); G.sfx.pop(); });
+    function selectMission(i) {
+      ui.mi = i; ui.then = false; ui.multi = []; ui.fbdPick = {}; lastGate = null;
+      const m = curM(); if (m.phase && L.P.phase !== m.phase) { setP("phase", m.phase); paintControls(); }
+      if (m.graph && !graphOpen) graphKind = m.graph;
+      S.activate(L, m);
+      paintBar(); paintMission();
+    }
+    const head = (m) => `<div class="mhead"><small>משימה ${ui.mi + 1} · ${esc(KIND_HE[m.kind])}${isDone(m.id) ? " · ✓ הושלמה" : ""}</small><p>${esc(S.textOf(L, m))}</p></div>`;
+    const hintBtn = (h) => h ? `<details class="mhint"><summary class="linkish">איך?</summary><p>${esc(h)}</p></details>` : "";
+    function paintMission() {
+      const m = curM(), el = $("#task");
+      const gate = S.gateOk(L, m); lastGate = gate;
+      let body = "";
+      if (isDone(m.id) && !ui.replay) body = `<p class="learn">✓ ${esc(m.learn)}</p><div class="mrow"><button class="btn quiet" type="button" id="again">לעשות שוב (בלי מטבעות)</button>${nextBtn()}</div>`;
+      else if (ui.then) body = thenHtml(m.then);
+      else if (m.kind === "auto") body = `${hintBtn(m.hint)}<p class="status" id="mstatus">${esc(S.isLive(L) ? "שנה את הבקרים: המדרון מגיב מיד." : "שנה, ואז ▶.")}</p>`;
+      else if (!gate) body = `<p class="gate">👉 ${esc(m.gateHint || "")}</p>`;
+      else if (m.kind === "choice") body = choiceHtml(m.q, m.options);
+      else if (m.kind === "numeric") body = numericHtml(m);
+      else if (m.kind === "fbd") body = fbdHtml(m);
+      else if (m.kind === "predict") body = predictHtml(m);
+      el.innerHTML = head(m) + body;
+      bindMission(m);
+    }
+    const nextBtn = () => { const n = sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id)); return n >= 0 ? `<button class="btn primary" type="button" id="nextM">למשימה ${n + 1}</button>` : `<button class="btn primary" type="button" id="toMap">למפת המדרונות</button>`; };
+    const choiceHtml = (q, opts) => `<p class="q">${esc(q)}</p><div class="options">${opts.map((a, i) => `<button type="button" data-ch="${i}">${esc(a)}</button>`).join("")}</div><p class="why" id="why" hidden></p>`;
+    function thenHtml(t) { if (t.kind === "numeric") return numericHtml(t); return choiceHtml(t.q, t.options); }
+    function numericHtml(m) {
+      const armed = m.confirm && L.confirm && L.confirm[m.id] !== undefined;
+      if (armed) return `<p class="ok">✓ החישוב נכון.</p><p class="gate">👉 ${esc(m.confirm.hint)}</p>`;
+      return `<div class="numgrid">${m.fields.map((f) => `<label><span>${esc(f.he)}</span><span class="inp"><input data-f="${f.k}" inputmode="decimal" dir="ltr" autocomplete="off" aria-label="${esc(f.he)}"><em class="ltr">${esc(f.unit)}</em></span></label>`).join("")}</div>
+        ${m.graph ? `<p class="fine">פתח "גרפים" כדי לקרוא מהגרף.</p>` : ""}
+        <div class="mrow"><button class="btn primary" type="button" id="checkN">בדוק</button></div><p class="why" id="why" hidden></p>`;
+    }
+    function fbdHtml(m) {
+      return `<div class="fbd">${m.rows.map((r, i) => `<div class="frow"><span class="flabel">${esc(r.label)}</span><div class="fopts">${r.opts.map((o) => `<button type="button" data-row="${i}" data-o="${o}" aria-pressed="${ui.fbdPick[i] === o}" title="${esc(S.DIRS[o])}">${dirGlyph(o)}<small>${esc(S.DIRS[o])}</small></button>`).join("")}</div></div>`).join("")}</div>
+        <div class="mrow"><button class="btn primary" type="button" id="checkF">בדוק</button></div><p class="why" id="why" hidden></p>`;
+    }
+    function predictHtml(m) {
+      const pr = L.pred[m.id];
+      if (!pr) {
+        if (m.multi) return `<div class="multi">${m.multi.map((row, r) => `<div class="frow"><span class="flabel">${esc(row.he)}</span><div class="seg">${m.options.map((o, i) => `<button type="button" data-mr="${r}" data-mo="${i}" aria-pressed="${ui.multi[r] === i}">${esc(o)}</button>`).join("")}</div></div>`).join("")}</div>
+          <div class="mrow"><button class="btn primary" type="button" id="lockM">🔒 נעל תחזית</button></div>`;
+        return `<p class="q">התחזית שלך, לפני הניסוי:</p><div class="options">${m.options.map((a, i) => `<button type="button" data-pr="${i}">${esc(a)}</button>`).join("")}</div>`;
+      }
+      const shown = Array.isArray(pr.pick) ? pr.pick.map((x, i) => `${m.multi[i].he}: ${m.options[x]}`).join(" · ") : m.options[pr.pick];
+      const res = S.predictionResult(L, m);
+      if (res && res.ready && !res.ok) {
+        const truth = Array.isArray(res.truth) ? res.truth.map((x, i) => `${m.multi[i].he}: ${m.options[x]}`).join(" · ") : m.options[res.truth];
+        return `<p class="locked">🔒 ${esc(shown)}</p><p class="bad">הניסוי הראה: ${esc(truth)}.</p><p class="why">${esc(m.learn)}</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">תחזית חדשה</button></div>`;
+      }
+      return `<p class="locked">🔒 התחזית שלך: ${esc(shown)}</p><p class="gate">👉 ${esc(m.needHint)}</p>`;
+    }
+    function bindMission(m) {
+      const el = $("#task");
+      el.querySelector("#again")?.addEventListener("click", () => { ui.replay = true; delete L.pred[m.id]; if (L.confirm) delete L.confirm[m.id]; (L.since || {})[m.id] = undefined; S.activate(L, m); paintMission(); });
+      el.querySelector("#nextM")?.addEventListener("click", () => { const n = sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id)); ui.replay = false; selectMission(n); });
+      el.querySelector("#toMap")?.addEventListener("click", () => show("ramps", {}, false));
+      // choices (a mission's question, or the follow-up after an experiment)
+      for (const b of el.querySelectorAll("[data-ch]")) b.addEventListener("click", () => {
+        if (el.dataset.answered) return;
+        const q = ui.then ? m.then : m, r = S.checkChoice(L, q, +b.dataset.ch);
+        b.classList.add(r.ok ? "right" : "wrong");
+        const why = el.querySelector("#why"); why.hidden = false;
+        if (r.ok) { el.dataset.answered = "1"; why.textContent = "נכון!"; later(() => complete(m), 700); }
+        else { wrongOnce(m); why.textContent = "לא בדיוק. " + (attempts(m) >= 2 ? m.learn : "חשוב על מה שראית בניסוי ונסה שוב."); G.sfx.hmph && G.sfx.hmph(0.4); later(() => b.classList.remove("wrong"), 900); }
+      });
+      // numbers
+      el.querySelector("#checkN")?.addEventListener("click", () => {
+        const q = ui.then && m.then && m.then.kind === "numeric" ? m.then : m;
+        const vals = {}; for (const i of el.querySelectorAll("[data-f]")) vals[i.dataset.f] = num(i.value);
+        if (Object.values(vals).some((v) => !Number.isFinite(v))) { const why = el.querySelector("#why"); why.hidden = false; why.textContent = "כתוב מספר בכל שדה (אפשר עם מינוס)."; return; }
+        const r = S.checkNumeric(L, q, vals);
+        el.querySelectorAll("[data-f]").forEach((inp, i) => inp.classList.toggle("bad", !r.res[i].ok));
+        const why = el.querySelector("#why"); why.hidden = false;
+        if (r.ok) {
+          G.sfx.sparkle && G.sfx.sparkle(1);
+          if (q.confirm) { S.armConfirm(L, q); why.textContent = "נכון. עכשיו הניסוי."; later(paintMission, 600); }
+          else { why.textContent = "נכון!"; later(() => complete(m), 600); }
+        } else {
+          wrongOnce(m); G.sfx.hmph && G.sfx.hmph(0.4);
+          const signOnly = r.res.some((x, i) => !x.ok && Math.abs(Math.abs(vals[q.fields[i].k]) - Math.abs(x.truth)) <= Math.max(0.02, 0.02 * Math.abs(x.truth)));
+          why.textContent = signOnly ? "הגודל נכון, הסימן לא. בדוק את כיוון הציר (+ במעלה)." : attempts(m) >= 2 ? "רמז: " + m.learn : "עוד לא. בדוק יחידות והצבה, ונסה שוב.";
+        }
+      });
+      for (const inp of el.querySelectorAll("[data-f]")) inp.addEventListener("keydown", (e) => { if (e.key === "Enter") el.querySelector("#checkN")?.click(); });
+      // force diagram
+      for (const b of el.querySelectorAll("[data-row]")) b.addEventListener("click", () => {
+        ui.fbdPick[+b.dataset.row] = b.dataset.o;
+        for (const x of el.querySelectorAll(`[data-row="${b.dataset.row}"]`)) x.setAttribute("aria-pressed", x === b);
+        G.sfx.tick && G.sfx.tick();
+      });
+      el.querySelector("#checkF")?.addEventListener("click", () => {
+        const picks = m.rows.map((_, i) => ui.fbdPick[i]);
+        if (picks.some((x) => !x)) { const why = el.querySelector("#why"); why.hidden = false; why.textContent = "בחר כיוון לכל שורה."; return; }
+        const r = S.checkFbd(L, m, picks);
+        el.querySelectorAll(".frow").forEach((row, i) => row.classList.toggle("bad", !r.res[i].ok));
+        const why = el.querySelector("#why"); why.hidden = false;
+        if (r.ok) { why.textContent = "נכון!"; G.sfx.sparkle && G.sfx.sparkle(1); if (m.then) { later(() => { ui.then = true; paintMission(); }, 600); } else later(() => complete(m), 600); }
+        else { wrongOnce(m); G.sfx.hmph && G.sfx.hmph(0.4); why.textContent = attempts(m) >= 2 ? "השורות המסומנות עוד לא נכונות. " + m.learn : "השורות המסומנות עוד לא נכונות. נגד מה החיכוך? לאן המשטח דוחף?"; }
+      });
+      // predictions are locked before the run
+      for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { S.lockPrediction(L, m, +b.dataset.pr); G.sfx.pop(); say("נעול. עכשיו הניסוי!", 1.6); paintMission(); });
+      for (const b of el.querySelectorAll("[data-mr]")) b.addEventListener("click", () => { ui.multi[+b.dataset.mr] = +b.dataset.mo; for (const x of el.querySelectorAll(`[data-mr="${b.dataset.mr}"]`)) x.setAttribute("aria-pressed", x === b); });
+      el.querySelector("#lockM")?.addEventListener("click", () => { if (m.multi.some((_, i) => ui.multi[i] === undefined)) { say("בחר לכל קטע.", 1.4); return; } S.lockPrediction(L, m, ui.multi.slice()); G.sfx.pop(); paintMission(); });
+      el.querySelector("#unlockP")?.addEventListener("click", () => { delete L.pred[m.id]; ui.multi = []; paintMission(); });
+    }
+    const attempts = (m) => ui.attempts[m.id] || 0;
+    const wrongOnce = (m) => { ui.attempts[m.id] = attempts(m) + 1; };
+    // checked a few times a second: experiments, locked predictions, confirmations, gates
+    function evaluate(force) {
+      const m = curM(); if (isDone(m.id) && !ui.replay) return;
+      if (ui.then) return;
+      if (m.kind === "auto" && S.autoCheck(L, m)) { if (m.then) { ui.then = true; paintMission(); say("רגע, שאלה!", 1.4); } else complete(m); return; }
+      if (m.kind === "predict" && L.pred[m.id]) {
+        const r = S.predictionResult(L, m);
+        if (r && r.ready) { if (r.ok) complete(m); else if (!ui.predShown) { ui.predShown = true; paintMission(); G.sfx.hmph && G.sfx.hmph(0.5); say("הממ, לא מה שחשבנו.", 1.8); } return; }
+        ui.predShown = false;
+      }
+      if (m.kind === "numeric" && m.confirm && L.confirm && L.confirm[m.id] !== undefined) { const r = S.confirmResult(L, m); if (r && r.ok) complete(m); return; }
+      const g = S.gateOk(L, m);
+      if (force || g !== lastGate) paintMission();
+    }
+    function complete(m) {
+      const first = !isDone(m.id);
+      ui.replay = false; ui.then = false;
+      if (first) { st().completed.push(m.id); L.completed = st().completed; P.save(); }
+      const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
+      if (first) reward("ramp:" + m.id, MISSION_COINS, from);
+      G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
+      toast(m, first);
+      say(["יש!", "גילינו!", "אני גאה בנו.", "פיזיקה!"][Math.floor(Math.random() * 4)], 1.6);
+      paintBar();
+      const allDone = sc.missions.every((x) => isDone(x.id));
+      if (first && allDone) later(() => sceneComplete(), 1600);
+      const n = sc.missions.findIndex((x) => !isDone(x.id));
+      if (n >= 0 && first) later(() => selectMission(n), 1400); else paintMission();
+    }
+    function toast(m, first) {
+      const t = $("#toast");
+      t.innerHTML = `<b>${first ? `<span class="coin"></span> +${MISSION_COINS} · ` : ""}גילית</b><p>${esc(m.learn)}</p>
+        <div class="tmeters"><span>${esc("מישור משופע")}</span><span class="meter thin violet"><i style="width:${Math.max(2, K.familyCoverage("newton") * 100)}%"></i></span><span>כללי</span><span class="meter thin teal"><i style="width:${Math.max(2, K.overallCoverage() * 100)}%"></i></span></div>`;
+      t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 6500);
+      t.onclick = () => { t.hidden = true; };
+    }
+    function sceneComplete() {
+      const r = cv.getBoundingClientRect();
+      reward("ramp:" + sc.id, SCENE_BONUS, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      const fam = K.familyCoverage("newton"), all = K.overallCoverage();
+      const nextSc = S.SCENES.find((x) => sceneDone(x) < 5 && S.unlocked(x.tier, st().completed));
+      sheet(`<div class="gain"><span class="coin"></span> +${SCENE_BONUS}</div><h3>${esc(sc.title)}: כל 5 המשימות!</h3>
+        <p class="insight">${esc(sc.desc)}</p>
+        <div style="display:grid;gap:12px;margin-top:10px">
+          <div><div class="meter-label"><span>מישור משופע וחיכוך</span><span class="ltr">${K.pct(fam)}</span></div><span class="meter violet"><i data-w="${fam}"></i></span></div>
+          <div><div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${K.pct(all)}</span></div><span class="meter teal"><i data-w="${all}"></i></span></div>
+        </div>
+        <div class="actions"><button class="btn secondary" type="button" data-close>להישאר ולשחק</button>${nextSc ? `<button class="btn primary" type="button" id="goNext">ל${esc(nextSc.title)}</button>` : ""}</div>`);
+      document.querySelector("#goNext")?.addEventListener("click", () => { document.querySelector(".sheet-back")?.remove(); show("rscene", { id: nextSc.id }, false); });
+    }
+
+    // ---------------- direction glyphs (for the force-diagram buttons) ----------------
+    function dirGlyph(o) {
+      const th = (L.P.th !== undefined ? L.P.th : L.P.thA || 30) * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+      const V = { down: [0, 1], up: [0, -1], out: [-s, -c], into: [s, c], upslope: [c, -s], downslope: [-c, s], against: [-1, 0], with: [1, 0], tpulley: [c, -s] }[o];
+      if (!V) return `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M13 27L27 13" stroke="currentColor" stroke-width="2.4"/></svg>`;
+      const x2 = 20 + V[0] * 13, y2 = 20 + V[1] * 13, x1 = 20 - V[0] * 9, y1 = 20 - V[1] * 9, a = Math.atan2(V[1], V[0]);
+      const h = (d) => `${x2 - 7 * Math.cos(a + d)},${y2 - 7 * Math.sin(a + d)}`;
+      const slope = ["out", "into", "upslope", "downslope"].includes(o) ? `<path d="M${20 - c * 16} ${20 + s * 16}L${20 + c * 16} ${20 - s * 16}" stroke="#C9CCD2" stroke-width="2"/>` : "";
+      return `<svg viewBox="0 0 40 40" aria-hidden="true">${slope}<path d="M${x1} ${y1}L${x2} ${y2}" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M${x2} ${y2}L${h(0.5)}L${h(-0.5)}z" fill="currentColor"/></svg>`;
+    }
+
+    // ---------------- measurements table ----------------
+    function paintMeas() {
+      const el = $("#meas");
+      if (sc.secret) {
+        const ms = S.runs(L).filter((r) => r.meas);
+        el.hidden = false;
+        el.innerHTML = `<div class="meter-label"><span>✉️ המעבדה הסודית · μk במעטפה</span><span class="ltr">${ms.length} מדידות</span></div>
+          <table class="cmp ltr"><tr><th>θ</th><th>sinθ</th><th>cosθ</th><th>|a| ±2%</th></tr>${ms.slice(-6).map((r) => `<tr><td>${fmt(r.P.th, 0)}°</td><td>${fmt(Math.sin(r.P.th * Math.PI / 180), 3)}</td><td>${fmt(Math.cos(r.P.th * Math.PI / 180), 3)}</td><td>${fmt(Math.abs(r.meas.a), 2)} ± ${fmt(Math.abs(r.meas.a) * 0.02, 2)}</td></tr>`).join("")}</table>
+          <p class="fine">הרעש הוא חלק מהניסוי: כל מדידה נותנת תחום. μk = (sinθ − |a|/g) / cosθ, g = 10.</p>
+          ${isDone("S17-M05") ? `<p class="learn">המעטפה: μk = ${fmt(L.secret.muK, 2)}</p>` : ""}`;
+        return;
+      }
+      if (!sc.measure) return;
+      const ms = L.meas || [];
+      el.hidden = !ms.length;
+      if (sc.id === "S18") el.innerHTML = `<div class="meter-label"><span>📌 מדידות (תצורה ג)</span></div><table class="cmp ltr"><tr><th>F (N)</th><th>מצב</th><th>f (N, + במעלה)</th></tr>${ms.filter((r) => r.phase === "C").slice(-6).map((r) => `<tr><td>${fmt(r.F, 1)}</td><td>${r.mode === "static" ? "מנוחה" : "תנועה"}</td><td>${fmt(r.f, 2)}</td></tr>`).join("")}</table>`;
+      else el.innerHTML = `<div class="meter-label"><span>📌 מדידות</span></div><table class="cmp ltr"><tr><th>F</th><th>β</th><th>N</th><th>a</th></tr>${ms.slice(-6).map((r) => `<tr><td>${fmt(r.F, 1)}</td><td>${fmt(r.beta, 0)}°</td><td>${r.lost ? "0 (ניתוק)" : fmt(r.N, 1)}</td><td>${r.mode === "static" ? "0 (מנוחה)" : fmt(r.a, 2)}</td></tr>`).join("")}</table>`;
+    }
+
+    // ======================================================================
+    //  DRAWING
+    // ======================================================================
+    const vis = () => clamp(prof().height_m * 1.6, 0.42, 0.85);
+    const sx = (x) => cam.ox + x * cam.S, sy = (y) => cam.oy - y * cam.S;
+    function fit(x0, x1, y0, y1, follow) {
+      let S_ = Math.min(W / (x1 - x0), (H - 50) / (y1 - y0));
+      let ox = W / 2 - S_ * (x0 + x1) / 2, oy = (H - 40) / 2 + S_ * (y0 + y1) / 2 + 4;
+      if (follow) { const Sf = Math.min(W / 5.2, (H - 50) / 3.2); if (Sf > S_) { S_ = Sf; ox = W / 2 - S_ * follow.x; oy = H * 0.58 + S_ * follow.y; } }
+      cam = { S: S_, ox, oy };
+    }
+    function pencilLine(x0, y0, x1, y1, w = 2, col = "#2e2e33") { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+    function hatchPoly(pts, alpha = 0.18) {
+      ctx.save(); ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)))); ctx.closePath();
+      ctx.fillStyle = "rgba(107,107,112,0.06)"; ctx.fill(); ctx.clip();
+      ctx.strokeStyle = `rgba(58,58,64,${alpha})`; ctx.lineWidth = 1; for (let i = -900; i < 1400; i += 11) { ctx.beginPath(); ctx.moveTo(i, H); ctx.lineTo(i + H, 0); ctx.stroke(); }
+      ctx.restore();
+    }
+    function plank(a, b, tint, w) {
+      ctx.strokeStyle = tint; ctx.lineWidth = Math.max(5, w || cam.S * 0.05); ctx.beginPath(); ctx.moveTo(sx(a[0]), sy(a[1])); ctx.lineTo(sx(b[0]), sy(b[1])); ctx.stroke();
+      pencilLine(sx(a[0]), sy(a[1]), sx(b[0]), sy(b[1]), 1.6);
+    }
+    // the creature: feet at (x, y) on a surface of angle ang (rad, CCW from +x in world)
+    function creature(x, y, ang, strain, scaleY = 1) {
+      if (!(img.complete && img.naturalWidth)) return;
+      const hv = vis() * cam.S, w = hv * img.naturalWidth / img.naturalHeight;
+      const jx = strain && !reduceMotion ? (Math.random() - 0.5) * 1.2 : 0;
+      ctx.save(); ctx.translate(sx(x) + jx, sy(y)); ctx.rotate(-ang); ctx.scale(1, scaleY); ctx.drawImage(img, -w / 2, -hv, w, hv); ctx.restore();
+    }
+    function drawBox(x, y, ang, kg, label) {
+      const sz = 0.34 * cam.S;
+      ctx.save(); ctx.translate(sx(x), sy(y)); ctx.rotate(-ang);
+      ctx.fillStyle = "#F5F1E8"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.rect(-sz / 2, -sz, sz, sz); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#20232A"; ctx.font = "700 12px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.direction = "ltr";
+      ctx.fillText(label || fmt(kg, 1) + " kg", 0, -sz / 2); ctx.restore();
+    }
+    // world vector → screen arrow
+    const arr = (o, v, k, color, label, opts = {}) => forceArrow(ctx, o.x, o.y, v[0] * k, -v[1] * k, color, label, opts);
+    const kScale = () => Math.min(95 / (mc() * 10), 4.2) * (cam.S / 90);
+    function banner(text, color = "#E2574C") {
+      ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const tw = ctx.measureText(text).width + 24; ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = color; ctx.lineWidth = 2;
+      const by = H - 104; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, by, tw, 30, 12) : ctx.rect(W / 2 - tw / 2, by, tw, 30); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = color; ctx.fillText(text, W / 2, by + 15); ctx.restore(); ctx.direction = "ltr";
+    }
+    function labelAt(x, y, text, color = "#606671", align = "center") { ctx.save(); ctx.font = "600 12px " + FONT; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = "middle"; ctx.direction = "ltr"; ctx.fillText(text, x, y); ctx.restore(); }
+
+    // ---------- ramp (one body; S01–S08, S13–S17, S18 a/c) ----------
+    function drawRamp(sim, R) {
+      const p = sim.p, th = p.angleDeg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th), Lr = sim.hi, long = Lr > 6;
+      const pt = (d) => [d * c, d * s];
+      const body = pt(sim.s);
+      fit(-0.7, Lr * c + 0.7, -0.25, Lr * s + 1.1, long ? { x: body[0], y: body[1] + 0.3 } : null);
+      // ground and support
+      pencilLine(0, sy(0), W, sy(0), 2.2);
+      hatchPoly([[0, 0], [Lr * c, 0], [Lr * c, Lr * s]]);
+      pencilLine(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * s), 2);
+      // the surface strip
+      const tint = sc.surface === "secret" ? "#9C8FB8" : L.P.mat ? S.MATS[L.P.mat].tint : (S.MATS[sc.surface] || S.MATS.wood).tint;
+      plank([0, 0], pt(Lr), tint);
+      if (sc.brakeBtn && p.brake && p.brake.on && sim.s < Lr) { ctx.save(); ctx.globalAlpha = 0.85; plank(pt(Math.max(p.sMin || 0, sim.s - 0.4)), pt(Math.min(Lr, sim.s + 0.4)), "#E2574C", cam.S * 0.07); ctx.restore(); }
+      // θ arc
+      ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(0), sy(0), 40, -th, 0); ctx.stroke();
+      labelAt(sx(0) + 58, sy(0) - 12, "θ = " + fmt(p.angleDeg, Number.isInteger(p.angleDeg) ? 0 : 1) + "°", "#B8741A", "left");
+      // end stops, finish, rock, spring
+      if (sc.finish) { const [fx, fy] = pt(0.02); ctx.fillStyle = "#20232A"; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) if ((i + j) % 2 === 0) ctx.fillRect(sx(fx) - 8 + j * 6, sy(fy) - 34 + i * 6, 6, 6); pencilLine(sx(fx) - 8, sy(fy), sx(fx) - 8, sy(fy) - 36, 1.6); labelAt(sx(fx) + 4, sy(fy) - 44, "סיום", "#20232A"); }
+      if (sc.obstacle) { const [rx, ry] = pt(p.sMin); ctx.fillStyle = "#8C8C92"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(sx(rx) - 0.12 * cam.S * c, sy(ry) - 0.14 * cam.S, 0.2 * cam.S, 0.15 * cam.S, -th, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); labelAt(sx(rx), sy(ry) - 0.38 * cam.S, "סלע", "#20232A"); }
+      if (p.spring) {
+        const x = R.x || 0, a0 = pt(0), a1 = pt(p.spring.at - x), n = 9, nx = -s, ny = c, amp = 0.07;
+        pencilLine(sx(a0[0]) - 2, sy(a0[1]) + 4, sx(a0[0]) - 2 - nx * 0.4 * cam.S, sy(a0[1]) - ny * 0.4 * cam.S, 4, "#2e2e33");
+        ctx.strokeStyle = COL.k; ctx.lineWidth = 2.6; ctx.beginPath();
+        for (let i = 0; i <= n * 2; i++) { const f = i / (n * 2), bx = a0[0] + (a1[0] - a0[0]) * f, by = a0[1] + (a1[1] - a0[1]) * f, o = i === 0 || i === n * 2 ? 0 : (i % 2 ? amp : -amp); const X = bx + nx * (0.13 + o), Y = by + ny * (0.13 + o); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); }
+        ctx.stroke();
+        // ruler for the compression
+        const r0 = pt(p.spring.at), r1 = pt(p.spring.at - x);
+        ctx.save(); ctx.setLineDash([4, 4]); pencilLine(sx(r0[0] + nx * 0.3), sy(r0[1] + ny * 0.3), sx(r0[0] - nx * 0.05), sy(r0[1] - ny * 0.05), 1.2, "#606671"); ctx.restore();
+        if (x > 0.002) labelAt(sx((r0[0] + r1[0]) / 2 + nx * 0.42), sy((r0[1] + r1[1]) / 2 + ny * 0.42), "x = " + fmt(x * 100, 1) + " cm", COL.k);
+      }
+      // peak markers (the experiment's own record and the player's prediction)
+      const run = L.cur || L.runs[L.runs.length - 1];
+      if (run && run.tPeak !== null && run.sPeak !== null && (sc.launch || sc.motor)) { const [px, py] = pt(run.sPeak); ctx.save(); ctx.setLineDash([3, 4]); pencilLine(sx(px - s * 0.05), sy(py + c * 0.05), sx(px - s * 0.6), sy(py + c * 0.6), 1.6, "#20232A"); ctx.restore(); labelAt(sx(px - s * 0.7), sy(py + c * 0.7), "שיא", "#20232A"); }
+      // apparatus: motor, rope, angled rope, press
+      const hv = vis(), feet = body, com = [body[0] - s * hv * 0.45, body[1] + c * hv * 0.45];
+      const COM = { x: sx(com[0]), y: sy(com[1]) };
+      if (sc.motor) {
+        const top = pt(Lr), on = R.on !== false && R.F > 0;
+        ctx.fillStyle = on ? "#FFE7CC" : "#ECEEF1"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; const mx = sx(top[0]) + 4, my = sy(top[1]) - 18;
+        if (!long || Math.abs(sim.s - Lr) < 5) { ctx.beginPath(); ctx.rect(mx - 14, my - 10, 28, 20); ctx.fill(); ctx.stroke(); labelAt(mx, my - 20, on ? "מנוע" : "כבוי", on ? "#B8741A" : "#606671"); }
+        if (on) { ctx.save(); ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(COM.x, COM.y); const far = pt(Math.min(Lr, sim.s + 8)); ctx.lineTo(sx(far[0] - s * hv * 0.45), sy(far[1] + c * hv * 0.45)); ctx.stroke(); ctx.restore(); }
+      }
+      if (sc.rope === "parallel" && L.P.F > 0) {
+        const hand = pt(Math.min(Lr, sim.s + 1.25)), hx = sx(hand[0] - s * hv * 0.45), hy = sy(hand[1] + c * hv * 0.45);
+        pencilLine(COM.x, COM.y, hx, hy, 1.8, "#3a3a40"); hand_(hx, hy);
+      }
+      if (sc.rope === "angled" && L.P.F > 0 && !sim.lost) {
+        const b = (L.P.beta || 0) * Math.PI / 180, u = [c, s], n = [-s, c], dir = [u[0] * Math.cos(b) + n[0] * Math.sin(b), u[1] * Math.cos(b) + n[1] * Math.sin(b)];
+        const hx = COM.x + dir[0] * 1.15 * cam.S, hy = COM.y - dir[1] * 1.15 * cam.S;
+        pencilLine(COM.x, COM.y, hx, hy, 1.8, "#3a3a40"); hand_(hx, hy); grip = { x: hx, y: hy, cx: COM.x, cy: COM.y, u, n };
+        ctx.save(); ctx.setLineDash([3, 4]); pencilLine(COM.x, COM.y, COM.x + u[0] * 0.8 * cam.S, COM.y - u[1] * 0.8 * cam.S, 1.2, "#9a9aa0"); ctx.restore();
+        labelAt(COM.x + (u[0] + dir[0]) * 0.45 * cam.S, COM.y - (u[1] + dir[1]) * 0.45 * cam.S - 8, "β " + fmt(L.P.beta, 0) + "°", "#B8741A");
+      }
+      if (sc.press && L.P.Q > 0) {
+        const n = [-s, c], top = [feet[0] + n[0] * (hv + 0.05), feet[1] + n[1] * (hv + 0.05)], len = 0.25 + Math.min(0.5, L.P.Q / (mc() * 10) * 0.25);
+        const a = [top[0] + n[0] * len, top[1] + n[1] * len];
+        pencilLine(sx(a[0]), sy(a[1]), sx(top[0]), sy(top[1]), 5, "#B8741A");
+        ctx.save(); ctx.translate(sx(top[0]), sy(top[1])); ctx.rotate(-th); ctx.fillStyle = "#F5E6CC"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.rect(-14, -6, 28, 8); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      // the body
+      const near = R.mode === "static" && R.maxS > 0 && Math.abs(R.f) / R.maxS > 0.85 && sim.s > 0;
+      creature(feet[0], feet[1], th, near);
+      if (sc.backpack && L.P.load > 0) { ctx.save(); ctx.fillStyle = "#6A5134"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; const bx = sx(feet[0] - s * hv * 0.55 + c * hv * 0.28), by = sy(feet[1] + c * hv * 0.55 + s * hv * 0.28); ctx.beginPath(); ctx.ellipse(bx, by, 11, 14, -th, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); labelAt(bx, by - 24, "+" + fmt(L.P.load, 1) + " kg", "#6A5134"); }
+      // forces
+      if (view !== "none" && !sim.lost) forcesSingle(COM, R, th, sim);
+      if (sim.lost) banner("הדמות מתרוממת: N = 0. כאן נדרש מודל מעוף דו־ממדי, המסילה לא תקפה.");
+      else if (R.mode === "wall") banner(sim.atEnd() === "bottom" && sc.obstacle ? "נעצר בסלע (לא חיכוך)" : "הגענו לקצה המסלול (לא חיכוך)", "#606671");
+      if (sc.gauge && R.mode === "static" && R.maxS > 0) gauge(Math.abs(R.f), R.maxS);
+      if (sc.energy) energyBars(sim.energy());
+      if (sc.motor) timeline(sim);
+      if (sc.secret) envelope();
+      if (Math.abs(sim.v) > 0.02) labelAt(COM.x, COM.y - hv * cam.S * 0.75, "v = " + fmt(sim.v, 2) + " m/s", "#20232A");
+    }
+    let grip = null;
+    function hand_(x, y) { ctx.save(); ctx.fillStyle = "#F7D9B5"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    function forcesSingle(C, R, th, sim) {
+      const c = Math.cos(th), s = Math.sin(th), u = [c, s], n = [-s, c], m = S.mOf(L), Wt = m * 10 * (sim.p.g ? sim.p.g / 10 : 1), k = kScale();
+      const real = view === "real";
+      arr(C, [0, -Wt], k, COL.g, "mg", { dash: !real, thin: !real, value: real ? Wt : undefined });
+      arr(C, [n[0] * R.N, n[1] * R.N], k, COL.N, "N", { alpha: real ? 1 : 0.3, side: -1, value: real ? R.N : undefined });
+      if (Math.abs(R.f) > 1e-3 && (R.mode === "static" || R.mode === "kinetic")) arr(C, [u[0] * R.f, u[1] * R.f], k, COL.f, R.mode === "static" ? "f_s" : "f_k", { alpha: real ? 1 : 0.3, side: 1, value: real ? Math.abs(R.f) : undefined });
+      if (R.F > 0 && R.on !== false) { const b = (sim.p.beta || 0) * Math.PI / 180, d = [u[0] * Math.cos(b) + n[0] * Math.sin(b), u[1] * Math.cos(b) + n[1] * Math.sin(b)]; arr(C, [d[0] * R.F, d[1] * R.F], k, COL.F, "F", { alpha: real ? 1 : 0.3, side: -1, value: real ? R.F : undefined }); }
+      if (R.Q > 0) arr(C, [-n[0] * R.Q, -n[1] * R.Q], k, COL.Q, "Q", { alpha: real ? 1 : 0.3, side: 1, value: real ? R.Q : undefined, dx: 18 });
+      if (R.spring > 0) arr(C, [u[0] * R.spring, u[1] * R.spring], k, COL.k, "kx", { alpha: real ? 1 : 0.3, side: -1, value: real ? R.spring : undefined });
+      if (!real) {
+        arr(C, [-u[0] * Wt * s, -u[1] * Wt * s], k, COL.par, "mg sinθ", { side: 1, value: Wt * s });
+        arr(C, [-n[0] * Wt * c, -n[1] * Wt * c], k, COL.perp, "mg cosθ", { side: -1, value: Wt * c });
+      }
+    }
+    function gauge(f, max) {
+      const r = Math.min(1, f / max), gx = 12, gy = H - 150, gw = 130;
+      ctx.save(); ctx.fillStyle = "#606671"; ctx.font = "600 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("חיכוך סטטי מתוך המרבי", gx, gy); ctx.direction = "ltr";
+      ctx.fillStyle = "#ECEEF1"; ctx.fillRect(gx, gy + 18, gw, 9); ctx.fillStyle = r > 0.85 ? "#E2574C" : COL.f; ctx.fillRect(gx, gy + 18, gw * r, 9);
+      ctx.fillStyle = "#20232A"; ctx.font = "700 12px " + FONT; ctx.fillText(fmt(f, 2) + " / " + fmt(max, 2) + " N", gx, gy + 31); ctx.restore();
+    }
+    function energyBars(e) {
+      const tot = Math.max(1e-6, e.K + e.U + e.Es + e.Q), bw = 22, bh = Math.min(110, H * 0.3), x0 = 14, y0 = 52 + bh;
+      const bars = [["U", e.U + e.Es, COL.g], ["K", e.K, COL.perp], ["חום", e.Q, "#E2574C"]];
+      ctx.save(); bars.forEach(([lab, v, col], i) => {
+        const h = bh * v / tot, x = x0 + i * (bw + 16);
+        ctx.fillStyle = "#ECEEF1"; ctx.fillRect(x, y0 - bh, bw, bh); ctx.fillStyle = col; ctx.fillRect(x, y0 - h, bw, h);
+        labelAt(x + bw / 2, y0 + 10, lab, "#20232A"); labelAt(x + bw / 2, y0 - bh - 9, fmt(v, 1) + " J", col);
+      }); ctx.restore();
+    }
+    function timeline(sim) {
+      const t = sim.t, tOff = sim.p.forceOffAt, span = Math.max(tOff * 2, t + 0.5), x0 = 70, x1 = Math.min(W * 0.45, 230), y = 22;
+      ctx.save(); pencilLine(x0, y, x1, y, 2, "#C9CCD2");
+      const xo = x0 + (x1 - x0) * tOff / span, xt = x0 + (x1 - x0) * Math.min(1, t / span);
+      ctx.strokeStyle = "#E0702F"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(Math.min(xo, xt), y); ctx.stroke();
+      pencilLine(xo, y - 7, xo, y + 7, 2, "#20232A"); labelAt(xo, y + 15, "כיבוי " + fmt(tOff, 1) + " s", "#20232A");
+      ctx.fillStyle = "#20232A"; ctx.beginPath(); ctx.arc(xt, y, 4, 0, Math.PI * 2); ctx.fill(); labelAt(x0 - 6, y, "t = " + fmt(t, 1) + " s", "#20232A", "right"); ctx.restore();
+    }
+    function envelope() {
+      const x = 14, y = 16; ctx.save(); ctx.fillStyle = "#FFF8E8"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.rect(x, y, 56, 38); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 28, y + 20); ctx.lineTo(x + 56, y); ctx.stroke(); ctx.restore();
+      labelAt(x + 28, y + 50, isDone("S17-M05") ? "μk = " + fmt(L.secret.muK, 2) : "μk = ?", "#8A60E8");
+    }
+
+    // ---------- track (S09) ----------
+    function drawTrack(sim, R) {
+      const segs = sim.p.segments, pts = [[0, 0]];
+      for (const sg of segs) { const a = sg.angleDeg * Math.PI / 180, l = pts[pts.length - 1]; pts.push([l[0] + sg.length * Math.cos(a), l[1] - sg.length * Math.sin(a)]); }
+      const minY = Math.min(...pts.map((p) => p[1])); pts.forEach((p) => (p[1] -= minY));
+      const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      fit(Math.min(...xs) - 0.5, Math.max(...xs) + 0.5, -0.2, Math.max(...ys) + 1.0);
+      pencilLine(0, sy(0), W, sy(0), 2.2);
+      hatchPoly([[pts[0][0], 0], ...pts, [pts[pts.length - 1][0], 0]], 0.12);
+      const cur = R.seg;
+      segs.forEach((sg, i) => { plank(pts[i], pts[i + 1], i === 1 ? S.MATS[L.P.mat].tint : "#B58A55"); if (i === cur && Math.abs(sim.v) > 0.01) { ctx.save(); ctx.globalAlpha = 0.25; plank(pts[i], pts[i + 1], "#8A60E8", cam.S * 0.11); ctx.restore(); } labelAt(sx((pts[i][0] + pts[i + 1][0]) / 2), sy((pts[i][1] + pts[i + 1][1]) / 2) + 18, `${i + 1}: μk ${fmt(sg.muK, 2)}`, "#606671"); });
+      for (let i = 1; i < pts.length - 1; i++) { ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(sx(pts[i][0]), sy(pts[i][1]), 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      // position along the path
+      let d = sim.s, i = 0; while (i < segs.length - 1 && d > segs[i].length) { d -= segs[i].length; i++; }
+      const a = -segs[i].angleDeg * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a), fx = pts[i][0] + d * ux, fy = pts[i][1] + d * uy;
+      creature(fx, fy, a, false);
+      const hv = vis(), C = { x: sx(fx - uy * hv * 0.45), y: sy(fy + ux * hv * 0.45) }, n = [-uy, ux], m = S.mOf(L), k = kScale();
+      if (view !== "none") {
+        arr(C, [0, -m * 10], k, COL.g, "mg", { value: view === "real" ? m * 10 : undefined });
+        arr(C, [n[0] * R.N, n[1] * R.N], k, COL.N, "N", { side: -1, value: view === "real" ? R.N : undefined });
+        if (Math.abs(R.f) > 1e-3 && R.mode !== "wall") arr(C, [ux * R.f, uy * R.f], k, COL.f, R.mode === "static" ? "f_s" : "f_k", { side: 1, value: view === "real" ? Math.abs(R.f) : undefined });
+      }
+      if (R.mode === "wall" || (sim.stopped && sim.stopped.barrier)) banner(sim.s >= sim.hi - 1e-6 ? "הגיעה לקצה הקטע השלישי!" : "נעצרה בתחילת המסלול", "#606671");
+      else if (!L.running && L.runs.length && L.runs[L.runs.length - 1].settled && L.runs[L.runs.length - 1].barrier !== "top") banner("נעצרה בדרך: החיכוך עצר אותה", "#606671");
+      labelAt(W - 12, 18, "חיבורים מעוגלים, בלי איבוד בפנייה", "#606671", "right");
+      if (Math.abs(sim.v) > 0.02) labelAt(C.x, C.y - hv * cam.S * 0.75, "v = " + fmt(sim.v, 2) + " m/s", "#20232A");
+    }
+
+    // ---------- hanging pulley (S10, S18 b) ----------
+    function drawHang(sim, R) {
+      const p = sim.p, th = p.angleDeg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th), Lh = 2.6, base = 1.5, s0 = 1.3;
+      const pt = (d) => [d * c, base + d * s];
+      const top = pt(Lh), pul = [top[0] + 0.12 * -s + 0.1, top[1] + 0.12 * c];
+      fit(-0.5, top[0] + 0.9, -0.1, Math.max(top[1], pul[1]) + 0.8);
+      pencilLine(0, sy(0), W, sy(0), 2.2);
+      hatchPoly([[-0.2, 0], [-0.2, base], [0, base], [top[0], top[1]], [top[0], 0]], 0.12);
+      pencilLine(sx(top[0]), sy(0), sx(top[0]), sy(top[1]), 2);
+      plank(pt(0), top, (S.MATS.wood).tint);
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(sx(pul[0]), sy(pul[1]), 0.1 * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      const dA = s0 + sim.s, feet = pt(dA), hv = vis(), att = [feet[0] - s * hv * 0.4, feet[1] + c * hv * 0.4];
+      const ropeTop = [pul[0], pul[1] + 0.1], Bt = [pul[0] + 0.1, pul[1] - 0.55 - sim.s];
+      pencilLine(sx(att[0]), sy(att[1]), sx(pul[0] - 0.02), sy(pul[1] + 0.1), 1.8, "#3a3a40");
+      pencilLine(sx(pul[0] + 0.1), sy(pul[1]), sx(Bt[0]), sy(Bt[1]), 1.8, "#3a3a40");
+      creature(feet[0], feet[1], th, false);
+      drawBox(Bt[0], Bt[1] - 0.34, 0, p.mB);
+      const C = { x: sx(feet[0] - s * hv * 0.45), y: sy(feet[1] + c * hv * 0.45) }, CB = { x: sx(Bt[0]), y: sy(Bt[1] - 0.17) }, k = kScale(), T = sim.tension(), u = [c, s], n = [-s, c];
+      if (view !== "none") {
+        arr(C, [0, -p.mA * 10], k, COL.g, "mg", { value: view === "real" ? p.mA * 10 : undefined });
+        arr(C, [n[0] * R.N, n[1] * R.N], k, COL.N, "N", { side: -1, value: view === "real" ? R.N : undefined });
+        arr(C, [u[0] * T, u[1] * T], k, COL.T, "T", { side: 1, value: view === "real" ? T : undefined, dy: -14 });
+        if (Math.abs(R.f) > 1e-3 && R.mode !== "wall") arr(C, [u[0] * R.f, u[1] * R.f], k, COL.f, R.mode === "static" ? "f_s" : "f_k", { side: 1, value: view === "real" ? Math.abs(R.f) : undefined, dy: 14 });
+        arr(CB, [0, -p.mB * 10], k, COL.g, "m_B g", { value: view === "real" ? p.mB * 10 : undefined, side: 1 });
+        arr(CB, [0, T], k, COL.T, "T", { value: view === "real" ? T : undefined, side: -1 });
+      }
+      if (R.mode === "wall") banner("הגענו לקצה המסלול (לא חיכוך)", "#606671");
+      if (Math.abs(sim.v) > 0.02) labelAt(W / 2, H - 56, "|v| = " + fmt(Math.abs(sim.v), 2) + " m/s · |a| = " + fmt(Math.abs(R.a), 2) + " m/s²", "#20232A");
+    }
+
+    // ---------- two ramps and a pulley on the peak (S11) ----------
+    function drawDouble(sim, R) {
+      const p = sim.p, tA = p.angleA * Math.PI / 180, tB = p.angleB * Math.PI / 180, len = 2.6, Hp = len * Math.max(Math.sin(tA), Math.sin(tB)) + 0.1;
+      const peak = [0, Hp], pA = (d) => [-d * Math.cos(tA), Hp - d * Math.sin(tA)], pB = (d) => [d * Math.cos(tB), Hp - d * Math.sin(tB)];
+      const eA = pA(len), eB = pB(len);
+      fit(eA[0] - 0.5, eB[0] + 0.5, -0.2, Hp + 0.9);
+      pencilLine(0, sy(0), W, sy(0), 2.2);
+      hatchPoly([[eA[0], 0], eA, peak, eB, [eB[0], 0]], 0.12);
+      pencilLine(sx(eA[0]), sy(0), sx(eA[0]), sy(eA[1]), 2); pencilLine(sx(eB[0]), sy(0), sx(eB[0]), sy(eB[1]), 2);
+      plank(eA, peak, S.MATS.wood.tint); plank(peak, eB, S.MATS.wood.tint);
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(sx(0), sy(Hp + 0.1), 0.1 * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      const dA = 1.3 - sim.s, dB = 1.3 + sim.s, fA = pA(dA), fB = pB(dB), hv = vis();
+      const nA = [-Math.sin(tA), Math.cos(tA)], nB = [Math.sin(tB), Math.cos(tB)], uA = [Math.cos(tA), Math.sin(tA)], uB = [-Math.cos(tB), Math.sin(tB)];
+      const attA = [fA[0] + nA[0] * hv * 0.4, fA[1] + nA[1] * hv * 0.4], attB = [fB[0] + nB[0] * 0.17, fB[1] + nB[1] * 0.17];
+      pencilLine(sx(attA[0]), sy(attA[1]), sx(-0.05), sy(Hp + 0.2), 1.8, "#3a3a40"); pencilLine(sx(0.05), sy(Hp + 0.2), sx(attB[0]), sy(attB[1]), 1.8, "#3a3a40");
+      creature(fA[0], fA[1], tA, false);
+      drawBox(fB[0], fB[1], -tB, p.mB);
+      const sp = sim.split(), k = kScale(), CA = { x: sx(fA[0] + nA[0] * hv * 0.45), y: sy(fA[1] + nA[1] * hv * 0.45) }, CB = { x: sx(attB[0]), y: sy(attB[1]) };
+      if (view !== "none") {
+        arr(CA, [0, -p.mA * 10], k, COL.g, "mg", { value: view === "real" ? p.mA * 10 : undefined });
+        arr(CA, [nA[0] * R.NA, nA[1] * R.NA], k, COL.N, "N", { side: -1, value: view === "real" ? R.NA : undefined });
+        arr(CA, [uA[0] * sp.T, uA[1] * sp.T], k, COL.T, "T", { side: 1, dy: -14, value: view === "real" ? sp.T : undefined });
+        if (Math.abs(sp.fA) > 1e-3) arr(CA, [uA[0] * sp.fA, uA[1] * sp.fA], k, COL.f, "f", { side: 1, dy: 14, value: view === "real" ? Math.abs(sp.fA) : undefined });
+        arr(CB, [0, -p.mB * 10], k, COL.g, "m_B g", { value: view === "real" ? p.mB * 10 : undefined });
+        arr(CB, [nB[0] * R.NB, nB[1] * R.NB], k, COL.N, "N_B", { side: 1, value: view === "real" ? R.NB : undefined });
+        arr(CB, [uB[0] * sp.T, uB[1] * sp.T], k, COL.T, "T", { side: -1, dy: -14, value: view === "real" ? sp.T : undefined });
+        if (Math.abs(sp.fB) > 1e-3) arr(CB, [-uB[0] * sp.fB, -uB[1] * sp.fB], k, COL.f, "f_B", { side: -1, dy: 14, value: view === "real" ? Math.abs(sp.fB) : undefined });
+      }
+      labelAt(sx(eA[0] * 0.55) , sy(0) - 14, "θA " + fmt(p.angleA, 0) + "°", "#B8741A"); labelAt(sx(eB[0] * 0.55), sy(0) - 14, "θB " + fmt(p.angleB, 0) + "°", "#B8741A");
+      if (R.mode === "static") labelAt(W / 2, H - 70, "מנוחה: החיכוך הסטטי מחולק בין שני הצדדים לפי המקסימום של כל צד (הנחת מודל)", "#606671");
+      if (R.mode === "wall") banner("הגענו לקצה (לא חיכוך)", "#606671");
+    }
+
+    // ---------- two bodies on one ramp (S12) ----------
+    function drawLinked(sim) {
+      const th = sim.p.angleDeg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th), Lr = sim.L + 0.3;
+      const pt = (x) => { const d = Lr - x; return [d * c, d * s]; };
+      fit(-0.5, Lr * c + 0.5, -0.2, Lr * s + 0.9);
+      pencilLine(0, sy(0), W, sy(0), 2.2); hatchPoly([[0, 0], [Lr * c, 0], [Lr * c, Lr * s]]); pencilLine(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * s), 2);
+      const mid = Lr - (sim.xUp + sim.xDn) / 2;
+      plank([0, 0], pt(Lr - mid), S.MATS[L.P.swap ? L.P.matA : L.P.matB].tint); plank(pt(Lr - mid), pt(0), S.MATS[L.P.swap ? L.P.matB : L.P.matA].tint);
+      const fu = pt(sim.xUp), fd = pt(sim.xDn), hv = vis(), n = [-s, c], u = [c, s];
+      const upIsA = !L.P.swap, gap = sim.xDn - sim.xUp;
+      const a1 = [fu[0] - u[0] * 0.12 + n[0] * 0.15, fu[1] - u[1] * 0.12 + n[1] * 0.15], a2 = [fd[0] + u[0] * 0.17 + n[0] * 0.15, fd[1] + u[1] * 0.17 + n[1] * 0.15];
+      ctx.strokeStyle = "#3a3a40"; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(sx(a1[0]), sy(a1[1]));
+      const sag = Math.max(0, sim.rope - gap) * 0.5; ctx.quadraticCurveTo(sx((a1[0] + a2[0]) / 2 - n[0] * sag), sy((a1[1] + a2[1]) / 2 - n[1] * sag), sx(a2[0]), sy(a2[1])); ctx.stroke();
+      if (upIsA) { creature(fu[0], fu[1], th, false); drawBox(fd[0], fd[1], th, sim.p.B.m); } else { drawBox(fu[0], fu[1], th, sim.p.B.m); creature(fd[0], fd[1], th, false); }
+      const S_ = sim.state(), k = kScale();
+      if (view !== "none" && S_.kind !== "slack") {
+        const Cu = { x: sx(fu[0] + n[0] * 0.2), y: sy(fu[1] + n[1] * 0.2) }, Cd = { x: sx(fd[0] + n[0] * 0.2), y: sy(fd[1] + n[1] * 0.2) };
+        if (S_.T > 1e-3) { arr(Cu, [-u[0] * S_.T, -u[1] * S_.T], k, COL.T, "T", { side: 1, value: view === "real" ? S_.T : undefined }); arr(Cd, [u[0] * S_.T, u[1] * S_.T], k, COL.T, "T", { side: 1, value: view === "real" ? S_.T : undefined }); }
+        else if (S_.T < -1e-3) { arr(Cu, [-u[0] * -S_.T, -u[1] * -S_.T], k, COL.N, "מגע", { side: 1 }); }
+      }
+      banner(S_.kind === "slack" ? "החבל רפוי: חבל לא דוחף" : S_.kind === "contact" ? "הגופים נוגעים: דחיפה במגע" : "החבל מתוח", S_.kind === "taut" ? "#3A9E6E" : "#B8741A");
+      if (Math.abs(sim.vUp) > 0.02) labelAt(W / 2, H - 56, "v = " + fmt(sim.vUp, 2) + " · " + fmt(sim.vDn, 2) + " m/s", "#20232A");
+    }
+
+    function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr"; grip = null;
+      const sim = L.sim; if (!sim) return;
+      if (sim.xUp !== undefined) { drawLinked(sim); return; }
+      const R = sim.resolve();
+      if (sim.kind === "piecewise") drawTrack(sim, R);
+      else if (sim.kind === "hanging") drawHang(sim, R);
+      else if (sim.kind === "double") drawDouble(sim, R);
+      else drawRamp(sim, R);
+    }
+
+    // dragging the rope handle sets β (S06)
+    let dragging = false;
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen() || !grip) return;
+      const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+      if (Math.hypot(px - grip.x, py - grip.y) < 36) { dragging = true; cv.setPointerCapture(e.pointerId); G.audio.unlock(); }
+    });
+    cv.addEventListener("pointermove", (e) => {
+      if (!dragging || !grip) return;
+      const r = cv.getBoundingClientRect(), dx = e.clientX - r.left - grip.cx, dy = -(e.clientY - r.top - grip.cy);
+      const along = dx * grip.u[0] + dy * grip.u[1], out = dx * grip.n[0] + dy * grip.n[1];
+      setP("beta", clamp(Math.round(Math.atan2(out, along) * 180 / Math.PI), 0, 80));
+    });
+    const up = () => { if (dragging) { dragging = false; saveParams(); } };
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+
+    // ---------------- readouts ----------------
+    function readouts() {
+      const sim = L.sim; if (!sim) return [];
+      if (sim.xUp !== undefined) { const S_ = sim.state(); return [["מצב החבל", S_.kind === "taut" ? "מתוח" : S_.kind === "slack" ? "רפוי" : "מגע"], ["תאוצה a", S_.kind === "slack" ? fmt(S_.aUp, 2) + " · " + fmt(S_.aDn, 2) : fmt(S_.a, 2) + " m/s²"], ["מתיחות T", fmt(Math.max(0, S_.T || 0), 2) + " N"], ["מהירות", fmt(sim.vUp, 2) + " m/s"]]; }
+      const R = sim.resolve(), fl = R.mode === "static" ? "f_s " : R.mode === "kinetic" ? "f_k " : "";
+      const fTxt = R.mode === "lost" ? "אין מגע" : R.mode === "wall" ? "קצה" : fl + fmt(Math.abs(R.f || 0), 2) + " N";
+      if (sim.kind === "hanging") return [["תאוצה a", fmt(R.a, 2) + " m/s²"], ["מתיחות T", fmt(sim.tension(), 2) + " N"], ["חיכוך", fTxt], ["מהירות", fmt(sim.v, 2) + " m/s"]];
+      if (sim.kind === "double") return [["תאוצה a", fmt(R.a, 2) + " m/s²"], ["מתיחות T", fmt(sim.split().T, 2) + " N"], ["חיכוך", fTxt], ["מהירות", fmt(sim.v, 2) + " m/s"]];
+      if (sc.energy) { const e = sim.energy(); return [["גובה", fmt(sim.s * Math.sin(sim.p.angleDeg * Math.PI / 180), 2) + " m"], ["מהירות", fmt(sim.v, 2) + " m/s"], ["חום", fmt(e.Q, 2) + " J"], ["אנרגיה כוללת", fmt(e.K + e.U + e.Es + e.Q, 2) + " J"]]; }
+      return [["נורמל N", R.mode === "lost" ? "0" : fmt(R.N, 2) + " N"], ["חיכוך", fTxt], ["תאוצה a", R.mode === "lost" ? "–" : fmt(R.a, 2) + " m/s²"], [sc.spring ? "דחיסה x" : "מהירות", sc.spring ? fmt((R.x || 0) * 100, 1) + " cm" : fmt(sim.v, 2) + " m/s"]];
+    }
+    function paintReadouts() {
+      const rs = readouts();
+      $("#readouts").innerHTML = rs.map(([a, b]) => `<div class="readout"><small>${esc(a)}</small><b>${esc(b)}</b></div>`).join("");
+      // a text description for screen readers: what the forces are doing
+      const sim = L.sim; if (!sim || sim.xUp !== undefined) return;
+      const R = sim.resolve(), dir = (x) => (x > 0 ? "במעלה" : "במורד");
+      const t = R.mode === "lost" ? "אין מגע עם המשטח." : R.mode === "static" ? `במנוחה. חיכוך סטטי ${fmt(Math.abs(R.f), 1)} ניוטון ${R.f ? dir(R.f) : ""}.` : R.mode === "wall" ? "עומד בקצה המסלול." : `בתנועה ${dir(sim.v || R.a)}. חיכוך קינטי ${fmt(Math.abs(R.f), 1)} ניוטון ${dir(R.f)}, תאוצה ${fmt(R.a, 2)}.`;
+      if ($("#srText").textContent !== t) $("#srText").textContent = t;
+    }
+
+    // ---------------- graphs (from the same samples that moved the creature) ----------------
+    const GKINDS = () => {
+      const base = L.sim && L.sim.xUp !== undefined ? [["v", "v(t)"], ["a", "a(t)"], ["T", "T(t)"]] : [["x", "x(t)"], ["v", "v(t)"], ["a", "a(t)"], ["f", "כוחות(t)"], ["E", "אנרגיה(t)"]];
+      if (sc.rig === "track") base.unshift(["ax", "a(x)"]);
+      if (sc.spring) base.unshift(["Fx", "F(x)"]);
+      return base;
+    };
+    function paintGraphSeg() {
+      const ks = GKINDS(); if (!ks.some((k) => k[0] === graphKind)) graphKind = ks[0][0];
+      $("#gseg").innerHTML = ks.map(([k, he]) => `<button type="button" data-g="${k}" aria-pressed="${graphKind === k}">${he}</button>`).join("");
+      for (const b of $("#gseg").querySelectorAll("[data-g]")) b.addEventListener("click", () => { graphKind = b.dataset.g; paintGraphSeg(); G.sfx.pop(); });
+    }
+    function sample() {
+      const sim = L.sim; if (!sim) return;
+      if (L.cur && histRun !== L.cur.id && !S.isLive(L)) { hist.length = 0; histRun = L.cur.id; }
+      if (sim.xUp !== undefined) { const S_ = sim.state(); hist.push({ t: sim.t, v: sim.vUp, a: S_.kind === "slack" ? S_.aUp : S_.a, T: Math.max(0, S_.T || 0) }); }
+      else {
+        const R = sim.resolve(), e = sim.energy ? sim.energy() : { K: 0, U: 0, Es: 0, Q: 0 };
+        hist.push({ t: sim.t, x: sim.s, v: sim.v, a: R.a || 0, f: R.f || 0, F: (R.on === false ? 0 : R.Fpar || 0), N: R.N || 0, T: sim.tension ? sim.tension() : 0, K: e.K, U: e.U + e.Es, Q: e.Q, xs: R.x || 0, Fs: R.spring || 0 });
+      }
+      if (hist.length > 3000) hist.splice(0, hist.length - 3000);
+    }
+    function paintGraph() {
+      if (!graphOpen) return;
+      const w = gcv.width / DPR, h = gcv.height / DPR; gctx.setTransform(DPR, 0, 0, DPR, 0, 0); gctx.clearRect(0, 0, w, h);
+      if (hist.length < 2) { gctx.fillStyle = "#606671"; gctx.font = "600 13px " + FONT; gctx.textAlign = "center"; gctx.direction = "rtl"; gctx.fillText("הרץ ניסוי כדי לראות גרף", w / 2, h / 2); gctx.direction = "ltr"; $("#gNote").textContent = ""; return; }
+      const kind = graphKind;
+      let X = (q) => q.t, xl = "t (s)", series;
+      if (kind === "ax") { X = (q) => q.x; xl = "x (m)"; series = [["a", "#8A60E8", (q) => q.a]]; }
+      else if (kind === "Fx") { X = (q) => q.xs * 100; xl = "x (cm)"; series = [["F = kx", COL.k, (q) => q.Fs]]; }
+      else if (kind === "f") series = [["f", COL.f, (q) => q.f], ["F", COL.F, (q) => q.F], ["N", COL.N, (q) => q.N]].concat(sc.rig === "hang" ? [["T", COL.T, (q) => q.T]] : []);
+      else if (kind === "E") series = [["U", COL.g, (q) => q.U], ["K", COL.perp, (q) => q.K], ["Q", "#E2574C", (q) => q.Q]];
+      else series = [[kind, kind === "x" ? "#20232A" : kind === "v" ? "#258EF6" : kind === "T" ? COL.T : "#8A60E8", (q) => q[kind]]];
+      const pts = kind === "Fx" ? hist.filter((q) => q.xs > 0) : hist;
+      if (pts.length < 2) { $("#gNote").textContent = "עוד אין מגע עם הקפיץ."; return; }
+      let x0 = Infinity, x1 = -Infinity, y0 = 0, y1 = 0;
+      for (const q of pts) { const xv = X(q); x0 = Math.min(x0, xv); x1 = Math.max(x1, xv); for (const [, , f] of series) { const v = f(q); if (Number.isFinite(v)) { y0 = Math.min(y0, v); y1 = Math.max(y1, v); } } }
+      if (x1 - x0 < 1e-6) x1 = x0 + 1; if (y1 - y0 < 1e-6) { y1 += 1; y0 -= 1; }
+      const pad = (y1 - y0) * 0.1; y0 -= pad; y1 += pad;
+      const L0 = 40, R0_ = 8, T0 = 10, B0 = 22, gx = (v) => L0 + (v - x0) / (x1 - x0) * (w - L0 - R0_), gy = (v) => T0 + (y1 - v) / (y1 - y0) * (h - T0 - B0);
+      gctx.strokeStyle = "#DFE1E4"; gctx.lineWidth = 1; gctx.beginPath(); gctx.moveTo(L0, T0); gctx.lineTo(L0, h - B0); gctx.lineTo(w - R0_, h - B0); gctx.stroke();
+      if (y0 < 0 && y1 > 0) { gctx.strokeStyle = "#B9BCC2"; gctx.setLineDash([3, 3]); gctx.beginPath(); gctx.moveTo(L0, gy(0)); gctx.lineTo(w - R0_, gy(0)); gctx.stroke(); gctx.setLineDash([]); }
+      gctx.fillStyle = "#606671"; gctx.font = "600 11px " + FONT; gctx.direction = "ltr"; gctx.textAlign = "right"; gctx.textBaseline = "middle";
+      gctx.fillText(fmt(y1 - pad, 1), L0 - 4, gy(y1 - pad)); gctx.fillText(fmt(y0 + pad, 1), L0 - 4, gy(y0 + pad)); if (y0 < 0 && y1 > 0) gctx.fillText("0", L0 - 4, gy(0));
+      gctx.textAlign = "center"; gctx.textBaseline = "top"; gctx.fillText(fmt(x0, 1), L0, h - B0 + 4); gctx.fillText(fmt(x1, 1) + "  " + xl, w - 40, h - B0 + 4);
+      // event marks: engine off, brake, joints
+      const evs = (L.sim.events || []).filter((e) => ["joint", "barrier", "v_zero"].includes(e.type));
+      if (kind !== "Fx") {
+        const marks = [];
+        if (L.sim.p && Number.isFinite(L.sim.p.forceOffAt)) marks.push(kind === "ax" ? null : L.sim.p.forceOffAt);
+        const cur = L.cur || L.runs[L.runs.length - 1]; if (cur && cur.braked) marks.push(kind === "ax" ? cur.braked.s : cur.braked.t);
+        if (kind === "ax") for (const e of evs) if (e.type === "joint") marks.push(e.s);
+        gctx.strokeStyle = "#E39B28"; gctx.setLineDash([4, 3]);
+        for (const mk of marks) if (mk !== null && mk >= x0 && mk <= x1) { gctx.beginPath(); gctx.moveTo(gx(mk), T0); gctx.lineTo(gx(mk), h - B0); gctx.stroke(); }
+        gctx.setLineDash([]);
+      }
+      series.forEach(([name, col, f], si) => {
+        gctx.strokeStyle = col; gctx.lineWidth = 2.2; gctx.beginPath(); let started = false;
+        for (const q of pts) { const v = f(q); if (!Number.isFinite(v)) continue; const X_ = gx(X(q)), Y_ = gy(v); started ? gctx.lineTo(X_, Y_) : gctx.moveTo(X_, Y_); started = true; }
+        gctx.stroke(); gctx.fillStyle = col; gctx.textAlign = "left"; gctx.textBaseline = "top"; gctx.font = "700 12px " + FONT; gctx.fillText(name, L0 + 6 + si * 34, T0);
+      });
+      $("#gNote").textContent = slow ? "הילוך איטי: הציר הוא זמן הסימולציה." : kind === "ax" ? "הקווים המקווקווים: מעברים בין קטעים." : L.sim.p && Number.isFinite(L.sim.p.forceOffAt) ? "הקו המקווקו: רגע הכיבוי." : "";
+    }
+
+    // ---------------- the loop ----------------
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    let lastMode = null, lineT = 0;
+    function frame(now) {
+      const dtw = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (!isSheetOpen() && !paused && L.running) {
+        let rem = dtw * (slow ? 0.25 : 1);
+        while (rem > 1e-9) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; sample(); if (!L.running) break; }
+        if (!L.running && !S.isLive(L)) paintTransport();
+      }
+      // reactions (words only; the physics decides what the body does)
+      const sim = L.sim;
+      if (sim && sim.resolve) {
+        const R = sim.resolve();
+        if (R.mode !== lastMode) {
+          if (R.mode === "kinetic" && lastMode === "static") say(sim.v < 0 || R.a < 0 ? "אוי, אני מחליק!" : "יאללה למעלה!", 1.6);
+          if (R.mode === "lost") { say("אני עף?!", 1.6); G.sfx.whoosh && G.sfx.whoosh(); }
+          if (R.mode === "wall" && lastMode === "kinetic") { say("בום. הגענו לקצה.", 1.6); G.sfx.thudSoft && G.sfx.thudSoft(); G.buzz && G.buzz(25); }
+          if (R.mode === "static" && lastMode === "kinetic") say("עצרתי.", 1.2);
+          lastMode = R.mode;
+        }
+        if (R.mode === "static" && R.maxS > 0 && Math.abs(R.f) / R.maxS > 0.9 && (lineT -= dtw) <= 0) { say("הרגליים שלי מנהלות משא ומתן עם הרצפה!", 2.2); lineT = 9; }
+      }
+      draw();
+      if ((tPaint++ & 3) === 0) { paintReadouts(); paintGraph(); }
+      if ((evalT += dtw) > 0.25) { evalT = 0; evaluate(false); if (sc.secret) paintMeasThrottled(); }
+      if (sayT > 0) { sayT -= dtw; if (sayT <= 0) $("#say").hidden = true; }
+      raf = requestAnimationFrame(frame);
+    }
+    let lastMeasN = -1;
+    function paintMeasThrottled() { const n = S.runs(L).filter((r) => r.meas).length; if (n !== lastMeasN) { lastMeasN = n; paintMeas(); } }
+
+    paintChip(); paintControls(); paintTransport(); paintBar(); selectMission(ui.mi); paintMeas();
+    raf = requestAnimationFrame(frame);
+    later(() => say(sc.desc, 2.8), 400);
+    window.__ramp = () => ({ L, ui, hist, sc, paused, slow });                 // for tests
+    K.onCleanup(() => { alive = false; cancelAnimationFrame(raf); ro.disconnect(); K.closeInfo(); document.querySelector(".sheet-back")?.remove(); R0.params[sc.id] = { ...L.P }; P.save(); clearTimeout(toast.t); });
+  };
 })();
 
 </script>

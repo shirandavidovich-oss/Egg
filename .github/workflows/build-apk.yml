@@ -35,6 +35,10 @@ jobs:
           node tests/incline.test.js
           node tests/explain.test.js
           node tests/damping.test.js
+          node tests/ramp-engine.test.js
+          node tests/ramp-missions.test.js
+          MC=0.9 node tests/ramp-missions.test.js
+          MC=3.9 node tests/ramp-missions.test.js
 
       - name: Build
         run: |

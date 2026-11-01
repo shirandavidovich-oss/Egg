@@ -921,6 +921,12 @@
   // ======================================================================
   //  FORCE ARROWS: bold, haloed, with the name and the size in a coloured tag
   // ======================================================================
+  // forces drawn from a point next to the body (a free-body diagram), so they do not cover the drawing
+  function fbdAnchor(ctx, bx, by, ox, oy) {
+    ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = "rgba(58,58,64,0.45)"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ox, oy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(58,58,64,0.55)"; ctx.beginPath(); ctx.arc(bx, by, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
   function forceArrow(ctx, x0, y0, vx, vy, color, label, opts = {}) {
     let len = Math.hypot(vx, vy); if (len < 1.5) return;
     const ux = vx / len, uy = vy / len;
@@ -1595,24 +1601,28 @@
       if (img.complete && img.naturalWidth) ctx.drawImage(img, b.left, b.top, b.w, b.h);
       ctx.fillStyle = "#F49A35"; ctx.beginPath(); ctx.ellipse(xr + 1, sy, 3, 6, 0, 0, Math.PI * 2); ctx.fill();
       // forces: spring (blue) at the body, friction (magenta) at the feet
-      const F = -p.k * x, Wt = p.m * p.g, kpx = Math.min(2.4, 70 / Wt);
-      // vertical pair: weight from the centre, normal from the floor (they cancel on a level floor)
-      const cy = g.floorY - b.h * 0.55;
-      forceArrow(ctx, b.mid, cy, 0, Wt * kpx, "#2785C7", "mg", { value: Wt });
-      forceArrow(ctx, b.mid, cy, 0, -Wt * kpx, "#8969C6", "N", { value: Wt });
-      if (Math.abs(F) > 0.05) arrow(b.mid, cy, clamp(-F * kpx, -170, 170), 0, "#25A06F", "kΔx", false, Math.abs(F));   // + x is away from the wall = left on screen
+      // the forces on the creature, drawn as a diagram above it (not over the drawing)
+      const L = clamp((b.top - 44) / 2, 26, 60);                 // mg must end (with its label) above the head
+      const F = -p.k * x, Wt = p.m * p.g, kpx = L / Wt;
+      const cy = Math.max(L + 8, b.top - 34 - L), ox = clamp(b.mid, 90, W - 90);
+      fbdAnchor(ctx, b.mid, b.top + b.h * 0.45, ox, cy);
+      forceArrow(ctx, ox, cy, 0, Wt * kpx, "#2785C7", "mg", { value: Wt });
+      forceArrow(ctx, ox, cy, 0, -Wt * kpx, "#8969C6", "N", { value: Wt });
+      if (Math.abs(F) > 0.05) arrow(ox, cy, clamp(-F * kpx, -150, 150), 0, "#25A06F", "kΔx", false, Math.abs(F));   // + x is away from the wall = left on screen
       let f = 0;
       if (sim.st.moving) f = -Math.sign(sim.st.v) * p.muk * p.m * p.g;           // + means away from the wall
       else if (!sim.held && Math.abs(F) > 0.01) f = -F;                          // static: exactly what is needed
-      if (Math.abs(f) > 0.05) arrow(b.mid, g.floorY - 4, clamp(-f * kpx, -170, 170), 0, "#CC5794", sim.st.moving ? "f_k" : "f_s", true, Math.abs(f));
+      if (Math.abs(f) > 0.05) arrow(ox, cy + 3, clamp(-f * kpx, -150, 150), 0, "#CC5794", sim.st.moving ? "f_k" : "f_s", true, Math.abs(f));
       // first time: show where to pull
       if (!everDragged && !reduceMotion) {
         const k = (performance.now() / 900) % 1;
         ctx.globalAlpha = Math.sin(k * Math.PI); ctx.strokeStyle = "#258EF6"; ctx.lineWidth = 3;
         const ax = b.left - 14 - k * 24, ay = g.floorY - g.h * scale * 0.6;
         ctx.beginPath(); ctx.moveTo(ax + 22, ay); ctx.lineTo(ax, ay); ctx.moveTo(ax + 8, ay - 7); ctx.lineTo(ax, ay); ctx.lineTo(ax + 8, ay + 7); ctx.stroke();
-        ctx.globalAlpha = 1; ctx.fillStyle = "#1A74D0"; ctx.font = "600 13px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("גררו הצידה", b.mid, b.top - 16); ctx.direction = "ltr";
+        ctx.globalAlpha = 1; ctx.fillStyle = "#1A74D0"; ctx.font = "800 16px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const hx = Math.max(44, b.left - 50);                    // beside the creature, under the arrow, clear of the force diagram above
+        ["גררו", "הצידה"].forEach((w, i) => { ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,254,252,0.95)"; ctx.strokeText(w, hx, ay + 26 + i * 19); ctx.fillText(w, hx, ay + 26 + i * 19); });
+        ctx.direction = "ltr";
       }
     }
     function paintReadouts() {
@@ -2312,6 +2322,7 @@
   //  x is measured from equilibrium; m·a = −k·x − b·v
   // ======================================================================
   SCREENS.osc = (args = {}) => {
+    let hitSpring = null;                                   // where the spring was drawn, for tapping it
     lab.mode = "osc";
     setTitle("קפיץ־קפוץ", "מעבדת תנודות וגרפים");
     let sp = activeSpecies();
@@ -2404,7 +2415,7 @@
       const p = pos(e), l = L(), at = { x: e.clientX, y: e.clientY };
       if (p.y > l.trackH) { const s = l.strips.find((q) => p.y >= q.y && p.y <= q.y + q.h); if (s) openInfo({ x: "xt", v: "vt", a: "at", E: "Et" }[s.id], at); return; }
       const bx = l.cx + sim.u * l.upx;
-      if (Math.abs(p.x - bx) > 60) { if (p.x < bx) openInfo("k", at); return; }
+      if (Math.abs(p.x - bx) > 60) { if (hitSpring && p.x > hitSpring.x0 - 6 && p.x < hitSpring.x1 + 6 && Math.abs(p.y - hitSpring.y) < 26) openInfo("k", at); return; }
       G.audio.unlock();
       dragging = { off: p.x - bx }; cv.setPointerCapture(e.pointerId);
       sim.hold(sim.u); trial = null; rel = null;
@@ -2458,6 +2469,7 @@
       const pr = probe(img), edge = pr ? pr.right(0.55) : 1;   // the spring meets the body's left edge
       const left = bx - iw / 2, sy = fy - h * 0.45;
       drawSpring(ctx, wallX, sy, left + iw * (1 - edge) + 3, sy, lab.k, false);     // the drawing is mirrored: its right edge faces the wall
+      hitSpring = { x0: wallX, x1: left + iw * (1 - edge) + 3, y: sy };
       if (img.complete && img.naturalWidth) { ctx.save(); ctx.translate(bx, fy); ctx.scale(-1, 1); ctx.drawImage(img, -iw / 2, -h, iw, h); ctx.restore(); }
       // forces on the track: the spring only (weight and normal cancel)
       const F = -p.k * x - p.b * sim.st.v;
@@ -2534,6 +2546,7 @@
   //  Every joule is accounted for: spring → motion → height, and friction turns some into heat.
   // ======================================================================
   SCREENS.ramp = (args = {}) => {
+    let hitSpring = null;                                   // where the spring was drawn, for tapping it
     lab.mode = "ramp";
     setTitle("קפיץ־קפוץ", "מסילת אנרגיה");
     let sp = activeSpecies();
@@ -2624,7 +2637,7 @@
       if (isSheetOpen() || (run && !run.done && st.moving)) return;
       const q = pos(e), v = view(), c = P2(v, st.s + bodyM() * 0.45), at = { x: e.clientX, y: e.clientY };
       if (q.y < H * 0.3) { openInfo("energyBars", at); return; }
-      if (Math.hypot(q.x - c.x, q.y - (c.y - 30)) > 70) { if (q.x < v.ox) openInfo("k", at); return; }
+      if (Math.hypot(q.x - c.x, q.y - (c.y - 30)) > 70) { if (hitSpring && q.x > hitSpring.x0 - 6 && q.x < hitSpring.x1 + 10 && Math.abs(q.y - hitSpring.y) < 26) openInfo("k", at); return; }
       G.audio.unlock();
       if (st.s > 0.02) { reconfigure(); }                                       // put it back at the start
       dragging = { x0: q.x, s0: Math.min(0, st.s) }; cv.setPointerCapture(e.pointerId); held = true; run = null; heat = 0; maxY = 0;
@@ -2678,6 +2691,7 @@
       // spring: from the wall to the creature while touching, otherwise to its natural end
       const sEnd = Math.min(0, st.s), sy = v.fy - 0.08 * S;
       drawSpring(ctx, wx + 2, sy, v.ox + sEnd * S, sy, lab.rk, false);
+      hitSpring = { x0: wx, x1: v.ox + sEnd * S, y: sy };
       ctx.fillStyle = "#3a3a40"; ctx.fillRect(v.ox + sEnd * S - 2, sy - 12, 4, 24);
       // creature: its left side at s, standing on the track
       const bw = bodyM(), c = P2(v, st.s + bw * 0.5);
@@ -2812,7 +2826,7 @@
     cv.addEventListener("pointerdown", (e) => {
       if (isSheetOpen()) return;
       const q = pos(e), v = view(), c = at(v, L0 + forces().x + bodyLen() * 0.45, phys(sp).height_m * 0.7);
-      if (Math.hypot(q.x - c.x, q.y - c.y) > 80) { const s0 = at(v, (L0 + forces().x) / 2, 0.1); if (Math.hypot(q.x - s0.x, q.y - s0.y) < 50) openInfo("k", { x: e.clientX, y: e.clientY }); else openInfo("forces", { x: e.clientX, y: e.clientY }); return; }
+      if (Math.hypot(q.x - c.x, q.y - c.y) > 80) { const s0 = at(v, (L0 + forces().x) / 2, 0.1); if (Math.hypot(q.x - s0.x, q.y - s0.y) < 50) openInfo("k", { x: e.clientX, y: e.clientY }); return; }
       G.audio.unlock(); dragging = { q, u0: sim.st.x }; cv.setPointerCapture(e.pointerId); sim.hold(sim.st.x); trial = null; firstDrag(e, drag1);
     });
     cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), v = view(); const along = ((q.x - dragging.q.x) * -v.c + (q.y - dragging.q.y) * v.s) / v.S; sim.hold(clamp(dragging.u0 + along, -Math.min(UM, xeq() + L0 * 0.6), UM)); });
@@ -2846,7 +2860,10 @@
       // in the turned frame +x points up the slope, so the picture's right edge meets the spring
       if (img.complete && img.naturalWidth) { ctx.save(); ctx.translate(base.x, base.y); ctx.rotate(-th()); ctx.drawImage(img, -bl * S * edge, -hpx, bl * S, hpx); ctx.restore(); }
       // forces from the centre: mg down, N out of the surface, spring up the slope, friction along the slope
-      const c = at(v, dd + (edge - 0.5) * bl, phys(sp).height_m * 0.7), k = 70 / Math.max(f.W, 1), up = { x: v.c, y: -v.s }, out = { x: -v.s, y: -v.c };
+      const c0 = at(v, dd + (edge - 0.5) * bl, phys(sp).height_m * 0.7), k = 58 / Math.max(f.W, 1), up = { x: v.c, y: -v.s }, out = { x: -v.s, y: -v.c };
+      // the forces on the creature, drawn as a diagram out from the slope, clear of the drawing
+      const off = hpx * 0.45 + 92, c = { x: clamp(c0.x + out.x * off, 70, d.W - 70), y: clamp(c0.y + out.y * off, 70, d.H - 70) };
+      fbdAnchor(ctx, c0.x, c0.y, c.x, c.y);
       forceArrow(ctx, c.x, c.y, 0, f.W * k, "#2785C7", "mg", { value: f.W });
       if (f.N > 0.05) forceArrow(ctx, c.x, c.y, out.x * f.N * k, out.y * f.N * k, "#8969C6", "N", { value: f.N });
       if (f.Fs > 0.05) forceArrow(ctx, c.x, c.y, up.x * f.Fs * k, up.y * f.Fs * k, "#25A06F", "kx", { value: f.Fs, side: 1 });
@@ -2928,7 +2945,7 @@
       if (isSheetOpen() || (run && !run.done)) return;
       const q = pos(e), v = view(); if (run && run.done) reset();
       const x2px = v.cx + st.x2 * v.S;
-      if (Math.abs(q.x - (x2px + 30)) > 70 || Math.abs(q.y - (v.fy - 30)) > 70) { openInfo("momentum", { x: e.clientX, y: e.clientY }); return; }
+      if (Math.abs(q.x - (x2px + 30)) > 70 || Math.abs(q.y - (v.fy - 30)) > 70) { if (q.y > v.fy + 30 && q.y < v.fy + 74) openInfo("momentum", { x: e.clientX, y: e.clientY }); return; }   // the p1/p2 bars
       G.audio.unlock(); dragging = { x0: q.x }; held = true; cv.setPointerCapture(e.pointerId); firstDrag(e, drag1);
     });
     cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), v = view(); const c = clamp((dragging.x0 - q.x) / v.S, 0, CM); st = restSt(c); });
@@ -3035,7 +3052,14 @@
     cv.addEventListener("pointerdown", (e) => {
       if (isSheetOpen()) return;
       const q = pos(e), g = G0(), y = hookY(g, sim.st.s);
-      if (Math.abs(q.x - (g.px + g.r)) > 70 || q.y < y - 20) { openInfo(q.y < g.py + 20 ? "pulley" : "tension", { x: e.clientX, y: e.clientY }); return; }
+      if (Math.abs(q.x - (g.px + g.r)) > 70 || q.y < y - 20) {
+        // info only on the thing itself: the wheel, the rope (down to the creature, or across to the spring), the spring
+        const rx = g.px + g.r, sxEnd = Math.min(g.wallX + 6 + (0.32 + sim.st.s) * g.S * 0.9, g.px - 30), at = { x: e.clientX, y: e.clientY };
+        if (Math.hypot(q.x - g.px, q.y - g.py) < g.r + 12) openInfo("pulley", at);
+        else if ((Math.abs(q.x - rx) < 16 && q.y > g.py && q.y < y - 4) || (Math.abs(q.y - (g.py - g.r)) < 14 && q.x > sxEnd && q.x < g.px)) openInfo("tension", at);
+        else if (Math.abs(q.y - (g.py - g.r)) < 24 && q.x > g.wallX && q.x <= sxEnd) openInfo("k", at);
+        return;
+      }
       G.audio.unlock(); dragging = { dy: q.y - y }; cv.setPointerCapture(e.pointerId); sim.hold(sim.u); trial = null; firstDrag(e, drag1);
     });
     cv.addEventListener("pointermove", (e) => { if (!dragging) return; const q = pos(e), g = G0(); sim.hold(clamp((q.y - dragging.dy - hookY(g, SP.equilibrium(sim.p))) / g.S, 0, Math.min(0.2, SP.equilibrium(sim.p) * 0.95))); });   // beyond s_eq the rope would go slack on the way up

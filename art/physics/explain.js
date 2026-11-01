@@ -377,7 +377,7 @@ const EggExplain = (() => {
           <h4>איך גילו?</h4><p>${esc(l.how)}</p>
           <h4>מי גילה?</h4>
           <ul class="law-events">${l.events.map((e) => `<li><b class="yr">${e.year < 0 ? -e.year + " לפנה״ס" : e.year}</b><button class="sci-chip" type="button" data-sci="${e.sci}">${esc(SCI[e.sci].full)}</button><span>${esc(e.what)}</span></li>`).join("")}</ul>
-          <div class="ex-actions"><button class="btn secondary" type="button" data-ex="timeline">📈 ציר הזמן של כל החוקים</button></div>`;
+          <div class="ex-actions"><button class="btn secondary" type="button" data-ex="timeline" data-focus="${l.id}">📈 ציר הזמן של כל החוקים</button></div>`;
         symbolize && body.querySelectorAll(".law-f .m").forEach(symbolize);
       } });
     }
@@ -393,13 +393,14 @@ const EggExplain = (() => {
           <div class="sci-fun"><b>הידעת?</b> ${esc(s.fun)}</div>
           <h4>מה גילה (מהחוקים שלנו)</h4>
           <div class="sci-laws">${mine.map((l) => `<button class="law-chip" type="button" data-law="${l.id}">${esc(l.name)} <small>${l.events.filter((e) => e.sci === id).map((e) => e.year < 0 ? -e.year + " לפנה״ס" : e.year).join(", ")}</small></button>`).join("")}</div>
-          <div class="ex-actions"><button class="btn secondary" type="button" data-ex="timeline">📈 ציר הזמן</button></div>`;
+          <div class="ex-actions"><button class="btn secondary" type="button" data-ex="timeline" data-focus-sci="${id}">📈 ציר הזמן</button></div>`;
       } });
     }
 
     // ---------------- the timeline: when (across) x who (down, א-ב) ----------------
     const COLORS = ["#258EF6", "#E2574C", "#25B58B", "#8A60E8", "#F49A35", "#D99A1C", "#1A9DB0", "#C2418F", "#5B6BD6", "#7A8B2A", "#B8741A", "#3F8F5A", "#9C4FD0", "#D0612F"];
-    function openTimeline() {
+    // focus: { law } or { sci } — what the person came from gets a marching dotted ring for a few seconds
+    function openTimeline(focus = {}) {
       push({ title: "ציר הזמן של החוקים", cls: "tl-panel", build: (body) => {
         const evs = [];
         LAWS.forEach((l, li) => l.events.forEach((e) => evs.push({ ...e, law: l, color: COLORS[li % COLORS.length] })));
@@ -415,7 +416,7 @@ const EggExplain = (() => {
         // points: one per person and year (several laws in the same year share a point)
         const groups = {};
         evs.forEach((e) => { const g = e.sci + "|" + e.year; (groups[g] = groups[g] || []).push(e); });
-        const placed = {};
+        const placed = {}, focusPts = [];
         Object.values(groups).sort((a, b) => a[0].year - b[0].year).forEach((g) => {
           const e = g[0], x = X(e.year), y = Y(e.sci), row = (placed[e.sci] = placed[e.sci] || []);
           const near = row.filter((px) => Math.abs(px - x) < 46).length; row.push(x);
@@ -423,6 +424,8 @@ const EggExplain = (() => {
           const multi = [...new Set(g.map((q) => q.law.id))];
           const label = multi.length > 1 ? `${multi.length} חוקים` : e.law.short;
           const attr = multi.length > 1 ? `data-ex="pick" data-laws="${multi.join(",")}"` : `data-law="${e.law.id}"`;
+          const hit = (focus.law && g.some((q) => q.law.id === focus.law)) || (focus.sci && e.sci === focus.sci);
+          if (hit) { svg += `<circle class="tl-ring" cx="${x}" cy="${y}" r="15" stroke="${e.color}"/>`; focusPts.push({ x, y, main: focus.law ? g.some((q) => q.law.id === focus.law && q.year === q.law.year) : true }); }
           svg += `<g class="tl-pt" ${attr} role="button" tabindex="0"><circle cx="${x}" cy="${y}" r="13" fill="transparent"/><circle cx="${x}" cy="${y}" r="7" fill="${multi.length > 1 ? "#fff" : e.color}" stroke="${e.color}" stroke-width="2.5"/><text x="${x}" y="${ly}" class="tl-lab">${esc(label)}</text></g>`;
         });
         body.innerHTML = `<p class="fine">לרוחב: מתי גילו. לגובה: מי גילה (לפי א״ב). לחצו על נקודה כדי לקרוא על החוק, ועל שם כדי להכיר את המדען.</p>
@@ -432,7 +435,18 @@ const EggExplain = (() => {
           </div>
           <div class="tl-legend">${LAWS.map((l, li) => `<button type="button" class="law-chip" data-law="${l.id}"><i style="background:${COLORS[li % COLORS.length]}"></i>${esc(l.name)}</button>`).join("")}</div>`;
         const sc = body.querySelector(".tl-scroll");
-        requestAnimationFrame(() => { sc.scrollLeft = Math.max(0, X(1560) - 10); });
+        if (focus.sci) { const nm = body.querySelector(`.tl-name[data-sci="${focus.sci}"]`); nm && nm.classList.add("tl-hl"); }
+        if (focus.law) { const ch = body.querySelector(`.tl-legend [data-law="${focus.law}"]`); ch && ch.classList.add("tl-hl"); }
+        requestAnimationFrame(() => {
+          if (focusPts.length) {                                // bring the marked point(s) into view: across and down
+            const main = focusPts.filter((q) => q.main), pts = main.length ? main : focusPts;   // the law's own year first; its other discoverers are ringed too
+            const xs = pts.map((q) => q.x), ys = pts.map((q) => q.y);
+            sc.scrollLeft = Math.max(0, (Math.min(...xs) + Math.max(...xs)) / 2 - sc.clientWidth / 2);
+            const panel = body.closest(".ex-panel"), svgEl = sc.querySelector("svg");
+            if (panel && svgEl) { const top = svgEl.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop + Math.min(...ys); panel.scrollTo({ top: Math.max(0, top - panel.clientHeight * 0.4), behavior: reduceMotion ? "auto" : "smooth" }); }
+          } else sc.scrollLeft = Math.max(0, X(1560) - 10);
+          setTimeout(() => { body.querySelectorAll(".tl-ring").forEach((r) => r.classList.add("done")); body.querySelectorAll(".tl-hl").forEach((r) => r.classList.remove("tl-hl")); }, 4500);
+        });
       } });
     }
     function openPick(ids) {
@@ -486,7 +500,7 @@ const EggExplain = (() => {
       if (ex && layer && layer.contains(ex)) {
         e.preventDefault(); e.stopPropagation();
         const a = ex.dataset.ex;
-        if (a === "close") closeAll(); else if (a === "back") back(); else if (a === "timeline") openTimeline();
+        if (a === "close") closeAll(); else if (a === "back") back(); else if (a === "timeline") openTimeline({ law: ex.dataset.focus, sci: ex.dataset.focusSci });
         else if (a === "pick") openPick(ex.dataset.laws.split(","));
         return true;
       }

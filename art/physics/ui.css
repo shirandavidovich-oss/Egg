@@ -548,3 +548,11 @@
   .fluid-sweep { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 15; pointer-events: none; }
   .readout small { white-space: normal; line-height: 1.2; overflow: visible; }
   .readout .qi { width: 15px; height: 15px; font-size: 10px; }
+
+  /* timeline: what you came from gets a marching dotted ring for a few seconds */
+  .tl-ring { fill: none; stroke-width: 3; stroke-dasharray: 5 5; stroke-linecap: round; animation: tlMarch .6s linear infinite, tlPulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; transition: opacity .8s; pointer-events: none; }
+  .tl-ring.done { opacity: 0; }
+  @keyframes tlMarch { to { stroke-dashoffset: -20; } }
+  @keyframes tlPulse { 50% { transform: scale(1.25); } }
+  .tl-hl { box-shadow: 0 0 0 3px #FFD45C !important; background: #FFF6D6 !important; transition: box-shadow .8s, background .8s; }
+  @media (prefers-reduced-motion: reduce) { .tl-ring { animation: none; } }

@@ -632,3 +632,20 @@
   .meas table { margin-top: 6px; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   @media (max-width: 360px) { .rgrid { grid-template-columns: 1fr; } }
+
+  /* ---------- עולמות המכניקה ---------- */
+  .wpath { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; position: relative; }
+  .wpath::before { content: ""; position: absolute; top: 20px; bottom: 20px; right: 50%; border-right: 2px dashed #D9CBF8; }
+  .wtile { position: relative; display: flex; gap: 12px; align-items: center; width: 88%; text-align: right; padding: 12px; cursor: pointer; font: inherit; color: var(--ink); }
+  .wtile.alt { margin-right: 12%; }
+  .wtile .wicon { width: 52px; height: 52px; flex: none; color: #3a3a40; } .wtile .wicon svg { width: 100%; height: 100%; }
+  .wtile .rtxt { flex: 1; } .wtile .meter { margin: 6px 0 2px; }
+  .wtile.full { border-color: #D9CBF8; background: #FBF9FF; }
+  .rscene .mbar.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rscene .mbar.four button { font-size: 14px; }
+  .story-chip { align-self: center; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.95); border: 1px solid var(--line); font: 600 13px var(--ui-font); color: var(--ink-2); }
+  .mission .target { margin: 4px 0 0; font-weight: 700; color: #5B37B8; }
+  .wreadouts { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+  .wtile .rtxt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .wtile b { font-size: 15.5px; }
+  .wtile small { font-size: 12px; color: var(--ink-2); }

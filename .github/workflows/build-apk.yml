@@ -39,6 +39,8 @@ jobs:
           node tests/ramp-missions.test.js
           MC=0.9 node tests/ramp-missions.test.js
           MC=3.9 node tests/ramp-missions.test.js
+          node tests/worlds-engine.test.js
+          node tests/worlds-missions.test.js
 
       - name: Build
         run: |

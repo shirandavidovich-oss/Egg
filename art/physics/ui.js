@@ -53,9 +53,19 @@
     if (changed) P.save();
     return ph.ramp;
   };
-  const familyCoverage = (id) => id === "newton" ? RampScenes.coverage(rampState().completed, done()).total
-    : FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
-  const doneUnits = () => Object.keys(FAMILY_UNITS).reduce((n, id) => n + familyCoverage(id) * weightOf(id), 0);
+  // "עולמות המכניקה": 84 situations that feed the existing topics. Topics that had no game yet are measured by
+  // them alone; the three that already had a game keep it as 60% of their meter (40% from the worlds).
+  const worldsState = () => { const ph = P.data.physics; if (!ph.worlds) { ph.worlds = { v: 1, done: [], params: {} }; P.save(); } return ph.worlds; };
+  const WORLD_EVIDENCE = () => WorldScenes.topicEvidence(worldsState().done);
+  const ownCoverage = (id) => id === "newton" ? RampScenes.coverage(rampState().completed, done()).total
+    : FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : null;
+  const familyCoverage = (id) => {
+    const own = ownCoverage(id), w = WORLD_EVIDENCE()[id];
+    if (!w) return own || 0;
+    return own === null ? w.frac : 0.6 * own + 0.4 * w.frac;
+  };
+  const doneUnits = () => TOPICS.reduce((n, t) => n + familyCoverage(t.id) * weightOf(t.id, t), 0);
+  for (const t of TOPICS) if (["projectiles", "circular", "gravitation", "momentum", "energy"].includes(t.id)) t.ready = true;
   const overallCoverage = () => doneUnits() / TOTAL_UNITS;
   const pct = (x) => Math.round(x * 100) + "%";
 
@@ -196,7 +206,7 @@
     ui.hidden = false; G.covered = true;
     screenEl.className = ""; void screenEl.offsetWidth; screenEl.className = "screen-in";
     screenEl.scrollTop = 0;
-    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", ramps: "physics", rscene: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
+    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", ramps: "physics", rscene: "physics", worlds: "physics", world: "physics", wscene: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
@@ -284,13 +294,20 @@
           <p>מסע בנושאים, צעד אחרי צעד</p>
           <span class="btn secondary">להמשיך במסלול</span>
         </button>
+        <button class="card mode-card" id="toWorlds" type="button">
+          <span class="art">${icon("planet", "#8A60E8")}</span>
+          <h2>עולמות המכניקה</h2>
+          <p>12 עולמות, 84 מכונות ניסוי. בוחרים עולם ומשחקים.</p>
+          <span class="btn secondary">למפת העולמות</span>
+        </button>
         <div class="card">
           <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${Math.round(doneUnits())}/${TOTAL_UNITS}</span></div>
           <div class="meter-row"><span class="meter teal"><i style="width:0"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         </div>
       </div>`;
     requestAnimationFrame(() => { const i = screenEl.querySelector(".meter i"); if (i) i.style.width = Math.max(2, overallCoverage() * 100) + "%"; });
-    for (const b of screenEl.querySelectorAll(".mode-card")) b.addEventListener("click", () => {
+    $("#toWorlds").addEventListener("click", () => { G.sfx.pop(); show("worlds"); });
+    for (const b of screenEl.querySelectorAll(".mode-card[data-path]")) b.addEventListener("click", () => {
       P.data.physics.path = b.dataset.path; P.save(); G.sfx.pop();
       show("lever");
     });
@@ -399,11 +416,22 @@
     newton: { title: "מישור משופע, כוחות וחיכוך", name: "הרפתקאות על המדרון", bubble: "18 מדרונות. אחד מהם בטח מחליק.", screen: "ramps",
       art: `<svg viewBox="0 0 90 210"><path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 196L84 120v76z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M28 196a20 20 0 0 0-4-12" fill="none" stroke="#F49A35" stroke-width="2.4"/><circle cx="84" cy="120" r="6" fill="#F49A35" stroke="currentColor" stroke-width="2"/></svg>` }
   };
+  const worldGame = (id, title, name, bubble, art) => ({ title, name, bubble, screen: "world", args: { id }, art: `<svg viewBox="0 0 90 210">${art}</svg>` });
+  Object.assign(GAMES, {
+    projectiles: worldGame("W04", "נפילה וזריקה", "פארק התאוצה", "מי זרק אותי לאוויר?!", `<path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M10 196q34-150 72 0" fill="none" stroke="#F49A35" stroke-width="2.6" stroke-dasharray="5 6"/>`),
+    circular: worldGame("W08", "תנועה מעגלית", "קרקס המעגלים", "סחרחורת זה חלק מהניסוי.", `<circle cx="45" cy="120" r="36" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="81" cy="120" r="6" fill="#F49A35"/><path d="M45 120h36" stroke="#8969C6" stroke-width="2.4"/>`),
+    gravitation: worldGame("W10", "כבידה", "פלנטריום הכבידה", "למה אני לא נופל מהכוכב?", `<circle cx="45" cy="120" r="18" fill="none" stroke="currentColor" stroke-width="2.6"/><ellipse cx="45" cy="120" rx="40" ry="28" fill="none" stroke="#F49A35" stroke-width="2.2" stroke-dasharray="4 5"/>`),
+    momentum: worldGame("W09", "מתקף ותנע", "זירת ההתנגשויות", "בום! ומה נשמר?", `<path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3"/><rect x="8" y="170" width="30" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="52" y="170" width="30" height="22" rx="4" fill="none" stroke="#F49A35" stroke-width="2.4"/>`),
+    energy: worldGame("W07", "עבודה ואנרגיה", "בנק האנרגיה", "לאן הלכה האנרגיה שלי?", `<path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3"/><path d="M6 110q30 0 40 90" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M50 196h34" stroke="#F49A35" stroke-width="6"/>`)
+  });
   SCREENS.card = ({ topic = "springs", ordered = false }) => {
     const t = TOPICS.find((x) => x.id === topic), g = GAMES[topic] || GAMES.springs, units = FAMILY_UNITS[topic] || SPRING_UNITS;
     setTitle(g.title, ordered ? "לפי הסדר" : t ? t.world_he : "");
     const sp = activeSpecies(), cov = familyCoverage(topic);
-    const isRamp = topic === "newton", n = isRamp ? rampState().completed.length : units.filter((u) => done().includes(u.id)).length, of = isRamp ? RampScenes.ALL.length : units.length;
+    const isRamp = topic === "newton", isWorld = !FAMILY_UNITS[topic];
+    const worldIds = isWorld ? WorldScenes.ALL.filter((m) => WorldScenes.byId(m.id.slice(0, 7)).topic === topic).map((m) => m.id) : [];
+    const n = isRamp ? rampState().completed.length : isWorld ? worldIds.filter((id) => worldsState().done.includes(id)).length : units.filter((u) => done().includes(u.id)).length;
+    const of = isRamp ? RampScenes.ALL.length : isWorld ? worldIds.length : units.length;
     screenEl.innerHTML = `
       <div class="stack intro">
         <div class="scene">
@@ -419,7 +447,7 @@
         </div>
         <button class="btn primary block" id="go" type="button">בוא ננסה</button>
       </div>`;
-    $("#go").addEventListener("click", () => { G.sfx.pop(); show(g.screen, { topic }); });
+    $("#go").addEventListener("click", () => { G.sfx.pop(); show(g.screen, { topic, ...(g.args || {}) }); });
   };
 
   SCREENS.creatures = () => {
@@ -3863,6 +3891,6 @@
   window.eggPhysics.kit = {
     G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, back, setTitle, sheet, isSheetOpen, reward, forceArrow, paintCoins,
     activeSpecies, phys, nameOf, artOf, creatureImg, familyCoverage, overallCoverage, pct, rampState, done,
-    onCleanup: (fn) => { cleanup = fn; }, closeInfo, icon
+    onCleanup: (fn) => { cleanup = fn; }, closeInfo, icon, worldsState
   };
 })();

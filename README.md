@@ -118,3 +118,19 @@ Missions pay 5 coins the first time and a finished situation pays 15 more (`ramp
 The topic meter is mastery over 12 skills, not a count of missions, and the newton topic weighs 12 units in the overall meter.
 Body mass is the creature's own mass plus an optional backpack. μ comes from the surface.
 Spec: `incline_friction_claude_pack` (docs in Hebrew, `data/scenarios.json`).
+
+### עולמות המכניקה (12 worlds, 84 situations, 336 missions)
+
+Physics → **עולמות המכניקה**: a path of 12 worlds with 7 machines each. The creature is the body in every machine.
+| What | File |
+|---|---|
+| 20 models (`evaluate`, same results as the pack) and a time simulator for each (stops, landings, meetings, collisions, loss of contact, slipping, orbits) | `art/physics/worlds-engine.js` |
+| Content (generated from the pack's JSON by `art/source/worlds/build_worlds_data.py`) | `art/physics/worlds-data.js` |
+| Missions per situation: prediction locked before the run, the situation's own goal, explanation, transfer computed then run | `art/physics/worlds-scenes.js` |
+| Worlds map, world, situation screen and the 20 machine drawings | `art/physics/worlds-ui.js` |
+| Tests: pack's 32 reference checks + acceptance; a robot that reaches all 336 missions with slider values | `tests/worlds-engine.test.js`, `tests/worlds-missions.test.js` |
+
+Each world feeds an existing topic of the map. Projectiles, circular motion, gravitation, momentum and energy are now playable and measured by their worlds.
+Motion, newton and springs keep their own game as 60% of the topic meter, and their worlds add 40%.
+Mission weights are 0.1, 0.35, 0.25 and 0.3, so a prediction alone never counts as mastery. Coins come from the same ledger (`world:<mission>`, plus `worldscene:<id>` for a completed machine) and are paid once.
+W05 links to "הרפתקאות על המדרון", and W06 links to the spring lab. Source pack: `art/source/worlds/`.

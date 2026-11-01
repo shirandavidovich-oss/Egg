@@ -650,6 +650,23 @@
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   @media (max-width: 360px) { .rgrid { grid-template-columns: 1fr; } }
 
+  /* ---------- עולמות המכניקה ---------- */
+  .wpath { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; position: relative; }
+  .wpath::before { content: ""; position: absolute; top: 20px; bottom: 20px; right: 50%; border-right: 2px dashed #D9CBF8; }
+  .wtile { position: relative; display: flex; gap: 12px; align-items: center; width: 88%; text-align: right; padding: 12px; cursor: pointer; font: inherit; color: var(--ink); }
+  .wtile.alt { margin-right: 12%; }
+  .wtile .wicon { width: 52px; height: 52px; flex: none; color: #3a3a40; } .wtile .wicon svg { width: 100%; height: 100%; }
+  .wtile .rtxt { flex: 1; } .wtile .meter { margin: 6px 0 2px; }
+  .wtile.full { border-color: #D9CBF8; background: #FBF9FF; }
+  .rscene .mbar.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rscene .mbar.four button { font-size: 14px; }
+  .story-chip { align-self: center; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.95); border: 1px solid var(--line); font: 600 13px var(--ui-font); color: var(--ink-2); }
+  .mission .target { margin: 4px 0 0; font-weight: 700; color: #5B37B8; }
+  .wreadouts { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+  .wtile .rtxt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .wtile b { font-size: 15.5px; }
+  .wtile small { font-size: 12px; color: var(--ink-2); }
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
@@ -2215,6 +2232,680 @@ const RampScenes = (() => {
   function noisy(a, runId, seed) { let h = 2166136261; for (const c of seed + ":" + runId) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } const e = (((h >>> 0) % 2001) / 1000 - 1) * 0.02; return a * (1 + e); }
 
   return { SKILLS, LEGACY, MATS, DIRS, SCENES, ALL, TIERS, UNLOCK_HE, newRun, track, rebuild, idle, startRun, finishRun, stepRun, setParam, addMeasure, gateOk, checkNumeric, checkFbd, checkChoice, lockPrediction, activate, autoCheck, textOf, startValues, maxOf, examF, predictionResult, confirmResult, armConfirm, isLive, coverage, skillPoints, unlocked, newLab, makeSecret, noisy, runs, mOf, near, motorPeak, segsOf, brakeMu, linkedSolve, springMax };
+})();
+
+// ======================================================================
+//  "עולמות המכניקה": 20 physics models (evaluate, ported 1:1 from the pack's
+//  engine/physics.mjs) and a time simulator for each, so what moves on the
+//  screen is computed, not animated. SI units, g from the scene (default 10).
+//  Each simulator: { t, tEnd, step(dt), st (state for drawing/graphs),
+//  events [{type, t, ...}], done }. Exact events where it matters: stops,
+//  landings, meetings, collisions, loss of contact, slipping.
+//  (spec: art/source/worlds/docs/PHYSICS_CONSTRAINTS_HE.md)
+// ======================================================================
+const WorldPhys = (() => {
+  "use strict";
+  const RP = (typeof RampPhys !== "undefined") ? RampPhys : require("./ramp-engine.js");
+  const G = 6.67430e-11, rad = (d) => d * Math.PI / 180;
+  const invalid = (why) => { throw new RangeError("Invalid physics input: " + why); };
+  const finite = (...v) => { if (v.some((x) => !Number.isFinite(x))) invalid("nonfinite value"); };
+  const positive = (...v) => { finite(...v); if (v.some((x) => x <= 0)) invalid("nonpositive parameter"); };
+  const nonneg = (...v) => { finite(...v); if (v.some((x) => x < 0)) invalid("negative parameter"); };
+  const nearZero = (x) => Math.abs(x) < 1e-10;
+
+  // ---------------- the reference calculator (same results as the pack) ----------------
+  function evaluate(kind, p) {
+    finite(...Object.values(p).filter((x) => typeof x === "number"));
+    switch (kind) {
+      case "units": positive(p.factor); return { baseSI: p.value * p.factor };
+      case "vectors": { const Rx = p.ax + p.bx, Ry = p.ay + p.by; return { Rx, Ry, magnitude: Math.hypot(Rx, Ry), angle: Math.atan2(Ry, Rx) * 180 / Math.PI }; }
+      case "uniform": nonneg(p.t); return { x: p.x0 + p.v * p.t, displacement: p.v * p.t, distance: Math.abs(p.v * p.t) };
+      case "meeting": {
+        const dv = p.v1 - p.v2;
+        const t = nearZero(dv) ? (nearZero(p.x2 - p.x1) ? 0 : null) : (p.x2 - p.x1) / dv;
+        if (t === null || t < 0) return { tMeeting: null, xMeeting: null, status: "אין מפגש עתידי במודל" };
+        return { tMeeting: t, xMeeting: p.x1 + p.v1 * t, status: "מפגש" };
+      }
+      case "acceleration": {
+        nonneg(p.t);
+        const v = p.v0 + p.a * p.t, dx = p.v0 * p.t + 0.5 * p.a * p.t * p.t, tStop = (p.v0 * p.a < 0) ? -p.v0 / p.a : null;
+        return { v, dx, stoppingTime: tStop };
+      }
+      case "vertical": {
+        positive(p.g); nonneg(p.h, p.t);
+        const y = p.h + p.v0 * p.t - 0.5 * p.g * p.t * p.t, tPeak = Math.max(0, p.v0 / p.g), maxY = p.h + (p.v0 > 0 ? p.v0 * p.v0 / (2 * p.g) : 0);
+        const tLand = (p.v0 + Math.sqrt(p.v0 * p.v0 + 2 * p.g * p.h)) / p.g;
+        return { y: p.t > tLand ? 0 : Math.max(0, y), v: p.t > tLand ? 0 : p.v0 - p.g * p.t, tPeak, maxY, tLand, status: p.t > tLand ? "נחת" : "באוויר" };
+      }
+      case "projectile": {
+        positive(p.g); nonneg(p.h, p.t); if (p.v0 < 0 || p.angle < 0 || p.angle > 90) invalid("launch");
+        const vx = p.v0 * Math.cos(rad(p.angle)), vy = p.v0 * Math.sin(rad(p.angle)), tLand = (vy + Math.sqrt(vy * vy + 2 * p.g * p.h)) / p.g, t = Math.min(tLand, p.t);
+        return { x: vx * t, y: Math.max(0, p.h + vy * t - 0.5 * p.g * t * t), range: vx * tLand, tLand, maxY: p.h + vy * vy / (2 * p.g), vx, vy: vy - p.g * t };
+      }
+      case "incline": {
+        positive(p.m, p.g); nonneg(p.muS, p.muK); if (p.angle < 0 || p.angle >= 90 || p.muK > p.muS + 1e-10) invalid("incline limits");
+        const N = p.m * p.g * Math.cos(rad(p.angle)), drive = p.F - p.m * p.g * Math.sin(rad(p.angle)), staticLimit = p.muS * N;
+        if (nearZero(p.v0) && Math.abs(drive) <= staticLimit + 1e-10) return { N, friction: -drive, a: 0, mode: "סטטי", staticLimit, drive };
+        const direction = nearZero(p.v0) ? Math.sign(drive) : Math.sign(p.v0), friction = -direction * p.muK * N;
+        return { N, friction, a: (drive + friction) / p.m, mode: "קינטי", staticLimit, drive };
+      }
+      case "pulley": {
+        positive(p.mA, p.mB, p.g); nonneg(p.muS, p.muK); if (p.angle < 0 || p.angle >= 90 || p.muK > p.muS) invalid("pulley");
+        const N = p.mA * p.g * Math.cos(rad(p.angle)), drive = p.mB * p.g - p.mA * p.g * Math.sin(rad(p.angle)), maxStatic = p.muS * N;
+        if (Math.abs(drive) <= maxStatic + 1e-9) return { a: 0, T: p.mB * p.g, N, mode: "סטטי" };
+        const friction = -Math.sign(drive) * p.muK * N, a = (drive + friction) / (p.mA + p.mB), T = p.mB * (p.g - a);
+        if (T < 0) return { a: null, T: null, N, mode: "חבל רפוי — נדרש מודל אחר" };
+        return { a, T, N, mode: "נע" };
+      }
+      case "spring": positive(p.k, p.m); return { F: -p.k * p.x, E: 0.5 * p.k * p.x * p.x, a: -p.k * p.x / p.m };
+      case "energy": {
+        positive(p.m, p.g); nonneg(p.h, p.mu, p.d); if (p.v0 < 0) invalid("starting speed");
+        const initialE = 0.5 * p.m * p.v0 * p.v0 + p.m * p.g * p.h, heat = p.mu * p.m * p.g * p.d, remainingE = initialE - heat;
+        return { initialE, heat, endV: remainingE >= 0 ? Math.sqrt(2 * remainingE / p.m) : 0, remainingE: Math.max(0, remainingE), status: remainingE < 0 ? "נעצר לפני קצה הרצועה" : "עבר את הרצועה", stopDistance: p.mu === 0 ? null : initialE / (p.mu * p.m * p.g) };
+      }
+      case "circle": positive(p.m, p.r, p.g); nonneg(p.v, p.mu);
+        return { aC: p.v * p.v / p.r, Fc: p.m * p.v * p.v / p.r, period: p.v > 0 ? 2 * Math.PI * p.r / p.v : null, safeSpeed: Math.sqrt(p.mu * p.g * p.r), status: p.v * p.v / p.r <= p.mu * p.g ? "חיכוך מספיק" : "החלקה (במודל משטח אופקי)" };
+      case "bank": { positive(p.r, p.g); if (p.angle <= 0 || p.angle >= 90) invalid("bank angle"); const idealV = Math.sqrt(p.r * p.g * Math.tan(rad(p.angle))); return { idealV, idealKmh: 3.6 * idealV }; }
+      case "loop": { positive(p.m, p.r, p.g); nonneg(p.vTop); const rawN = p.m * (p.vTop * p.vTop / p.r - p.g); return { contact: rawN >= 0 ? "מגע מתקיים" : "אין מגע בפסגה", minV: Math.sqrt(p.g * p.r), NTop: Math.max(0, rawN) }; }
+      case "impulse": { positive(p.m, p.dt); const J = p.m * (p.v1 - p.v0); return { J, Favg: J / p.dt, deltaP: J }; }
+      case "collision": {
+        positive(p.m1, p.m2); if (p.e < 0 || p.e > 1) invalid("coefficient of restitution");
+        const { m1, m2, u1, u2, e } = p;
+        const v1 = (m1 * u1 + m2 * u2 - m2 * e * (u1 - u2)) / (m1 + m2), v2 = (m1 * u1 + m2 * u2 + m1 * e * (u1 - u2)) / (m1 + m2);
+        const before = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2, after = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2;
+        return { v1, v2, pBefore: m1 * u1 + m2 * u2, pAfter: m1 * v1 + m2 * v2, lostK: Math.max(0, before - after) };
+      }
+      case "recoil": { positive(p.m1, p.m2); const v2 = -p.m1 * p.v1 / p.m2; return { v2, pTotal: p.m1 * p.v1 + p.m2 * v2 }; }
+      case "gravity": { positive(p.M, p.r, p.m); const g = G * p.M / (p.r * p.r), vOrbit = Math.sqrt(G * p.M / p.r); return { g, F: p.m * g, vOrbit, vEscape: Math.SQRT2 * vOrbit, period: 2 * Math.PI * p.r / vOrbit }; }
+      case "oscillator": {
+        positive(p.m, p.k); nonneg(p.A, p.t);
+        const omega = Math.sqrt(p.k / p.m), phi = omega * p.t + p.phase, x = p.A * Math.cos(phi);
+        return { period: 2 * Math.PI / omega, x, v: -p.A * omega * Math.sin(phi), a: -omega * omega * x, E: 0.5 * p.k * p.A * p.A };
+      }
+      case "capstone": {
+        positive(p.m, p.k, p.g, p.d); nonneg(p.mu, p.v0); if (p.angle <= 0 || p.angle >= 90) invalid("capstone angle");
+        const energyAtBottom = 0.5 * p.m * p.v0 * p.v0 + p.m * p.g * p.d * (Math.sin(rad(p.angle)) - p.mu * Math.cos(rad(p.angle)));
+        return { energyAtBottom, endV: energyAtBottom > 0 ? Math.sqrt(2 * energyAtBottom / p.m) : 0, compression: energyAtBottom > 0 ? Math.sqrt(2 * energyAtBottom / p.k) : 0, status: energyAtBottom < 0 ? "לא מגיע לתחתית (עצירה במדרון)" : "מגיע לתחתית" };
+      }
+      default: throw new Error("Unknown model: " + kind);
+    }
+  }
+  const modelNames = ["units", "vectors", "uniform", "meeting", "acceleration", "vertical", "projectile", "incline", "pulley", "spring", "energy", "circle", "bank", "loop", "impulse", "collision", "recoil", "gravity", "oscillator", "capstone"];
+
+  // ======================================================================
+  //  time simulators
+  // ======================================================================
+  const sim = (o) => Object.assign({ t: 0, done: false, events: [], log(type, x = {}) { this.events.push({ type, t: this.t, ...x }); } }, o);
+  const firstRoot = (a, b, c) => {            // smallest t>0 with a t² + b t + c = 0
+    if (Math.abs(a) < 1e-14) { if (Math.abs(b) < 1e-14) return null; const t = -c / b; return t > 1e-12 ? t : null; }
+    const D = b * b - 4 * a * c; if (D < 0) return null;
+    const r = Math.sqrt(D), ts = [(-b - r) / (2 * a), (-b + r) / (2 * a)].filter((t) => t > 1e-12).sort((x, y) => x - y);
+    return ts.length ? ts[0] : null;
+  };
+
+  const SIMS = {
+    // the plank is cut to value×factor metres; walking across shows whether it spans the gap
+    units(p, o) { const L = p.value * p.factor, gap = o.gap; return sim({ tEnd: 2.4, step(dt) { this.t = Math.min(this.tEnd, this.t + dt); const walk = Math.min(1, this.t / 2) * Math.max(gap, L) ; this.st = { L, gap, x: walk, fell: L + 1e-9 < gap && walk > L }; if (this.t >= this.tEnd) this.done = true; }, st: { L, gap, x: 0, fell: false } }); },
+    // the creature (or leaf) moves along the resultant for two seconds
+    vectors(p) { const R = evaluate("vectors", p); return sim({ tEnd: 2, step(dt) { this.t = Math.min(this.tEnd, this.t + dt); this.st = { x: R.Rx * this.t / 2, y: R.Ry * this.t / 2, R }; if (this.t >= this.tEnd) this.done = true; }, st: { x: 0, y: 0, R } }); },
+    uniform(p) { return sim({ tEnd: Math.max(0.5, p.t), st: { x: p.x0, v: p.v, path: 0 }, step(dt) {
+      const t1 = Math.min(this.tEnd, this.t + dt), x0 = p.x0 + p.v * this.t, x1 = p.x0 + p.v * t1;
+      if ((x0 < 0 && x1 >= 0) || (x0 > 0 && x1 <= 0)) { const tz = -p.x0 / p.v; this.t = tz; this.log("zero", { x: 0 }); }
+      this.t = t1; this.st = { x: x1, v: p.v, path: Math.abs(p.v * t1) }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    meeting(p) { const R = evaluate("meeting", p), tEnd = R.tMeeting !== null ? Math.min(14, R.tMeeting + 1.2) : 10;
+      return sim({ tEnd, met: null, st: { x1: p.x1, x2: p.x2 }, step(dt) {
+        const t1 = Math.min(this.tEnd, this.t + dt);
+        if (this.met === null && R.tMeeting !== null && R.tMeeting <= t1 + 1e-12) { this.met = { t: R.tMeeting, x: R.xMeeting }; this.t = R.tMeeting; this.log("meet", { x: R.xMeeting }); }
+        this.t = t1; this.st = { x1: p.x1 + p.v1 * t1, x2: p.x2 + p.v2 * t1, gap: (p.x2 + p.v2 * t1) - (p.x1 + p.v1 * t1) }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // a brake stops and stays stopped; a constant force may turn the motion around
+    acceleration(p, o) { const brake = !!o.brake; return sim({ tEnd: Math.max(0.5, p.t), st: { x: 0, v: p.v0, a: p.a }, stopped: false, step(dt) {
+      let t1 = Math.min(this.tEnd, this.t + dt);
+      const tStop = p.v0 * p.a < 0 ? -p.v0 / p.a : null;
+      if (tStop !== null && this.t < tStop && t1 >= tStop) this.log("v_zero", { x: p.v0 * tStop + 0.5 * p.a * tStop * tStop });
+      let x, v, a = p.a;
+      if (brake && tStop !== null && t1 >= tStop) { x = p.v0 * tStop + 0.5 * p.a * tStop * tStop; v = 0; a = 0; this.stopped = true; }
+      else { x = p.v0 * t1 + 0.5 * p.a * t1 * t1; v = p.v0 + p.a * t1; }
+      this.t = t1; this.st = { x, v, a }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    vertical(p) { const R = evaluate("vertical", { ...p, t: 0 }); return sim({ tEnd: R.tLand, st: { y: p.h, v: p.v0 }, step(dt) {
+      const t1 = Math.min(this.tEnd, this.t + dt);
+      if (this.t < R.tPeak && t1 >= R.tPeak && p.v0 > 0) this.log("peak", { y: R.maxY });
+      this.t = t1; const land = t1 >= R.tLand - 1e-12;
+      this.st = land ? { y: 0, v: p.v0 - p.g * R.tLand, landed: true } : { y: p.h + p.v0 * t1 - 0.5 * p.g * t1 * t1, v: p.v0 - p.g * t1 };
+      if (land) { this.log("land", { v: this.st.v }); this.done = true; } } }); },
+    projectile(p) { const R = evaluate("projectile", { ...p, t: 0 }), vy0 = p.v0 * Math.sin(rad(p.angle)), tp = vy0 / p.g;
+      return sim({ tEnd: R.tLand, st: { x: 0, y: p.h, vx: R.vx, vy: vy0 }, step(dt) {
+        const t1 = Math.min(this.tEnd, this.t + dt);
+        if (this.t < tp && t1 >= tp && vy0 > 0) this.log("peak", { y: R.maxY, x: R.vx * tp });
+        this.t = t1; const land = t1 >= R.tLand - 1e-12;
+        this.st = land ? { x: R.range, y: 0, vx: R.vx, vy: vy0 - p.g * R.tLand, landed: true } : { x: R.vx * t1, y: p.h + vy0 * t1 - 0.5 * p.g * t1 * t1, vx: R.vx, vy: vy0 - p.g * t1 };
+        if (land) { this.log("land", { x: R.range }); this.done = true; } } }); },
+    // a ramp track (exact stops and static re-check from the ramp engine); + is UP the slope
+    incline(p) { const tr = RP.makeSingle({ m: p.m, angleDeg: p.angle, muS: p.muS, muK: Math.min(p.muK, p.muS), g: p.g, F: p.F, L: 6, s0: 3, v0: p.v0 });
+      return wrapTrack(tr, 6); },
+    pulley(p) { const tr = RP.makeHanging({ mA: p.mA, mB: p.mB, angleDeg: p.angle, muS: p.muS, muK: Math.min(p.muK, p.muS), g: p.g, sMin: -1.3, sMax: 1.1 });
+      return wrapTrack(tr, 5); },
+    // horizontal spring on a smooth floor, released from x
+    spring(p) { const w = Math.sqrt(p.k / p.m), T = 2 * Math.PI / w; return sim({ tEnd: 2 * T, st: { x: p.x, v: 0, F: -p.k * p.x }, step(dt) {
+      this.t = Math.min(this.tEnd, this.t + dt); const x = p.x * Math.cos(w * this.t), v = -p.x * w * Math.sin(w * this.t);
+      this.st = { x, v, F: -p.k * x, a: -p.k * x / p.m, E: 0.5 * p.k * x * x, K: 0.5 * p.m * v * v }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // a smooth slope down h, then a rough strip d, then a smooth run-out
+    energy(p) { const segs = []; if (p.h > 0) segs.push({ length: p.h / Math.sin(rad(30)), angleDeg: 30, muS: 0, muK: 0 });
+      segs.push({ length: Math.max(0.01, p.d), angleDeg: 0, muS: p.mu, muK: p.mu }, { length: 3, angleDeg: 0, muS: 0, muK: 0 });
+      const tr = RP.makePiecewise({ m: p.m, g: p.g, segments: segs, v0: Math.max(p.v0, 1e-6) });
+      const s = wrapTrack(tr, 30); s.stripStart = p.h > 0 ? segs[0].length : 0; s.stripEnd = s.stripStart + p.d; s.segs = segs;
+      const base = s.step.bind(s); s.step = (dt) => { base(dt); if (tr.s >= s.stripEnd - 1e-9 && !s.passed) { s.passed = true; s.log("strip_end", { v: tr.v }); s.done = true; } }; return s; },
+    // a flat turntable: friction provides v²/r up to μg; beyond that it slides off along the tangent
+    circle(p) { const need = p.v * p.v / p.r, slip = need > p.mu * p.g + 1e-12, plate = p.r * 1.6;
+      return sim({ tEnd: slip ? 3 : Math.min(12, 2 * (p.v > 0 ? 2 * Math.PI * p.r / p.v : 4)), st: { x: p.r, y: 0, on: true }, step(dt) {
+        this.t = Math.min(this.tEnd, this.t + dt);
+        if (!slip) { const ph = p.v * this.t / p.r; this.st = { x: p.r * Math.cos(ph), y: p.r * Math.sin(ph), on: true, phase: ph }; }
+        else { if (!this.events.length) this.log("slip"); const d = p.v * this.t; this.st = { x: p.r, y: d, on: Math.hypot(p.r, d) < plate }; if (!this.st.on && !this.off) { this.off = true; this.log("off_plate"); } }
+        if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // a frictionless banked curve: at v ≠ ideal the car drifts up (too fast) or down (too slow)
+    bank(p, o) { const R = evaluate("bank", p), v = o.v === undefined ? R.idealV : o.v, th = rad(p.angle);
+      // net along the bank (up-slope +) without friction: m(v²/r)cosθ − mg sinθ
+      const drift = (v * v / p.r) * Math.cos(th) - p.g * Math.sin(th);
+      return sim({ tEnd: 4, st: { phase: 0, up: 0, drift }, step(dt) { this.t = Math.min(this.tEnd, this.t + dt); this.st = { phase: v * this.t / p.r, up: Math.max(-1, Math.min(1, 0.5 * drift * this.t * this.t)), drift, v }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // a vertical loop entered at the bottom with the speed that would give vTop at the top;
+    // when N would turn negative the ball leaves the track and flies freely
+    loop(p) { const vb = Math.sqrt(p.vTop * p.vTop + 4 * p.g * p.r);
+      const s = sim({ tEnd: 6, st: { th: 0, x: 0, y: 0, v: vb, onTrack: true, N: p.m * (vb * vb / p.r + p.g) }, th: 0, om: vb / p.r, free: null, step(dt) {
+        this.t = Math.min(this.tEnd, this.t + dt);
+        if (!this.free) {
+          const h = 1 / 2000; let rem = dt;
+          while (rem > 1e-12 && !this.free) { const k = Math.min(h, rem); rem -= k;
+            // energy: v² = vb² − 2 g r (1 − cos th); th from the bottom, counter-clockwise
+            const v2 = vb * vb - 2 * p.g * p.r * (1 - Math.cos(this.th));
+            const Nn = p.m * v2 / p.r + p.m * p.g * Math.cos(this.th);           // normal toward the centre
+            if (Nn < 0 || v2 <= 0) { const v = Math.sqrt(Math.max(0, v2)); this.free = { t0: this.t - rem, x: p.r * Math.sin(this.th), y: p.r - p.r * Math.cos(this.th), vx: v * Math.cos(this.th), vy: v * Math.sin(this.th) }; this.log("lost_contact", { th: this.th }); break; }
+            this.th += Math.sqrt(v2) / p.r * k;
+            if (this.th >= 2 * Math.PI) { this.th -= 2 * Math.PI; if (!this.events.some((e) => e.type === "full_loop")) this.log("full_loop"); }
+            if (this.th > Math.PI && !this.events.some((e) => e.type === "top")) this.log("top", { v: Math.sqrt(v2), N: Nn });
+          }
+          if (!this.free) { const v2 = vb * vb - 2 * p.g * p.r * (1 - Math.cos(this.th)); this.st = { th: this.th, x: p.r * Math.sin(this.th), y: p.r - p.r * Math.cos(this.th), v: Math.sqrt(Math.max(0, v2)), onTrack: true, N: p.m * v2 / p.r + p.m * p.g * Math.cos(this.th) }; }
+        }
+        if (this.free) { const f = this.free, tt = this.t - f.t0; let y = f.y + f.vy * tt - 0.5 * p.g * tt * tt; if (y < 0) { y = 0; if (!this.events.some((e) => e.type === "land")) this.log("land"); this.done = true; } this.st = { x: f.x + f.vx * tt, y, onTrack: false, N: 0, v: Math.hypot(f.vx, f.vy - p.g * tt) }; }
+        if (this.events.some((e) => e.type === "full_loop") && this.t > 0.2 + this.events.find((e) => e.type === "full_loop").t) this.done = true;
+        if (this.t >= this.tEnd - 1e-12) this.done = true; } });
+      return s; },
+    // a cart meets a cushion: during dt a constant average force changes v0 into v1
+    impulse(p) { const J = p.m * (p.v1 - p.v0), F = J / p.dt, t0 = 1.0, x0 = -p.v0 * t0;
+      return sim({ tEnd: t0 + p.dt + 1.2, st: { x: x0, v: p.v0, F: 0 }, step(dt) {
+        this.t = Math.min(this.tEnd, this.t + dt); const t = this.t;
+        let x, v, f = 0;
+        if (t < t0) { x = x0 + p.v0 * t; v = p.v0; }
+        else if (t < t0 + p.dt) { const u = t - t0; x = p.v0 * u + 0.5 * (F / p.m) * u * u; v = p.v0 + (F / p.m) * u; f = F; if (!this.events.length) this.log("contact"); }
+        else { const xe = p.v0 * p.dt + 0.5 * (F / p.m) * p.dt * p.dt; x = xe + p.v1 * (t - t0 - p.dt); v = p.v1; if (this.events.length === 1) this.log("release"); }
+        this.st = { x, v, F: f, p: p.m * v }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // two carts on a smooth track; they collide at the exact contact time
+    collision(p) { const R = evaluate("collision", p), gap0 = 2.4, w = 0.4, x1 = -gap0 / 2 - w / 2, x2 = gap0 / 2 + w / 2;
+      const closing = p.u1 - p.u2, tc = closing > 1e-9 ? gap0 / closing : null;
+      return sim({ tEnd: tc !== null ? tc + 2 : 3, st: { x1, x2, v1: p.u1, v2: p.u2 }, step(dt) {
+        this.t = Math.min(this.tEnd, this.t + dt); const t = this.t;
+        if (tc === null || t < tc) this.st = { x1: x1 + p.u1 * t, x2: x2 + p.u2 * t, v1: p.u1, v2: p.u2, p: p.m1 * p.u1 + p.m2 * p.u2, K: 0.5 * p.m1 * p.u1 ** 2 + 0.5 * p.m2 * p.u2 ** 2 };
+        else { if (!this.events.length) this.log("hit", { x: x1 + p.u1 * tc + w / 2 }); const c1 = x1 + p.u1 * tc, c2 = x2 + p.u2 * tc, u = t - tc;
+          this.st = { x1: c1 + R.v1 * u, x2: c2 + R.v2 * u, v1: R.v1, v2: R.v2, p: R.pAfter, K: 0.5 * p.m1 * R.v1 ** 2 + 0.5 * p.m2 * R.v2 ** 2 }; }
+        if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    recoil(p) { const R = evaluate("recoil", p), t0 = 0.6;
+      return sim({ tEnd: t0 + 2, st: { x1: -0.25, x2: 0.25, v1: 0, v2: 0 }, step(dt) { this.t = Math.min(this.tEnd, this.t + dt); const u = Math.max(0, this.t - t0);
+        if (u > 0 && !this.events.length) this.log("push");
+        // body 1 is pushed with v1; the other gets v2 = −m1 v1 / m2
+        this.st = { x1: -0.25 + p.v1 * u, x2: 0.25 + R.v2 * u, v1: u > 0 ? p.v1 : 0, v2: u > 0 ? R.v2 : 0, p: u > 0 ? R.pTotal : 0 };
+        if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // a satellite around a point mass, launched sideways at vf × v_orbit (RK4, time compressed for the screen)
+    gravity(p, o) { const R = evaluate("gravity", p), vf = o.vf === undefined ? 1 : o.vf, Rp = o.Rp || 6.0e6, GM = G * p.M;
+      let s = [p.r, 0, 0, vf * R.vOrbit];
+      const acc = (x, y) => { const r3 = Math.pow(x * x + y * y, 1.5); return [-GM * x / r3, -GM * y / r3]; };
+      const f = (q) => { const a = acc(q[0], q[1]); return [q[2], q[3], a[0], a[1]]; };
+      const scale = R.period / 6;                   // one circular orbit ≈ 6 s on screen
+      return sim({ tEnd: 9, scale, st: { x: s[0], y: s[1], r: p.r, v: vf * R.vOrbit, g: R.g }, step(dt) {
+        if (this.done) return; let T = dt * scale; const n = Math.max(4, Math.ceil(T / (R.period / 2000)));
+        const h = T / n;
+        for (let i = 0; i < n; i++) {
+          const k1 = f(s), k2 = f(s.map((v, j) => v + h / 2 * k1[j])), k3 = f(s.map((v, j) => v + h / 2 * k2[j])), k4 = f(s.map((v, j) => v + h * k3[j]));
+          s = s.map((v, j) => v + h / 6 * (k1[j] + 2 * k2[j] + 2 * k3[j] + k4[j]));
+          const r = Math.hypot(s[0], s[1]);
+          if (r <= Rp) { this.log("crash"); this.done = true; break; }
+          if (r > 6 * p.r) { this.log("escape"); this.done = true; break; }
+        }
+        this.t = Math.min(this.tEnd, this.t + dt); const r = Math.hypot(s[0], s[1]);
+        this.st = { x: s[0], y: s[1], r, v: Math.hypot(s[2], s[3]), g: GM / (r * r), E: 0.5 * (s[2] ** 2 + s[3] ** 2) - GM / r };
+        if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    oscillator(p) { const w = Math.sqrt(p.k / p.m), T = 2 * Math.PI / w; return sim({ tEnd: Math.max(3 * T, 3), st: {}, step(dt) {
+      this.t = Math.min(this.tEnd, this.t + dt); const ph = w * this.t + p.phase, x = p.A * Math.cos(ph), v = -p.A * w * Math.sin(ph);
+      this.st = { x, v, a: -w * w * x, K: 0.5 * p.m * v * v, U: 0.5 * p.k * x * x }; if (this.t >= this.tEnd - 1e-12) this.done = true; } }); },
+    // down a rough ramp of length d, then a smooth floor into a spring (friction only on the ramp)
+    capstone(p) { const th = rad(p.angle), aRamp = p.g * (Math.sin(th) - p.mu * Math.cos(th)), gapToSpring = 0.6, w = Math.sqrt(p.k / p.m);
+      const stuck = p.v0 <= 1e-9 && Math.tan(th) <= p.mu;    // μ also as the static limit: it never starts
+      const s = sim({ tEnd: 8, phase: "ramp", s: 0, v: p.v0, xMax: 0, heat: 0, st: { phase: "ramp", s: 0, v: p.v0, x: 0 }, step(dt) {
+        let rem = dt;
+        while (rem > 1e-12 && !this.done) {
+          if (stuck) { this.done = true; this.log("stays"); break; }
+          if (this.phase === "ramp") {
+            // constant a on the ramp; stop if it slows to zero (then static: μ ≥ tanθ means it stays)
+            const left = p.d - this.s, tStop = aRamp < 0 ? -this.v / aRamp : Infinity, tEnd = firstRoot(0.5 * aRamp, this.v, -left);
+            const k = Math.min(rem, tStop, tEnd === null ? Infinity : tEnd);
+            const ds = this.v * k + 0.5 * aRamp * k * k; this.s += ds; this.v += aRamp * k; this.heat += p.mu * p.m * p.g * Math.cos(th) * ds; this.t += k; rem -= k;
+            if (k === tStop) { this.v = 0; this.log("stopped_on_ramp", { s: this.s }); this.done = true; }
+            else if (tEnd !== null && k === tEnd) { this.s = p.d; this.phase = "flat"; this.u = 0; this.log("bottom", { v: this.v }); }
+          } else if (this.phase === "flat") {
+            const k = Math.min(rem, (gapToSpring - this.u) / this.v); this.u += this.v * k; this.t += k; rem -= k;
+            if (this.u >= gapToSpring - 1e-12) { this.phase = "spring"; this.ts = this.t; this.vin = this.v; this.log("contact"); }
+          } else if (this.phase === "spring") {
+            const half = Math.PI / w, quarter = half / 2, u0 = this.t - this.ts;
+            const k = Math.min(rem, half - u0, u0 < quarter - 1e-12 ? quarter - u0 : Infinity);
+            this.t += k; rem -= k; const u = this.t - this.ts; this.x = (this.vin / w) * Math.sin(w * u); this.v = this.vin * Math.cos(w * u);
+            this.xMax = Math.max(this.xMax, this.x);
+            if (Math.abs(u - quarter) < 1e-9 && !this.events.some((e) => e.type === "max")) this.log("max", { x: this.xMax });
+            if (u >= half - 1e-9) { this.phase = "back"; this.x = 0; this.v = -this.vin; this.log("leaves_spring"); this.done = true; }
+          }
+        }
+        this.st = { phase: this.phase, s: this.s, v: this.v, x: this.phase === "spring" ? this.x : 0, xMax: this.xMax, heat: this.heat };
+        if (this.t >= this.tEnd) this.done = true; } });
+      return s; }
+  };
+  function wrapTrack(tr, tMax) {
+    const s = sim({ tEnd: tMax, tr, st: {}, step(dt) {
+      tr.advance(dt); this.t = tr.t; const R = tr.resolve();
+      this.st = { s: tr.s, v: tr.v, a: R.a, f: R.f, N: R.N, mode: R.mode, T: tr.tension ? tr.tension() : null };
+      for (const e of tr.events.slice(this.events.length)) this.events.push(e);
+      if (R.mode !== "kinetic") { this.rest = (this.rest || 0) + dt; if (this.rest > 0.6) this.done = true; } else this.rest = 0;
+      if (this.t >= this.tEnd) this.done = true; } });
+    s.step(1e-9); return s;
+  }
+  function makeSim(family, p, opts = {}) { const s = SIMS[family](p, opts); if (!s.st || s.st.x === undefined && family !== "incline") s.step(0); return s; }
+  // run a simulator to its end (for tests and for answers that come from a run)
+  function runToEnd(s, dt = 1 / 120) { let guard = 0; while (!s.done && guard++ < 20000) s.step(dt); return s; }
+
+  return { G, evaluate, modelNames, makeSim, runToEnd, rad };
+})();
+
+// generated by art/source/worlds/build_worlds_data.py from worlds_and_scenes.json (do not edit by hand)
+const WORLDS_DATA = {"worlds":[{"id":"W01","title":"סדנת המדידה הסודית","subtitle":"צעד ראשון: שפה מדעית לפני שמזיזים משהו","track":"ליבה","sceneIds":["W01-S01","W01-S02","W01-S03","W01-S04","W01-S05","W01-S06","W01-S07"]},{"id":"W02","title":"יער החצים","subtitle":"כוחות ומהירויות עם כיוונים אמיתיים","track":"ליבה","sceneIds":["W02-S01","W02-S02","W02-S03","W02-S04","W02-S05","W02-S06","W02-S07"]},{"id":"W03","title":"עיר הזמנים","subtitle":"תנועה ללא תאוצה ומפגשים","track":"ליבה","sceneIds":["W03-S01","W03-S02","W03-S03","W03-S04","W03-S05","W03-S06","W03-S07"]},{"id":"W04","title":"פארק התאוצה","subtitle":"שינוי מהירות, נפילה ובליסטיקה","track":"ליבה","sceneIds":["W04-S01","W04-S02","W04-S03","W04-S04","W04-S05","W04-S06","W04-S07"]},{"id":"W05","title":"מצוקי החיכוך","subtitle":"חוקי ניוטון, שיווי משקל ומערכות מרובות גופים","track":"ליבה","sceneIds":["W05-S01","W05-S02","W05-S03","W05-S04","W05-S05","W05-S06","W05-S07"]},{"id":"W06","title":"מערת הקפיצים","subtitle":"חוק הוק ואנרגיה אלסטית","track":"ליבה","sceneIds":["W06-S01","W06-S02","W06-S03","W06-S04","W06-S05","W06-S06","W06-S07"]},{"id":"W07","title":"בנק האנרגיה","subtitle":"עבודה, שימור והמרות","track":"ליבה","sceneIds":["W07-S01","W07-S02","W07-S03","W07-S04","W07-S05","W07-S06","W07-S07"]},{"id":"W08","title":"קרקס המעגלים","subtitle":"תנועה מעגלית וכוח מרכזי","track":"ליבה","sceneIds":["W08-S01","W08-S02","W08-S03","W08-S04","W08-S05","W08-S06","W08-S07"]},{"id":"W09","title":"זירת ההתנגשויות","subtitle":"מתקף, תנע, רתע והחזרתיות","track":"ליבה","sceneIds":["W09-S01","W09-S02","W09-S03","W09-S04","W09-S05","W09-S06","W09-S07"]},{"id":"W10","title":"פלנטריום הכבידה","subtitle":"שדות כבידה, מסלולים ובריחה","track":"ליבה","sceneIds":["W10-S01","W10-S02","W10-S03","W10-S04","W10-S05","W10-S06","W10-S07"]},{"id":"W11","title":"גן התנודות","subtitle":"העשרה: תנודות ומחזוריות","track":"העשרה","sceneIds":["W11-S01","W11-S02","W11-S03","W11-S04","W11-S05","W11-S06","W11-S07"]},{"id":"W12","title":"מגדל הניסויים המשולבים","subtitle":"אתגרי מחשבה שמשלבים כלים קודמים","track":"אתגר","sceneIds":["W12-S01","W12-S02","W12-S03","W12-S04","W12-S05","W12-S06","W12-S07"]}],"scenes":[{"id":"W01-S01","w":"W01","title":"תחנת הסרגל המתכווץ","family":"units","story":"הדמות מנסה לתקן גשר שסרגלו מסמן סנטימטרים, בעוד שהמחשב מצפה למטרים.","objective":"כייל את המספר כך שהגשר יתאים למרחק בפועל.","difficulty":1,"params":{"value":260,"factor":0.01},"skills":["יחידות","MKS"]},{"id":"W01-S02","w":"W01","title":"מפת החץ השבור","family":"vectors","story":"שני מסועי רוח נותנים לדמות הוראות תנועה בצירים מאונכים.","objective":"סמן את הכיוון השקול שמחזיר אותה לשולחן העבודה.","difficulty":1,"params":{"ax":4,"ay":0,"bx":0,"by":3},"skills":["רכיבים","פיתגורס"]},{"id":"W01-S03","w":"W01","title":"שעון מחקר איטי","family":"units","story":"השעון בחדר הניסויים מציג אלפיות שנייה, ומערכת התנועה עובדת בשניות.","objective":"המר בין הספירות לפני שהדלת תיסגר.","difficulty":2,"params":{"value":430,"factor":0.001},"skills":["זמן","יחידות"]},{"id":"W01-S04","w":"W01","title":"שביל הקואורדינטות","family":"uniform","story":"על הרצפה פסים מסומנים מימין ומשמאל לאפס, והדמות מחפשת נקודת התחלה.","objective":"זהה האם ההעתק חיובי או שלילי, גם כשהמיקום הסופי שלילי.","difficulty":2,"params":{"x0":-11,"v":-2,"t":3},"skills":["סימן","העתק"]},{"id":"W01-S05","w":"W01","title":"כוח בלי מספר","family":"vectors","story":"היצור מקבל שתי משיכות בזוויות שונות מחבל דק וממגנט.","objective":"מצא וקטור שלישי שיאזן את התוצאה.","difficulty":2,"params":{"ax":6,"ay":2,"bx":-1,"by":4},"skills":["וקטור שקול","איזון"]},{"id":"W01-S06","w":"W01","title":"מגדל המדידות","family":"units","story":"מנוף קטן מסומן במילימטרים ומכשיר הבקרה דורש מטרים.","objective":"הבא את הגובה לערך מדויק לפני שחרור הפלטפורמה.","difficulty":3,"params":{"value":480,"factor":0.001},"skills":["קנה מידה","יחידות"]},{"id":"W01-S07","w":"W01","title":"פתיחת המעבדה","family":"vectors","story":"שלושה פנסים מקרינים שני וקטורי כיול שמצטלבים באזור הסודי.","objective":"בחר את רכיבי השקול מבלי לנחש לפי אורך החיצים.","difficulty":3,"params":{"ax":-5,"ay":4,"bx":3,"by":-7},"skills":["וקטורים","זווית"]},{"id":"W02-S01","w":"W02","title":"רוח נגדית בשביל","family":"vectors","story":"שני זרמי אוויר דוחפים עלה של הדמות לכיוונים שונים.","objective":"שנה את רכיבי הרוח עד שהעלה יתקדם ישר.","difficulty":1,"params":{"ax":7,"ay":3,"bx":-2,"by":-3},"skills":["סופרפוזיציה"]},{"id":"W02-S02","w":"W02","title":"מעלית ללא אלכסון","family":"vectors","story":"שני מנועים צדדיים יוצרים יחד כוח שמושך גם הצידה.","objective":"איזן רכיב צדדי בלי לבטל את העלייה.","difficulty":1,"params":{"ax":4,"ay":6,"bx":-4,"by":1},"skills":["שקול"]},{"id":"W02-S03","w":"W02","title":"קפיצה דרך רשת","family":"projectile","story":"הדמות מזנקת דרך חלון ונדרשת לבחור מהירות זוויתית נכונה.","objective":"זהה בנפרד את המהירות האופקית והאנכית.","difficulty":2,"params":{"v0":16,"angle":50,"h":0,"g":10,"t":0.75},"skills":["פירוק וקטורים"]},{"id":"W02-S04","w":"W02","title":"עגלה במשיכת אלכסון","family":"incline","story":"מדרון קטן ומוט אלכסוני מאתגרים את בחירת מערכת הצירים.","objective":"הדגם למה נוח לבחור ציר מקביל למשטח.","difficulty":2,"params":{"m":4,"angle":24,"muS":0.48,"muK":0.28,"F":21,"v0":0,"g":10},"skills":["צירים","רכיבי כוח"]},{"id":"W02-S05","w":"W02","title":"שדה המגנטים","family":"vectors","story":"שתי משיכות על כדור ברזל יוצרות וקטור שקול לא אינטואיטיבי.","objective":"הראה מה קורה לשקול כשמשנים רק רכיב אחד.","difficulty":2,"params":{"ax":-3,"ay":5,"bx":-6,"by":-2},"skills":["חיבור וקטורים"]},{"id":"W02-S06","w":"W02","title":"שביל המסועים","family":"uniform","story":"הדמות זזה אחורה ביחס לסימון הקרקע למרות שהמסוע פועל קדימה.","objective":"הפרד מהירות חתומה לבין גודל מהירות.","difficulty":3,"params":{"x0":4,"v":-3,"t":4},"skills":["סימן מהירות"]},{"id":"W02-S07","w":"W02","title":"שער איזון כוחות","family":"vectors","story":"השער יישאר פתוח רק כשהשקול של שתי דחיפות עומד בתנאי.","objective":"הבא את גודל השקול לערך קטן ככל האפשר.","difficulty":3,"params":{"ax":9,"ay":1,"bx":-8,"by":-2},"skills":["שיווי משקל"]},{"id":"W03-S01","w":"W03","title":"שליחי רכבת הצעצוע","family":"meeting","story":"שני שליחים מתקרבים זה לזה לאורך מסילה עם סימון אפס מרכזי.","objective":"נבא את מקום המפגש לפני שיצאו.","difficulty":1,"params":{"x1":-4,"v1":3.5,"x2":31,"v2":-1.5},"skills":["מפגש","מהירות יחסית"]},{"id":"W03-S02","w":"W03","title":"המסוע שלא עוצר","family":"uniform","story":"הדמות נוסעת על רצפת מפעל בקצב קבוע לכיוון האחורי.","objective":"הצב סמן יעד והבא את היצור לנקודה הנכונה.","difficulty":1,"params":{"x0":14,"v":-2.5,"t":4},"skills":["x(t)"]},{"id":"W03-S03","w":"W03","title":"מרוץ שני חילזונות־רובוט","family":"meeting","story":"רובוט איטי מתחיל קרוב והרובוט המהיר מתחיל מאחוריו.","objective":"מצא מתי המהיר ישיג את האיטי.","difficulty":2,"params":{"x1":0,"v1":4.5,"x2":15,"v2":1.5},"skills":["עקיפה"]},{"id":"W03-S04","w":"W03","title":"מחוג הווידאו","family":"uniform","story":"וידאו איטי של דמות מתקדמת לצד מד זמנים.","objective":"קרא את המהירות מתוך שינוי המיקום.","difficulty":2,"params":{"x0":-3,"v":1.5,"t":7},"skills":["גרף מקום־זמן"]},{"id":"W03-S05","w":"W03","title":"מפגש על הגשר","family":"meeting","story":"שני יצורים מתקדמים בשני קצוות גשר ונפגשים מעל הנהר.","objective":"כוון את אחת המהירויות כך שייפגשו על הפס האדום.","difficulty":2,"params":{"x1":-5,"v1":2,"x2":27,"v2":-3},"skills":["שני גופים"]},{"id":"W03-S06","w":"W03","title":"חזרה לנקודת האפס","family":"uniform","story":"הדמות מתחילה מימין לאפס ונעה שמאלה בקצב קבוע.","objective":"מצא זמן חציית האפס באופן ניסויי.","difficulty":3,"params":{"x0":10,"v":-2,"t":5},"skills":["סימני צירים"]},{"id":"W03-S07","w":"W03","title":"חדר שתי השעוניות","family":"meeting","story":"שני שעוני ניסוי נעים על מסילה במהירויות שונות ואסור שיתנגשו.","objective":"זהה איזה שינוי מהירות ימנע את המפגש.","difficulty":3,"params":{"x1":0,"v1":1,"x2":18,"v2":2},"skills":["אין מפגש"]},{"id":"W04-S01","w":"W04","title":"קרונית בלמי הגומי","family":"acceleration","story":"קרונית דוחפת את הדמות לעבר מחסום רך והבלמים מאטים אותה.","objective":"מדוד את זמן העצירה בלי להפוך תאוטה למהירות שלילית.","difficulty":1,"params":{"v0":11,"a":-2.5,"t":3},"skills":["בלימה"]},{"id":"W04-S02","w":"W04","title":"כדור אור בירידה","family":"vertical","story":"כדור זוהר נשמט ממנוף, והמטרה להשיגו לפני הנחיתה.","objective":"חשב את זמן הנפילה מגובה התחלתי.","difficulty":1,"params":{"v0":0,"g":10,"h":12,"t":1},"skills":["נפילה חופשית"]},{"id":"W04-S03","w":"W04","title":"המזרקה שקפאה בזמן","family":"vertical","story":"סילון דוחף חרוז למעלה, והדמות עוצרת את הזמן בשיא.","objective":"כוון את הזמן לרגע שבו המהירות האנכית אפס.","difficulty":2,"params":{"v0":18,"g":10,"h":0,"t":1.5},"skills":["שיא זריקה"]},{"id":"W04-S04","w":"W04","title":"שער הקשת הצבעונית","family":"projectile","story":"היצור משגר בועה מעל מכשול ונדרש לפגוע בסל מרוחק.","objective":"שנה זווית ומהירות עד שטווח השיגור מתאים.","difficulty":2,"params":{"v0":15,"angle":38,"h":1,"g":10,"t":1},"skills":["זריקה משופעת"]},{"id":"W04-S05","w":"W04","title":"מכונית השיפוע האדום","family":"acceleration","story":"מכונית ניסוי מאיצה ואז מקבלת פקודה לבלום.","objective":"שרטט לעצמך את סימן התאוצה והמהירות.","difficulty":2,"params":{"v0":3,"a":1.75,"t":4},"skills":["תאוצה חיובית"]},{"id":"W04-S06","w":"W04","title":"משגר המרפסת","family":"projectile","story":"קופסת מצנחים יוצאת באופק ממגדל בגובה משתנה.","objective":"בדוק השפעת הגובה על הזמן ועל הטווח.","difficulty":3,"params":{"v0":11,"angle":0,"h":8,"g":10,"t":1},"skills":["זריקה אופקית"]},{"id":"W04-S07","w":"W04","title":"שיגור ברוח דמיונית","family":"projectile","story":"מסלול עף לנקודה רחוקה; הכוח של הרוח אינו כלול במודל הראשוני.","objective":"ראה מה המודל יודע ומה צריך להוסיף כדי למדל רוח.","difficulty":3,"params":{"v0":20,"angle":55,"h":0,"g":10,"t":2},"skills":["הנחות מודל"]},{"id":"W05-S01","w":"W05","title":"השביל שמסרב להחליק","family":"incline","story":"הדמות עומדת על רמפה מחוספסת שמשנים את זוויתה באיטיות.","objective":"מצא את הזווית הראשונה שבה חיכוך סטטי כבר לא מספיק.","difficulty":1,"params":{"m":3,"angle":20,"muS":0.45,"muK":0.3,"F":0,"v0":0,"g":10},"skills":["סף החלקה"]},{"id":"W05-S02","w":"W05","title":"העלייה עם תרמיל","family":"incline","story":"יצור שנע במעלה מדרון עדיין חווה משיכה וכוח חיכוך כלפי מטה.","objective":"בדוק למה התאוצה אינה חייבת להיות בכיוון התנועה.","difficulty":1,"params":{"m":3,"angle":27,"muS":0.48,"muK":0.28,"F":0,"v0":4,"g":10},"skills":["כיוון חיכוך"]},{"id":"W05-S03","w":"W05","title":"מלכודת החול והקרח","family":"incline","story":"רמפה מחליפה בין מקטע מחוספס לכמעט חלק והמנוע נדרש להגיב מיד.","objective":"השווה בין שני מקדמי חיכוך.","difficulty":2,"params":{"m":3,"angle":32,"muS":0.7,"muK":0.44,"F":0,"v0":0,"g":10},"skills":["חיכוך קינטי"]},{"id":"W05-S04","w":"W05","title":"המנוף עם השק התלוי","family":"pulley","story":"שק תלוי בצד השני של גלגלת מושך דמות שנמצאת על מדרון.","objective":"מצא מי יגבר כאשר מגדילים את מסת השק.","difficulty":2,"params":{"mA":4,"mB":2.5,"angle":38,"muS":0.42,"muK":0.25,"g":10},"skills":["מערכת גופים","מתיחות"]},{"id":"W05-S05","w":"W05","title":"משיכה למעלה","family":"incline","story":"כלב־רובוט מושך חבל במעלה רמפה והדמות בודקת אם תזוז.","objective":"כוון כוח בדיוק בסף התזוזה.","difficulty":2,"params":{"m":3,"angle":19,"muS":0.55,"muK":0.31,"F":8,"v0":0,"g":10},"skills":["חוק שני"]},{"id":"W05-S06","w":"W05","title":"מחסום הבלמים הנע","family":"incline","story":"הדמות מתחילה במהירות מטה ונמשכת בכוח עולה.","objective":"הבחן בין סימן מהירות לבין כיוון התאוצה.","difficulty":3,"params":{"m":3,"angle":16,"muS":0.35,"muK":0.22,"F":30,"v0":-3,"g":10},"skills":["חיכוך בזמן תנועה"]},{"id":"W05-S07","w":"W05","title":"מבחן החבל הרופף","family":"pulley","story":"שני גופים מחוברים אבל יש מצבים שבהם המתח התיאורטי של החוט אינו מציאותי.","objective":"בדוק כיצד תנאי החוט משפיעים על הפתרון.","difficulty":3,"params":{"mA":2,"mB":1,"angle":12,"muS":0.3,"muK":0.2,"g":10},"skills":["אידאליזציה"]},{"id":"W06-S01","w":"W06","title":"מיטת הענן","family":"spring","story":"מיטת קפיץ דוחפת את הדמות כשהיא מכווצת.","objective":"ראה מדוע הכוח משנה כיוון כשעוברים דרך האפס.","difficulty":1,"params":{"k":80,"x":-0.35,"m":2},"skills":["חוק הוק"]},{"id":"W06-S02","w":"W06","title":"דלת הקשתות","family":"spring","story":"קפיץ מותח קשת בטיחות ואסור להעמיס עליה יותר מדי.","objective":"שנה את הקשיחות כדי לשמור על כוח בטווח בטוח.","difficulty":1,"params":{"k":130,"x":0.2,"m":2},"skills":["קשיחות"]},{"id":"W06-S03","w":"W06","title":"הקפיץ הזעיר","family":"spring","story":"מכשיר מדידה משווה הארכה קצרה בארבע קפיצים שונים.","objective":"מצא איך אפשר לחשב k באמצעות יחס בין כוח להארכה.","difficulty":2,"params":{"k":45,"x":0.14,"m":2},"skills":["גרף כוח־העתק"]},{"id":"W06-S04","w":"W06","title":"מגלשת קפיץ אנרגטית","family":"capstone","story":"הדמות יוצאת מראש מדרון, מגיעה בתחתית למעצור קפיצי ונעצרת.","objective":"התאם את הקשיחות לכיווץ הרצוי.","difficulty":2,"params":{"m":2,"angle":25,"d":3,"mu":0.12,"k":100,"v0":2,"g":10},"skills":["אנרגיה אלסטית"]},{"id":"W06-S05","w":"W06","title":"המשקל שמותח","family":"spring","story":"יצור נושא משקולת התלויה לקפיץ ומחפש תנוחת איזון.","objective":"התאם בין mg לבין kx במצב שיווי משקל.","difficulty":2,"params":{"k":60,"x":0.5,"m":3},"skills":["שיווי משקל"]},{"id":"W06-S06","w":"W06","title":"מגן האלסטיות","family":"spring","story":"כרית אלסטית מוצגת לפני ניסיון הנחתת כדור קטן.","objective":"השווה כוח ואנרגיה עבור שתי הארכות שונות.","difficulty":3,"params":{"k":90,"x":-0.5,"m":2},"skills":["אנרגיה"]},{"id":"W06-S07","w":"W06","title":"תזמורת הקפיצים","family":"oscillator","story":"הקפיץ גורם לתנועה חוזרת ויצור קטן מנסה לרקוד בקצב.","objective":"הבחן כיצד המסה משנה את זמן המחזור.","difficulty":3,"params":{"m":1,"k":80,"A":0.2,"t":0.3,"phase":0},"skills":["העשרה","מחזור"]},{"id":"W07-S01","w":"W07","title":"ארנק הגובה","family":"energy","story":"היצור אוסף אנרגיית גובה בגבעה ולאחר מכן יוצא למסלול נמוך.","objective":"חשב מה נשאר במעבר לגובה נמוך.","difficulty":1,"params":{"m":2,"v0":0,"h":4,"mu":0,"d":2,"g":10},"skills":["אנרגיה פוטנציאלית"]},{"id":"W07-S02","w":"W07","title":"מנהרת השטיח","family":"energy","story":"הדמות גולשת מחלק גבוה לרצועת בד שמחממת את האוויר.","objective":"בחר חיכוך שמאפשר להגיע למטרה עם אנרגיה סופית חיובית.","difficulty":1,"params":{"m":3,"v0":4,"h":3,"mu":0.28,"d":5,"g":10},"skills":["עבודת חיכוך"]},{"id":"W07-S03","w":"W07","title":"גלגל התאוצה החבוי","family":"acceleration","story":"מד מהירות מראה שינוי רגעי; מנסים לתרגם אותו לאנרגיה קינטית.","objective":"השווה בין הכפלת מהירות להכפלת אנרגיה.","difficulty":2,"params":{"v0":2,"a":2,"t":3},"skills":["קשר v²"]},{"id":"W07-S04","w":"W07","title":"מדרון בלי מנוע","family":"capstone","story":"קפיץ בקצה מחלץ מהדמות את האנרגיה שנותרה אחרי ירידה מחוספסת.","objective":"מצא מה יקרה אם מאריכים את המדרון.","difficulty":2,"params":{"m":2,"angle":40,"d":4,"mu":0.08,"k":160,"v0":2,"g":10},"skills":["שימור אנרגיה"]},{"id":"W07-S05","w":"W07","title":"שקע מהירות אפס","family":"energy","story":"מערכת דורשת שהדמות תיעצר בדיוק בתחילת רצועת החול.","objective":"מצא את אורך הרצועה שיאפשר עצירה.","difficulty":2,"params":{"m":2,"v0":7,"h":0,"mu":0.4,"d":4,"g":10},"skills":["עבודה שלילית"]},{"id":"W07-S06","w":"W07","title":"בריכת רווח והפסד","family":"energy","story":"מסוע נושא כדור קל מול חריץ בו האנרגיה מתפזרת לחום.","objective":"כמת את האנרגיה שנעלמת מהאנרגיה המכאנית.","difficulty":3,"params":{"m":1.5,"v0":6,"h":1,"mu":0.18,"d":7,"g":10},"skills":["חום וחיכוך"]},{"id":"W07-S07","w":"W07","title":"קופת החיסכון של הקפיץ","family":"spring","story":"הדמות מפקידה אנרגיה בכיווץ קטן של קפיץ ומשווה לכיווץ כפול.","objective":"גלה למה הכפלת x מגדילה E פי ארבעה.","difficulty":3,"params":{"k":95,"x":-0.3,"m":2},"skills":["E=1/2kx²"]},{"id":"W08-S01","w":"W08","title":"הקרוסלה המהירה","family":"circle","story":"הדמות אוחזת בידית של קרוסלה; שינוי רדיוס מחייב כוח שונה.","objective":"הגדל מהירות בלי לחרוג מסף החיכוך.","difficulty":1,"params":{"m":1.5,"r":2.5,"v":3,"mu":0.65,"g":10},"skills":["תאוצה מרכזית"]},{"id":"W08-S02","w":"W08","title":"קערת הסיבוב","family":"circle","story":"כדור זעיר נע על משטח מסתובב והחיכוך מחזיק אותו במעגל.","objective":"מצא מהירות מרבית לפני שהכדור יחליק.","difficulty":1,"params":{"m":0.5,"r":1.5,"v":4,"mu":0.45,"g":10},"skills":["תפקיד החיכוך"]},{"id":"W08-S03","w":"W08","title":"עיקול נוטה","family":"bank","story":"מסלול מרוץ בנוי בזווית כך שגם ללא חיכוך יש מהירות מתאימה.","objective":"מצא מהירות מסלול אידיאלית.","difficulty":2,"params":{"r":24,"angle":25,"g":10},"skills":["מסלול מוגבה"]},{"id":"W08-S04","w":"W08","title":"הטבעת האנכית","family":"loop","story":"יצור גולש בלולאה; בפסגה עלול לאבד מגע.","objective":"מצא את המהירות המינימלית בפסגת הלולאה.","difficulty":2,"params":{"m":2,"r":2,"vTop":6,"g":10},"skills":["תנאי מגע"]},{"id":"W08-S05","w":"W08","title":"השעון המסתובב","family":"circle","story":"היצור סופר הקפות ומנסה למדוד את המחזור ממהירות ורדיוס.","objective":"בדוק כיצד מהירות כפולה משפיעה על המחזור.","difficulty":2,"params":{"m":0.5,"r":3,"v":2,"mu":0.6,"g":10},"skills":["מחזור ותדירות"]},{"id":"W08-S06","w":"W08","title":"אופניים בסיבוב","family":"bank","story":"מסלול מקוצר בפארק מכיל פנייה בנויה בזווית משתנה.","objective":"קבע את הזווית הדרושה לקצב הנבחר.","difficulty":3,"params":{"r":11,"angle":14,"g":10},"skills":["כוח נורמלי"]},{"id":"W08-S07","w":"W08","title":"הריקוד במעגל הקטן","family":"circle","story":"שני רדיוסים אפשריים; הדמות צריכה להשוות כוח מרכזי הנדרש.","objective":"הגדל רדיוס בלי לשנות מהירות ועקוב אחרי הכוח.","difficulty":3,"params":{"m":3,"r":1,"v":4,"mu":0.9,"g":10},"skills":["v²/r"]},{"id":"W09-S01","w":"W09","title":"כרית העצירה","family":"impulse","story":"כדור קטן נוחת על כרית רכה שהזמן בו היא נלחצת משתנה.","objective":"הקטן את הכוח הממוצע בלי לשנות את שינוי התנע.","difficulty":1,"params":{"m":1.5,"v0":8,"v1":0,"dt":0.5},"skills":["מתקף"]},{"id":"W09-S02","w":"W09","title":"שתי עגלות ושלום","family":"collision","story":"שתי עגלות פוגשות זו את זו ומופרדות על ידי קפיץ קשיח.","objective":"הבחן בין שמירת תנע לבין שמירת אנרגיה קינטית.","difficulty":1,"params":{"m1":1,"m2":4,"u1":5,"u2":-1,"e":1},"skills":["התנגשות אלסטית"]},{"id":"W09-S03","w":"W09","title":"כדורי הקלקר","family":"collision","story":"כדורים נצמדים אחרי מפגש באמצעות סקוץ׳.","objective":"הפוך התנגשות לא־אלסטית לחלוטין וראה כמה אנרגיה התפזרה.","difficulty":2,"params":{"m1":2,"m2":5,"u1":6,"u2":0,"e":0},"skills":["התנגשות פלסטית"]},{"id":"W09-S04","w":"W09","title":"דחיפה בלי קרקע","family":"recoil","story":"שני יצורים על משטח חסר חיכוך דוחפים זה את זה ומתרחקים.","objective":"נבא את יחס המהירויות לפי יחס המסות.","difficulty":2,"params":{"m1":1,"m2":3,"v1":8},"skills":["רתע"]},{"id":"W09-S05","w":"W09","title":"פעמון שתי הפגיעות","family":"impulse","story":"הדמות מקישה בפעמון וכדור חוזר לאחור במקום לעצור.","objective":"גלה למה שינוי כיוון יכול להגדיל את המתקף.","difficulty":2,"params":{"m":0.7,"v0":6,"v1":-3,"dt":0.12},"skills":["כיוון תנע"]},{"id":"W09-S06","w":"W09","title":"מפגש באמצע המסוע","family":"collision","story":"עגלות מתקדמות לאותו צד אך המהירה משיגה את האטית.","objective":"כוון מקדם החזרה והבחן כיצד מהירויות סופיות משתנות.","difficulty":3,"params":{"m1":3,"m2":2,"u1":8,"u2":2,"e":0.45},"skills":["מהירות יחסית"]},{"id":"W09-S07","w":"W09","title":"קפיצת רציף החלל","family":"recoil","story":"תרמיל קטן נזרק מכיסא חסר חיכוך וגורם לרתע בכיוון ההפוך.","objective":"מצא מהירות רתע עבור המסות הנתונות.","difficulty":3,"params":{"m1":0.5,"m2":5,"v1":10},"skills":["תנע נשמר"]},{"id":"W10-S01","w":"W10","title":"חיפוש כוכב־בית","family":"gravity","story":"הדמות בוחרת מרחק ממוקד של כוכב כדי לקבל כבידה עדינה יותר.","objective":"חקור את התלות בריבוע המרחק.","difficulty":1,"params":{"M":5e+24,"r":9000000.0,"m":1.5},"skills":["חוק הכבידה"]},{"id":"W10-S02","w":"W10","title":"תחנת המסלול הנמוך","family":"gravity","story":"תחנת חלל קטנה נדרשת למהירות משיקית מתאימה במסלול מעגלי.","objective":"השווה מהירות מסלול למהירות בריחה.","difficulty":1,"params":{"M":5.97e+24,"r":7200000.0,"m":1},"skills":["תנועה במסלול"]},{"id":"W10-S03","w":"W10","title":"כוכב הגומי","family":"vertical","story":"פלאנטה דמיונית בעלת כבידה חלשה מאפשרת לישות לקפוץ גבוה.","objective":"השווה גובה שיא כאשר g קטן.","difficulty":2,"params":{"v0":11,"g":3.2,"h":0,"t":2},"skills":["g ותנועה אנכית"]},{"id":"W10-S04","w":"W10","title":"לוויין בגובה אחר","family":"gravity","story":"אותו לוויין נשלח למסלול אחר, וצריך להבין מה יקרה לזמן ההקפה.","objective":"שנה רק את המרחק ממרכז הכוכב.","difficulty":2,"params":{"M":4.5e+24,"r":13000000.0,"m":2},"skills":["חוק קפלר במעגל"]},{"id":"W10-S05","w":"W10","title":"מסלול רחוק במיוחד","family":"gravity","story":"מעבדה על לוויין מרוחק דורשת כוח קטן אך לא אפסי.","objective":"בדוק שגם מעבר לאטמוספרה כוח הכבידה אינו נעלם.","difficulty":2,"params":{"M":6.2e+24,"r":28000000.0,"m":1},"skills":["שדה כבידה"]},{"id":"W10-S06","w":"W10","title":"מד כוח פלנטרי","family":"gravity","story":"מאזני כוח מנסים לשקול דמות על גופים שונים בלי לשנות את המסה.","objective":"חקור ההבדל בין מסה למשקל.","difficulty":3,"params":{"M":2e+24,"r":8000000.0,"m":3},"skills":["משקל לעומת מסה"]},{"id":"W10-S07","w":"W10","title":"חדר ההימלטות","family":"gravity","story":"חללית נדרשת לצאת משדה כבידה בלי מנוע נוסף.","objective":"מצא מהירות בריחה בשינוי מרחק.","difficulty":3,"params":{"M":5.1e+24,"r":11000000.0,"m":1},"skills":["אנרגיה וכבידה"]},{"id":"W11-S01","w":"W11","title":"מטוטלת קפיץ מוזיקלית","family":"oscillator","story":"יצור קטן נע קדימה ואחורה במנגנון קפיץ אידאלי.","objective":"בדוק את השפעת המסה על המחזור.","difficulty":1,"params":{"m":1,"k":60,"A":0.25,"t":0.3,"phase":0},"skills":["תנודה"]},{"id":"W11-S02","w":"W11","title":"משרעת הענק","family":"oscillator","story":"הדמות זזה עד קצוות המסלול ונעצרת רגעית בכל קצה.","objective":"החלף משרעת בלי לשנות את זמן המחזור.","difficulty":1,"params":{"m":2,"k":90,"A":0.7,"t":0.3,"phase":0},"skills":["משרעת"]},{"id":"W11-S03","w":"W11","title":"נקודת האפס הנעלמת","family":"oscillator","story":"מסך סורק מבקש למצוא מתי הגוף עובר דרך האפס.","objective":"חקור מתי המהירות מקסימלית.","difficulty":2,"params":{"m":3,"k":50,"A":0.4,"t":0.4,"phase":0},"skills":["פאזה"]},{"id":"W11-S04","w":"W11","title":"מסלול הזמן המסתובב","family":"oscillator","story":"שני קפיצים שונים מניעים סמנים באותו קצב התחלתי.","objective":"שנה את k וראה איך התקופה משתנה.","difficulty":2,"params":{"m":4,"k":35,"A":0.3,"t":0.3,"phase":0},"skills":["זמן מחזור"]},{"id":"W11-S05","w":"W11","title":"שיא התאוצה","family":"oscillator","story":"הדמות מחפשת היכן התאוצה גדולה יותר: במרכז או בקצוות.","objective":"נסה להגיע לתאוצה מרבית בלי לשנות מסה.","difficulty":2,"params":{"m":1.5,"k":100,"A":0.45,"t":0.3,"phase":0},"skills":["a=-ω²x"]},{"id":"W11-S06","w":"W11","title":"אנרגיה שלא נעלמת","family":"oscillator","story":"המנגנון אידאלי ואינו מאבד אנרגיה לאורך המחזור.","objective":"בדוק מה נשאר קבוע כשמשנים את הזמן בלבד.","difficulty":3,"params":{"m":2,"k":70,"A":0.32,"t":1.1,"phase":0},"skills":["שימור אנרגיה"]},{"id":"W11-S07","w":"W11","title":"מופע התחלתי","family":"oscillator","story":"שני סמנים מתחילים ממקומות שונים למרות שזמן המחזור זהה.","objective":"שנה פאזה בלי לשנות את פרטי הקפיץ.","difficulty":3,"params":{"m":2,"k":75,"A":0.28,"t":0.3,"phase":1.57},"skills":["פאזה"]},{"id":"W12-S01","w":"W12","title":"המרדף ובלמי החירום","family":"acceleration","story":"שליח נכנס לחדר במהירות גבוהה ומאט כדי לעצור לפני דלת.","objective":"כייל את התאוטה ומצא אם ייעצר בתוך המרחק.","difficulty":1,"params":{"v0":10,"a":-3.5,"t":2},"skills":["גרף","דינמיקה"]},{"id":"W12-S02","w":"W12","title":"מדרון אל מעצור","family":"capstone","story":"יצור גולש במדרון חלקית מחוספס ונעצר בקפיץ בתחתית.","objective":"חשב את הכיווץ משילוב אנרגיה וחיכוך.","difficulty":1,"params":{"m":2,"angle":31,"d":5.5,"mu":0.18,"k":190,"v0":1,"g":10},"skills":["חיכוך","אנרגיה","קפיץ"]},{"id":"W12-S03","w":"W12","title":"שער התנגשויות כפול","family":"collision","story":"שתי עגלות נפגשות לפני שהן נכנסות למד האנרגיה.","objective":"בדוק מה תלוי בסוג ההתנגשות ומה נשמר בכל מצב.","difficulty":2,"params":{"m1":3,"m2":5,"u1":6,"u2":-1,"e":0.4},"skills":["תנע","אנרגיה"]},{"id":"W12-S04","w":"W12","title":"חבל מציל על מדרון","family":"pulley","story":"יצור מחובר לשק תלוי ומחפש שיווי משקל בדיוק לפני שגלישה מתחילה.","objective":"שנה מסה תלויה ואת החיכוך יחד.","difficulty":2,"params":{"mA":6,"mB":3.5,"angle":35,"muS":0.3,"muK":0.2,"g":10},"skills":["מערכת גופים"]},{"id":"W12-S05","w":"W12","title":"מסלול פנייה קריטי","family":"circle","story":"חוליה מתכננת סיבוב במהירות שהמשטח עדיין יכול לתמוך בה.","objective":"מצא גבול באמצעות שני יחסים: v²/r ו־μg.","difficulty":2,"params":{"m":2.5,"r":4,"v":5,"mu":0.5,"g":10},"skills":["חוק שני","מעגלי"]},{"id":"W12-S06","w":"W12","title":"החזרה אל המטרה","family":"projectile","story":"שליח עף בזווית ואז נפגש עם הקרקע בגובה נמוך יותר.","objective":"מצא זמן פגיעה וטווח בעזרת שתי משוואות מיקום.","difficulty":3,"params":{"v0":18,"angle":43,"h":4,"g":10,"t":1.2},"skills":["קינמטיקה דו־ממדית"]},{"id":"W12-S07","w":"W12","title":"כוכב קטן — קפיצה גדולה","family":"vertical","story":"הדמות ממריאה מכוכב דמיוני; משך הטיסה משתנה עם g.","objective":"השווה בין שיא ומשך כשמשנים תאוצת כובד.","difficulty":3,"params":{"v0":14,"g":4.2,"h":0,"t":1},"skills":["כבידה","תנועה"]}],"models":{"units":{"label":"כיול ומדידות","knobs":{"value":["קריאת מכשיר",1,700,1],"factor":["יחידות במטר",0.001,1,0.001]},"readouts":{"baseSI":"ערך ביחידות SI"}},"vectors":{"label":"הרכבת וקטורים","knobs":{"ax":["רכיב A אופקי",-10,10,0.5],"ay":["רכיב A אנכי",-10,10,0.5],"bx":["רכיב B אופקי",-10,10,0.5],"by":["רכיב B אנכי",-10,10,0.5]},"readouts":{"Rx":"שקול אופקי","Ry":"שקול אנכי","magnitude":"גודל השקול","angle":"כיוון (מעלות)"}},"uniform":{"label":"תנועה בקצב קבוע","knobs":{"x0":["נקודת התחלה (מ׳)",-20,20,1],"v":["מהירות (מ׳/ש׳)",-10,10,0.5],"t":["זמן (ש׳)",0,15,0.5]},"readouts":{"x":"מיקום (מ׳)","displacement":"העתק (מ׳)","distance":"דרך (מ׳)"}},"meeting":{"label":"מפגש ונקודת עקיפה","knobs":{"x1":["התחלה א׳",-10,10,1],"v1":["מהירות א׳",0,9,0.5],"x2":["התחלה ב׳",10,40,1],"v2":["מהירות ב׳",-8,4,0.5]},"readouts":{"tMeeting":"זמן מפגש (ש׳)","xMeeting":"מיקום מפגש (מ׳)"}},"acceleration":{"label":"האצה ובלימה","knobs":{"v0":["מהירות התחלתית",-6,12,0.5],"a":["תאוצה",-5,5,0.25],"t":["זמן",0,9,0.25]},"readouts":{"v":"מהירות רגעית","dx":"העתק","stoppingTime":"זמן עצירה אם יש"}},"vertical":{"label":"עלייה ונפילה","knobs":{"v0":["מהירות שיגור",0,24,1],"g":["תאוצת הכובד",1,15,0.5],"h":["גובה התחלתי",0,15,0.5],"t":["שניות מאז השיגור",0,6,0.25]},"readouts":{"y":"גובה נוכחי","v":"מהירות אנכית","tPeak":"זמן לשיא","maxY":"גובה שיא","tLand":"זמן פגיעה בקרקע"}},"projectile":{"label":"זריקה דו־ממדית","knobs":{"v0":["עוצמת שיגור",2,24,1],"angle":["זווית מעל האופק",0,85,1],"h":["גובה שיגור",0,15,0.5],"g":["כבידה",2,12,0.5],"t":["זמן",0,6,0.25]},"readouts":{"x":"מרחק אופקי","y":"גובה ברגע t","range":"טווח עד הקרקע","tLand":"זמן טיסה","maxY":"גובה מרבי"}},"incline":{"label":"מישור משופע וחיכוך","knobs":{"m":["מסת הדמות",0.5,10,0.5],"angle":["זווית שיפוע",0,70,1],"muS":["חיכוך סטטי",0,1,0.02],"muK":["חיכוך קינטי",0,0.9,0.02],"F":["כוח לאורך המדרון (מעלה חיובי)",-35,50,1],"v0":["מהירות התחלתית על המדרון",-5,5,0.5]},"readouts":{"N":"כוח נורמלי","friction":"כוח חיכוך לאורך המדרון","a":"תאוצה לאורך המדרון","mode":"מצב החיכוך","staticLimit":"סף חיכוך סטטי"}},"pulley":{"label":"חבלים וגלגלות","knobs":{"mA":["מסה על מדרון",1,8,0.5],"mB":["מסה תלויה",0.5,9,0.5],"angle":["זווית מדרון",0,65,1],"muS":["חיכוך סטטי",0,0.8,0.02],"muK":["חיכוך קינטי",0,0.8,0.02]},"readouts":{"a":"תאוצת הגופים","T":"מתיחות בחוט","mode":"מצב","N":"נורמל לגוף במדרון"}},"spring":{"label":"קפיץ ומאזני כוח","knobs":{"k":["קשיחות קפיץ (ניוטון/מ׳)",10,250,5],"x":["הארכה חתומה (מ׳)",-0.8,0.8,0.02],"m":["מסה מחוברת (ק״ג)",0.5,10,0.5]},"readouts":{"F":"כוח הקפיץ","E":"אנרגיה אלסטית","a":"תאוצה מחוק שני"}},"energy":{"label":"תקציב אנרגיה","knobs":{"m":["מסה",0.5,7,0.5],"v0":["מהירות התחלה",0,14,0.5],"h":["ירידת גובה",0,7,0.5],"mu":["חיכוך בקטע אופקי",0,0.7,0.02],"d":["אורך קטע מחוספס",0,16,0.5]},"readouts":{"initialE":"אנרגיה זמינה","heat":"אנרגיה שהופכת לחום","endV":"מהירות סיום אם מגיע","remainingE":"אנרגיה קינטית בסיום"}},"circle":{"label":"תנועה במסלול מעגלי","knobs":{"m":["מסה",0.2,7,0.1],"r":["רדיוס",0.5,9,0.25],"v":["מהירות משיקית",0,13,0.25],"mu":["חיכוך מקסימלי",0,1.2,0.05]},"readouts":{"aC":"תאוצה מרכזית","Fc":"כוח אל המרכז","period":"זמן הקפה","safeSpeed":"סף מהירות (חיכוך)"}},"bank":{"label":"עיקול מוגבה","knobs":{"r":["רדיוס הפנייה",2,55,1],"angle":["זווית ההגבהה",1,55,1],"g":["כבידה",1,12,0.5]},"readouts":{"idealV":"מהירות ללא צורך בחיכוך","idealKmh":"מהירות בקמ״ש"}},"loop":{"label":"לולאה אנכית","knobs":{"m":["מסה",0.5,7,0.5],"r":["רדיוס הלולאה",0.5,6,0.25],"vTop":["מהירות בפסגה",0,15,0.5]},"readouts":{"NTop":"נורמל בראש המעגל","minV":"מהירות מינימלית למגע בפסגה","contact":"האם יש מגע"}},"impulse":{"label":"מתקף ובלימת זעזועים","knobs":{"m":["מסה",0.5,9,0.5],"v0":["מהירות לפני",-8,12,0.5],"v1":["מהירות אחרי",-8,12,0.5],"dt":["זמן מגע",0.1,2,0.05]},"readouts":{"J":"מתקף (ניוטון·שנייה)","Favg":"כוח ממוצע (ניוטון)","deltaP":"שינוי בתנע"}},"collision":{"label":"התנגשויות","knobs":{"m1":["מסת גוף א׳",0.5,8,0.5],"m2":["מסת גוף ב׳",0.5,8,0.5],"u1":["מהירות א׳ לפני",-8,12,0.5],"u2":["מהירות ב׳ לפני",-8,12,0.5],"e":["מקדם החזרה",0,1,0.05]},"readouts":{"v1":"מהירות א׳ אחרי","v2":"מהירות ב׳ אחרי","pBefore":"תנע לפני","pAfter":"תנע אחרי","lostK":"אנרגיה קינטית שהתפזרה"}},"recoil":{"label":"הפרדה ורתע","knobs":{"m1":["מסת חלק א׳",0.5,8,0.5],"m2":["מסת חלק ב׳",0.5,8,0.5],"v1":["מהירות א׳ לאחר ההפרדה",-10,10,0.5]},"readouts":{"v2":"מהירות ב׳","pTotal":"תנע כולל"}},"gravity":{"label":"כבידה ומסלולים","knobs":{"M":["מסת הכוכב (×10²⁴ ק״ג)",1e+24,9e+24,2.5e+23],"r":["מרחק ממרכז הכוכב (מ׳)",6500000.0,32000000.0,500000.0],"m":["מסת גוף קטן",0.5,5,0.5]},"readouts":{"g":"שדה כבידה","F":"כוח כבידה","vOrbit":"מהירות מסלול מעגלי","vEscape":"מהירות בריחה","period":"זמן הקפה"}},"oscillator":{"label":"תנודה הרמונית — העשרה","knobs":{"m":["מסה",0.5,8,0.5],"k":["קשיחות",10,180,5],"A":["משרעת (מ׳)",0.05,0.9,0.05],"t":["זמן",0,9,0.1],"phase":["פאזה התחלתית",0,6.28,0.1]},"readouts":{"period":"מחזור","x":"מיקום","v":"מהירות","a":"תאוצה","E":"אנרגיה כוללת"}},"capstone":{"label":"מסלול משולב","knobs":{"m":["מסה",0.5,8,0.5],"angle":["זווית מדרון",10,65,1],"d":["אורך מדרון (מ׳)",1,10,0.5],"mu":["חיכוך במדרון",0,0.6,0.02],"k":["קשיחות מעצור קפיצי",25,300,5],"v0":["מהירות התחלתית",0,10,0.5]},"readouts":{"energyAtBottom":"אנרגיה בסוף המדרון","endV":"מהירות בתחתית","compression":"כיווץ מעצור הקפיץ","status":"האם מגיע לתחתית"}}}};
+
+// ======================================================================
+//  "עולמות המכניקה": what is checked in each of the 84 situations.
+//  Content (titles, stories, objectives, start values) comes from the pack
+//  (WORLDS_DATA). The pack's four missions per situation are templates; here
+//  each one gets a real check:
+//   M1 תחזית  – chosen and locked BEFORE the run, decided by the run
+//   M2 ניסוי  – a goal of this situation, reached by changing values and running
+//   M3 הסבר   – a reasoning question, open after at least one run
+//   M4 העברה  – a new condition: compute, then the run with it confirms
+//  Every right answer is computed at run time by WorldPhys. Pure logic, no DOM.
+// ======================================================================
+const WorldScenes = (() => {
+  "use strict";
+  const W = (typeof WorldPhys !== "undefined") ? WorldPhys : require("./worlds-engine.js");
+  const D = (typeof WORLDS_DATA !== "undefined") ? WORLDS_DATA : require("./worlds-data.js");
+  const { evaluate } = W;
+  const rad = (d) => d * Math.PI / 180, sgn = (x, e = 1e-9) => (x > e ? 1 : x < -e ? -1 : 0);
+  const f2 = (x, d = 2) => (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d);
+  const inR = (x, lo, hi) => x !== null && x !== undefined && x >= lo - 1e-9 && x <= hi + 1e-9;
+
+  // which existing physics topic each family feeds (the topic meters of the game)
+  const TOPIC_OF = { units: "motion", vectors: "motion", uniform: "motion", meeting: "motion", acceleration: "motion", vertical: "projectiles", projectile: "projectiles",
+    incline: "newton", pulley: "newton", spring: "springs", oscillator: "springs", energy: "energy", capstone: "energy", circle: "circular", bank: "circular", loop: "circular",
+    impulse: "momentum", collision: "momentum", recoil: "momentum", gravity: "gravitation" };
+  const ICON_OF_FAMILY = { units: "ruler", vectors: "arrows", uniform: "belt", meeting: "meet", acceleration: "brake", vertical: "drop", projectile: "arc", incline: "ramp", pulley: "pulley", spring: "spring",
+    energy: "energy", circle: "carousel", bank: "bank", loop: "loop", impulse: "cushion", collision: "carts", recoil: "recoil", gravity: "orbit", oscillator: "wave", capstone: "slide" };
+
+  // extra knobs some machines need to be playable (the pack's calculators have no speed for them)
+  const EXTRA_KNOBS = {
+    bank: { v: ["מהירות הרכב (מ׳/ש׳)", 1, 40, 0.5] },
+    gravity: { vf: ["מהירות שיגור ÷ מהירות מסלול", 0.4, 1.6, 0.01] }
+  };
+  const EXTRA_DEFAULTS = { bank: { v: 12 }, gravity: { vf: 1 } };
+
+  // ---------------- per-situation setup: start values, machine options, the M2 goal ----------------
+  // goal kinds:  win(key, lo, hi, also)  one run whose result lies in a window
+  //              cond(fn)                one run that satisfies fn(run)
+  //              pair(keys, fn)          two runs that differ ONLY in these knobs, fn(a, b)
+  const win = (key, lo, hi, also, text) => ({ kind: "one", text, check: (r) => inR(r.ev[key], lo, hi) && (!also || also(r)) });
+  const cond = (fn, text) => ({ kind: "one", text, check: fn });
+  const pair = (keys, fn, text) => ({ kind: "pair", keys, text, check: fn });
+  const ev = (r, k) => r.ev[k];
+  const has = (r, type) => r.events.includes(type);
+
+  const SETUP = {
+    // W01 סדנת המדידה
+    "W01-S01": { start: { factor: 1 }, gap: 2.6, unitText: "אורך הגשר", unitSI: "m", goal: win("baseSI", 2.6 * 0.99, 2.6 * 1.01, null, "קרש באורך 2.6 m בדיוק (±1%)") },
+    "W01-S02": { goal: cond((r) => Math.abs(((ev(r, "angle") - 135 + 540) % 360) - 180) <= 5 && ev(r, "magnitude") >= 2, "השקול מצביע אל שולחן העבודה: 135° (±5°), באורך 2 לפחות") },
+    "W01-S03": { start: { factor: 1 }, gap: 0.43, unitText: "הזמן עד שהדלת נסגרת", unitSI: "s", goal: win("baseSI", 0.43 * 0.99, 0.43 * 1.01, null, "זמן של 0.43 s בדיוק (±1%)") },
+    "W01-S04": { goal: cond((r) => ev(r, "x") < 0 && ev(r, "displacement") > 0, "מסיימים במיקום שלילי, אבל עם העתק חיובי") },
+    "W01-S05": { goal: win("magnitude", 0, 0.3, null, "שקול כמעט אפס: |R| ≤ 0.3") },
+    "W01-S06": { start: { factor: 1 }, gap: 0.48, unitText: "גובה הפלטפורמה", unitSI: "m", goal: win("baseSI", 0.48 * 0.99, 0.48 * 1.01, null, "גובה 0.48 m בדיוק (±1%)") },
+    "W01-S07": { goal: cond((r) => Math.abs(ev(r, "Rx") - 1) <= 0.01 && Math.abs(ev(r, "Ry") + 1) <= 0.01, "שקול עם רכיבים Rx = 1, Ry = −1 בדיוק") },
+    // W02 יער החצים
+    "W02-S01": { goal: cond((r) => Math.abs(ev(r, "Ry")) <= 0.25 && ev(r, "Rx") >= 3, "העלה טס ישר: |Ry| ≤ 0.25 ו-Rx ≥ 3") },
+    "W02-S02": { goal: cond((r) => Math.abs(ev(r, "Rx")) <= 0.25 && ev(r, "Ry") >= 4, "בלי סחף לצד (|Rx| ≤ 0.25) ועדיין עולה (Ry ≥ 4)") },
+    "W02-S03": { goal: cond((r) => Math.abs(r.P.angle - 45) <= 0.5 && r.P.h === 0, "מהירות אופקית ואנכית שוות בהתחלה, מהקרקע") },
+    "W02-S04": { goal: cond((r) => r.end.mode === "static" && Math.abs(r.P.F - r.P.m * r.P.g * Math.sin(rad(r.P.angle))) <= 0.6, "הגוף במנוחה עם חיכוך אפס: F שווה לרכיב המשקל במורד") },
+    "W02-S05": { goal: pair(null, (a, b) => oneKnob(a, b) && Math.abs(ev(a, "magnitude") - ev(b, "magnitude")) > 0.5, "שתי הרצות שנבדלות ברכיב אחד בלבד, ושקול שונה") },
+    "W02-S06": { goal: cond((r) => r.P.v < 0 && ev(r, "distance") >= 6, "מהירות שלילית שעוברת דרך של 6 m לפחות") },
+    "W02-S07": { goal: win("magnitude", 0, 0.5, null, "|R| ≤ 0.5") },
+    // W03 עיר הזמנים
+    "W03-S01": { goal: cond((r) => inR(ev(r, "xMeeting"), 10, 14), "המפגש בתחנה: בין 10 ל-14 m") },
+    "W03-S02": { target: 4, goal: cond((r) => Math.abs(ev(r, "x") - 4) <= 0.25, "היצור עוצר על הסמן: x = 4 m (±0.25)") },
+    "W03-S03": { goal: cond((r) => r.P.v2 > 0 && r.P.v1 > r.P.v2 && inR(ev(r, "tMeeting"), 0, 6), "המהיר משיג את האיטי (שניהם קדימה) תוך 6 s") },
+    "W03-S04": { goal: cond((r) => Math.abs(ev(r, "displacement") - 6) <= 0.1, "העתק של 6 m בדיוק") },
+    "W03-S05": { goal: cond((r) => inR(ev(r, "xMeeting"), 14, 16), "נפגשים על הפס האדום: 14–16 m") },
+    "W03-S06": { goal: cond((r) => r.P.v !== 0 && Math.abs(r.P.t - (-r.P.x0 / r.P.v)) <= 0.25 && has(r, "zero"), "קבע את t לרגע חציית האפס (±0.25 s)") },
+    "W03-S07": { start: { v1: 3 }, goal: cond((r) => ev(r, "tMeeting") === null && r.P.v1 >= 1 && r.P.v2 > 0, "בלי מפגש, ושניהם עדיין נוסעים קדימה") },
+    // W04 פארק התאוצה
+    "W04-S01": { brake: true, goal: cond((r) => Math.abs(r.P.t - stopT(r.P)) <= 0.15 && r.end.v === 0, "קבע את t לזמן העצירה בדיוק (±0.15 s)") },
+    "W04-S02": { goal: cond((r) => r.P.h > 0 && Math.abs(r.P.t - ev(r, "tLand")) <= 0.1, "קבע את t לרגע הנחיתה (±0.1 s)") },
+    "W04-S03": { goal: cond((r) => r.P.v0 >= 10 && Math.abs(r.P.t - ev(r, "tPeak")) <= 0.1, "v₀ ≥ 10, ו-t ברגע השיא (±0.1 s)") },
+    "W04-S04": { target: [18, 19], goal: win("range", 18, 19, null, "פגיעה בקשת: טווח 18–19 m") },
+    "W04-S05": { goal: cond((r) => r.P.v0 < 0 && r.P.a < 0, "מהירות שלילית ותאוצה שלילית: מאיצה, לא מאטה") },
+    "W04-S06": { goal: pair(["h"], (a, b) => a.P.angle === 0 && Math.max(a.P.h, b.P.h) >= 2 * Math.min(a.P.h, b.P.h) && Math.min(a.P.h, b.P.h) > 0, "שיגור אופקי משני גבהים (פי 2 לפחות), כל השאר זהה") },
+    "W04-S07": { goal: cond((r) => Math.abs(r.P.angle - 45) <= 0.5 && r.P.h === 0, "הטווח המרבי בלי רוח: 45° מהקרקע") },
+    // W05 מצוקי החיכוך (the full chapter is "הרפתקאות על המדרון")
+    "W05-S01": { goal: cond((r) => r.moved && r.P.F === 0 && r.P.v0 === 0 && r.P.angle <= Math.atan(r.P.muS) * 180 / Math.PI + 1.5, "החלקה ראשונה: זווית עד 1.5° מעל הסף") },
+    "W05-S02": { goal: cond((r) => r.P.v0 > 0 && has(r, "v_zero"), "שיגור במעלה עד עצירה: התאוצה במורד כל הזמן") },
+    "W05-S03": { goal: pair(["muK", "muS"], (a, b) => a.moved && b.moved && Math.abs(a.P.muK - b.P.muK) >= 0.1, "שתי החלקות שנבדלות רק בחיכוך (הפרש μk ≥ 0.1)") },
+    "W05-S04": { goal: cond((r) => r.moved && r.dir > 0 && r.P.mB <= upMin(r.P) + 0.5, "המסה הקטנה ביותר (עד 0.5 kg מעל הסף) שמעלה את הדמות") },
+    "W05-S05": { goal: cond((r) => !r.moved && r.P.v0 === 0 && r.P.F >= Fmax(r.P) - 0.6, "כוח שעוד מחזיק, עד 0.6 N מתחת לסף") },
+    "W05-S06": { goal: cond((r) => r.P.v0 < 0 && r.a0 > 0, "יורד (v < 0) ומאט: תאוצה חיובית") },
+    "W05-S07": { goal: cond((r) => !r.moved && r.P.mB >= 1.5, "מערכת במנוחה עם חבל מתוח ושק של 1.5 kg לפחות") },
+    // W06 מערת הקפיצים (the full spring lab is "קפיץ־קפוץ")
+    "W06-S01": { goal: pair(["x"], (a, b) => sgn(a.P.x) * sgn(b.P.x) < 0, "שחרור פעם ממתיחה ופעם מדחיסה") },
+    "W06-S02": { goal: cond((r) => Math.abs(ev(r, "F")) <= 15 && Math.abs(r.P.x) >= 0.3, "|F| ≤ 15 N גם במתיחה של 0.3 m לפחות") },
+    "W06-S03": { goal: cond((r) => Math.abs(Math.abs(ev(r, "F")) - 12) <= 0.3 && Math.abs(r.P.x) >= 0.2, "כוח של 12 N בדיוק, במתיחה של 0.2 m לפחות") },
+    "W06-S04": { goal: win("compression", 0.30, 0.33, null, "כיווץ של 30–33 cm") },
+    "W06-S05": { goal: cond((r) => Math.abs(Math.abs(ev(r, "F")) - r.P.m * 10) <= 0.3, "kx שווה ל-mg (±0.3 N)") },
+    "W06-S06": { goal: pair(["x"], (a, b) => Math.abs(Math.abs(b.P.x) - 2 * Math.abs(a.P.x)) <= 0.021 || Math.abs(Math.abs(a.P.x) - 2 * Math.abs(b.P.x)) <= 0.021, "שתי מתיחות, אחת כפולה מהשנייה") },
+    "W06-S07": { goal: pair(["m"], (a, b) => Math.max(a.P.m, b.P.m) >= 4 * Math.min(a.P.m, b.P.m) - 1e-9, "מסה פי 4, אותו קפיץ") },
+    // W07 בנק האנרגיה
+    "W07-S01": { goal: cond((r) => r.P.mu === 0 && Math.abs(ev(r, "endV") - 8) <= 0.15, "בלי חיכוך: מהירות סופית 8 m/s בדיוק") },
+    "W07-S02": { goal: cond((r) => inR(ev(r, "endV"), 0.01, 2), "עובר את הרצועה בקושי: מהירות סופית עד 2 m/s") },
+    "W07-S03": { goal: cond((r) => r.P.v0 > 0 && Math.abs(ev(r, "v") - 2 * r.P.v0) <= 0.1, "מהירות סופית כפולה מההתחלתית") },
+    "W07-S04": { goal: pair(["d"], (a, b) => (ev(a, "compression") - ev(b, "compression")) * (a.P.d - b.P.d) > 0, "מדרון ארוך יותר, כל השאר זהה") },
+    "W07-S05": { goal: cond((r) => ev(r, "endV") === 0 && r.P.d - ev(r, "stopDistance") <= 0.5, "עוצר על הרצועה, ברצועה הקצרה ביותר (עד 0.5 m עודף)") },
+    "W07-S06": { goal: cond((r) => ev(r, "endV") > 0 && inR(ev(r, "heat") / ev(r, "initialE"), 0.3, 0.6), "עובר, ובדרך 30%–60% מהאנרגיה הופכים לחום") },
+    "W07-S07": { goal: cond((r) => Math.abs(ev(r, "E") / (0.5 * r.P.k * 0.09) - 4) <= 0.12 && r.P.k === 95, "אנרגיה פי 4 מזו של x = 0.3 m, באותו קפיץ") },
+    // W08 קרקס המעגלים
+    "W08-S01": { goal: cond((r) => !has(r, "slip") && r.P.v >= 0.9 * ev(r, "safeSpeed"), "מהירות של 90% לפחות מהסף, ועדיין על המעגל") },
+    "W08-S02": { goal: cond((r) => !has(r, "slip") && r.P.v >= 0.95 * ev(r, "safeSpeed"), "95% לפחות מהמהירות המרבית, בלי להחליק") },
+    "W08-S03": { goal: cond((r) => Math.abs(r.P.v / ev(r, "idealV") - 1) <= 0.03, "המהירות האידיאלית (±3%)") },
+    "W08-S04": { goal: cond((r) => has(r, "full_loop") && r.P.vTop <= 1.1 * ev(r, "minV"), "הקפה שלמה עם vTop עד 10% מעל המינימום") },
+    "W08-S05": { goal: pair(["v"], (a, b) => !has(a, "slip") && !has(b, "slip") && Math.abs(Math.max(a.P.v, b.P.v) / Math.min(a.P.v, b.P.v) - 2) <= 0.03, "מהירות כפולה, אותו רדיוס, שתיהן על המעגל") },
+    "W08-S06": { start: { v: 12 }, goal: cond((r) => Math.abs(ev(r, "idealV") / r.P.v - 1) <= 0.03 && r.P.v === 12, "זווית שמתאימה ל-12 m/s (±3%)") },
+    "W08-S07": { goal: pair(["r"], (a, b) => !has(a, "slip") && !has(b, "slip"), "אותה מהירות, שני רדיוסים, שתיהן על המעגל") },
+    // W09 זירת ההתנגשויות
+    "W09-S01": { goal: cond((r) => r.P.v0 === 8 && r.P.v1 === 0 && r.P.m === 1.5 && Math.abs(ev(r, "Favg")) <= 12, "אותו שינוי תנע, כוח ממוצע עד 12 N") },
+    "W09-S02": { goal: pair(["e"], (a, b) => (a.P.e === 1 && b.P.e <= 0.5) || (b.P.e === 1 && a.P.e <= 0.5), "התנגשות אלסטית (e = 1) ואחת עם e ≤ 0.5") },
+    "W09-S03": { goal: cond((r) => r.P.e === 0 && r.P.u1 !== r.P.u2, "התנגשות פלסטית: e = 0") },
+    "W09-S04": { goal: cond((r) => Math.abs(Math.abs(ev(r, "v2") / r.P.v1) - 0.25) <= 0.01, "יחס מהירויות 1:4") },
+    "W09-S05": { goal: cond((r) => sgn(r.P.v1) === -sgn(r.P.v0) && Math.abs(ev(r, "J")) >= 1.5 * Math.abs(r.P.m * r.P.v0), "קפיצה חזרה: |J| ≥ 1.5·m|v₀|") },
+    "W09-S06": { goal: cond((r) => Math.abs(ev(r, "v1")) <= 0.15 && r.P.u1 > r.P.u2, "כוון e כך שהעגלה הראשונה נעצרת (|v₁| ≤ 0.15)") },
+    "W09-S07": { goal: cond((r) => inR(Math.abs(ev(r, "v2")), 0.9, 1.1), "מהירות רתע 0.9–1.1 m/s") },
+    // W10 פלנטריום הכבידה
+    "W10-S01": { goal: pair(["r"], (a, b) => Math.abs(Math.max(a.P.r, b.P.r) / Math.min(a.P.r, b.P.r) - 2) <= 0.03, "שני מרחקים, אחד כפול מהשני") },
+    "W10-S02": { goal: pair(["vf"], (a, b) => (has(a, "escape") && Math.abs(b.P.vf - 1) <= 0.01) || (has(b, "escape") && Math.abs(a.P.vf - 1) <= 0.01), "מסלול מעגלי (vf = 1) ובריחה") },
+    "W10-S03": { goal: pair(["g"], (a, b) => Math.max(a.P.g, b.P.g) >= 2 * Math.min(a.P.g, b.P.g), "אותו שיגור, g שונה פי 2 לפחות") },
+    "W10-S04": { goal: pair(["r"], (a, b) => Math.abs(a.P.r - b.P.r) >= 2e6, "רק המרחק משתנה (2000 km לפחות)") },
+    "W10-S05": { goal: cond((r) => r.P.r >= 25e6 && Math.abs(r.P.vf - 1) <= 0.01 && !has(r, "crash") && !has(r, "escape"), "מסלול מעגלי רחוק (r ≥ 25,000 km)") },
+    "W10-S06": { goal: pair(["m"], () => true, "שתי מסות, אותו מקום") },
+    "W10-S07": { goal: cond((r) => has(r, "escape") && r.P.vf <= 1.5 && r.P.r >= 15e6, "בריחה מ-15,000 km ומעלה, עם vf ≤ 1.5") },
+    // W11 גן התנודות (העשרה)
+    "W11-S01": { goal: pair(["m"], (a, b) => Math.max(a.P.m, b.P.m) >= 2 * Math.min(a.P.m, b.P.m), "מסה כפולה לפחות, אותו קפיץ") },
+    "W11-S02": { goal: pair(["A"], (a, b) => Math.max(a.P.A, b.P.A) >= 2 * Math.min(a.P.A, b.P.A), "משרעת כפולה לפחות, כל השאר זהה") },
+    "W11-S03": { goal: cond((r) => Math.abs(ev(r, "x")) <= 0.05 * r.P.A, "קבע t לרגע שבו x ≈ 0 (המהירות מרבית)") },
+    "W11-S04": { goal: pair(["k"], (a, b) => Math.max(a.P.k, b.P.k) >= 4 * Math.min(a.P.k, b.P.k) - 1e-9, "k פי 4, אותה מסה") },
+    "W11-S05": { goal: cond((r) => r.P.m === 1.5 && r.P.A * r.P.k / r.P.m >= 2 * 0.45 * 100 / 1.5, "תאוצה מרבית כפולה, בלי לשנות מסה") },
+    "W11-S06": { goal: pair(["t"], (a, b) => Math.abs(a.P.t - b.P.t) >= 0.5, "רק t משתנה") },
+    "W11-S07": { goal: pair(["phase"], (a, b) => Math.abs(a.P.phase - b.P.phase) >= 1, "רק הפאזה משתנה") },
+    // W12 מגדל הניסויים
+    "W12-S01": { brake: true, goal: cond((r) => inR(r.P.v0 * r.P.v0 / (2 * Math.abs(r.P.a)), 10, 12) && r.P.a < 0 && r.P.v0 > 0 && r.end.v === 0, "נעצר בין 10 ל-12 m") },
+    "W12-S02": { goal: win("compression", 0.40, 0.45, null, "כיווץ של 40–45 cm") },
+    "W12-S03": { goal: pair(["e"], (a, b) => Math.abs(a.P.e - b.P.e) >= 0.3, "אותם גופים, שני סוגי התנגשות (הפרש e ≥ 0.3)") },
+    "W12-S04": { goal: cond((r) => r.moved && inR(Math.abs(r.a0), 0.5, 1.5), "תנועה עם תאוצה של 0.5–1.5 m/s²") },
+    "W12-S05": { goal: cond((r) => !has(r, "slip") && r.P.v * r.P.v / r.P.r >= 0.9 * r.P.mu * 10, "v²/r בין 90% ל-100% מ-μg") },
+    "W12-S06": { goal: win("range", 25, 26, (r) => r.P.h === 4, "מגובה 4 m: פגיעה ב-25–26 m") },
+    "W12-S07": { goal: cond((r) => inR(ev(r, "maxY"), 20, 22), "גובה שיא 20–22 m") }
+  };
+  function oneKnob(a, b) { return Object.keys(a.P).filter((k) => a.P[k] !== b.P[k]).length === 1; }
+  const stopT = (P) => (P.v0 * P.a < 0 ? -P.v0 / P.a : Infinity);
+  const upMin = (P) => P.mA * Math.sin(rad(P.angle)) + P.muS * P.mA * Math.cos(rad(P.angle));            // kg of B for A to start up
+  const Fmax = (P) => P.m * P.g * (Math.sin(rad(P.angle)) + P.muS * Math.cos(rad(P.angle)));
+
+  // ---------------- family templates: prediction, explanation, transfer ----------------
+  const pct = (x) => Math.round(x * 100) + "%";
+  const FAM = {
+    units: {
+      pred: (P, s) => ({ q: `קריאה של ${P.value} כשכל יחידה = ${P.factor} m. ${s.setup.unitText} יצא…`, opts: ["קצר מהנדרש", "בדיוק", "ארוך מהנדרש"],
+        truth: (r) => { const L = r.ev.baseSI, g = s.setup.gap; return Math.abs(L - g) <= 0.01 * g ? 1 : L < g ? 0 : 2; } }),
+      why: { q: "למה צריך לכפול את הקריאה במקדם היחידה?", opts: ["כי המספר לבד לא אומר כמה: הוא תלוי ביחידה", "כי כך המספר גדל", "כי SI תמיד במילימטרים"], right: 0 },
+      xfer: (P) => ({ text: "אותו אורך נמדד עכשיו בסרגל שבו כל יחידה = 0.1 (דצימטרים). מה הקריאה?", change: { value: evaluate("units", P).baseSI / 0.1, factor: 0.1 }, field: { he: "קריאה", unit: "", value: (Q) => Q.value } })
+    },
+    vectors: {
+      pred: () => ({ q: "לאיזה רביע יצביע השקול?", opts: ["ימינה ולמעלה", "שמאלה ולמעלה", "שמאלה ולמטה", "ימינה ולמטה"],
+        truth: (r) => { const x = r.ev.Rx, y = r.ev.Ry; return x >= 0 && y >= 0 ? 0 : x < 0 && y >= 0 ? 1 : x < 0 ? 2 : 3; } }),
+      why: { q: "איך מקבלים את השקול?", opts: ["מחברים את הרכיבים: Rx = Ax + Bx ו-Ry = Ay + By", "מחברים את האורכים |A| + |B|", "לוקחים את הארוך מבין השניים"], right: 0 },
+      xfer: (P) => { const k = Math.max(Math.abs(P.bx), Math.abs(P.by)) * 2 <= 10 ? 2 : 0.5; return { text: `מכפילים את B ב-${k === 2 ? "2" : "½"} (שני הרכיבים). מה גודל השקול?`, change: { bx: k * P.bx, by: k * P.by }, field: { he: "|R|", unit: "", value: (Q) => evaluate("vectors", Q).magnitude } }; }
+    },
+    uniform: {
+      pred: () => ({ q: "בסוף הזמן, איפה היצור?", opts: ["מימין לאפס (x > 0)", "משמאל לאפס (x < 0)", "בדיוק באפס"], truth: (r) => (Math.abs(r.ev.x) < 1e-9 ? 2 : r.ev.x > 0 ? 0 : 1) }),
+      why: { q: "מה ההבדל בין העתק לדרך?", opts: ["העתק הוא x סופי פחות x התחלתי ויש לו סימן; דרך היא כמה הלכת, תמיד חיובית", "אין הבדל", "דרך יכולה להיות שלילית"], right: 0 },
+      xfer: (P) => ({ text: "אותה התחלה ואותו זמן, אבל המהירות בכיוון ההפוך. מה המיקום הסופי?", change: { v: -P.v }, field: { he: "x", unit: "m", value: (Q) => evaluate("uniform", Q).x } })
+    },
+    meeting: {
+      pred: (P) => ({ q: `ייפגשו? (אמצע הדרך: x = ${f2((P.x1 + P.x2) / 2, 1)} m)`, opts: ["כן, לפני האמצע", "כן, אחרי האמצע", "לא ייפגשו"],
+        truth: (r) => (r.ev.tMeeting === null ? 2 : r.ev.xMeeting < (r.P.x1 + r.P.x2) / 2 ? 0 : 1) }),
+      why: { q: "מה קובע את זמן המפגש?", opts: ["המרחק ההתחלתי חלקי מהירות ההתקרבות (v₁ − v₂)", "רק המהירות של המהיר", "סכום המיקומים"], right: 0 },
+      xfer: (P) => { const v1 = Math.max(P.v1, P.v2) + 2; return { text: `הראשון יוצא עכשיו במהירות ${f2(v1, 1)} m/s. מתי ייפגשו?`, change: { v1 }, field: { he: "t מפגש", unit: "s", value: (Q) => evaluate("meeting", Q).tMeeting } }; }
+    },
+    acceleration: {
+      pred: (P, s) => ({ q: s.setup.brake ? "בסוף הזמן הנבחר, הקרונית…" : "בסוף הזמן, גודל המהירות לעומת ההתחלה…", opts: s.setup.brake ? ["עדיין נוסעת", "עומדת"] : ["גדול יותר", "קטן יותר"],
+        truth: (r) => (s.setup.brake ? (r.end.v === 0 ? 1 : 0) : (Math.abs(r.end.v) > Math.abs(r.P.v0) ? 0 : 1)) }),
+      why: { q: "תאוצה שלילית תמיד מאטה?", opts: ["לא: היא מאטה רק כשהמהירות חיובית. עם מהירות שלילית היא מאיצה", "כן, תמיד", "רק אם a גדולה"], right: 0 },
+      xfer: (P, s) => ({ text: "אותה התחלה, חצי מהזמן. מה ההעתק?", change: { t: P.t / 2 }, field: { he: "Δx", unit: "m", value: (Q) => accDx(Q, s.setup.brake) } })
+    },
+    vertical: {
+      pred: (P) => ({ q: `ברגע t = ${f2(P.t, 2)} s הגוף…`, opts: ["עולה", "יורד", "כבר נחת"], truth: (r) => { const e = evaluate("vertical", r.P); return e.status === "נחת" ? 2 : e.v > 0 ? 0 : 1; } }),
+      why: { q: "בשיא הגובה…", opts: ["v = 0 אבל התאוצה עדיין g כלפי מטה", "גם v וגם a שווים לאפס", "התאוצה מתהפכת למעלה"], right: 0 },
+      xfer: (P) => ({ text: "אותו שיגור על כוכב שבו g קטן פי 2. מה גובה השיא?", change: { g: P.g / 2 }, field: { he: "גובה שיא", unit: "m", value: (Q) => evaluate("vertical", Q).maxY } })
+    },
+    projectile: {
+      pred: (P) => ({ q: "לעומת אותו שיגור ב-45°, הטווח כאן…", opts: ["ארוך יותר", "קצר יותר", "בערך אותו דבר"],
+        truth: (r) => { const a = r.ev.range, b = evaluate("projectile", { ...r.P, angle: 45 }).range; return Math.abs(a - b) <= 0.01 * b ? 2 : a > b ? 0 : 1; } }),
+      why: { q: "בלי גרר, מה קורה למהירות האופקית במעוף?", opts: ["קבועה: אין כוח אופקי", "קטנה כל הזמן", "גדלה כשהגוף נופל"], right: 0 },
+      xfer: (P) => ({ text: "מעלים את המשגר ב-5 m, כל השאר זהה. מה זמן המעוף?", change: { h: P.h + 5 }, field: { he: "זמן מעוף", unit: "s", value: (Q) => evaluate("projectile", Q).tLand } })
+    },
+    incline: {
+      pred: (P) => (P.v0 === 0 ? { q: "אחרי השחרור הגוף…", opts: ["עולה", "יורד", "נשאר במקום"], truth: (r) => (!r.moved ? 2 : r.dir > 0 ? 0 : 1) }
+        : { q: "אחרי שהוא ייעצר רגע…", opts: ["יישאר במקום", "יחליק חזרה", "לא ייעצר על המדרון"], truth: (r) => (!has(r, "v_zero") ? 2 : r.end.mode === "static" ? 0 : 1) }),
+      why: { q: "לאן מצביע חיכוך קינטי?", opts: ["נגד כיוון המהירות, גם אם התאוצה בכיוון אחר", "נגד כיוון התאוצה", "תמיד במעלה המדרון"], right: 0 },
+      xfer: (P) => ({ text: P.m * 2 <= 10 ? "אותו מדרון, מסה כפולה (הכוח F לא משתנה). מה התאוצה ברגע השחרור? (+ = במעלה)" : "אותו מדרון, חצי מסה (הכוח F לא משתנה). מה התאוצה ברגע השחרור? (+ = במעלה)", change: { m: P.m * 2 <= 10 ? P.m * 2 : P.m / 2 }, field: { he: "a", unit: "m/s²", value: (Q) => evaluate("incline", Q).a } })
+    },
+    pulley: {
+      pred: () => ({ q: "אחרי השחרור הדמות…", opts: ["עולה", "יורדת", "נשארת במנוחה"], truth: (r) => (!r.moved ? 2 : r.dir > 0 ? 0 : 1) }),
+      why: { q: "כשהשק יורד ומאיץ, המתיחות בחבל…", opts: ["קטנה מ-mB·g", "שווה ל-mB·g", "גדולה מ-mB·g"], right: 0 },
+      xfer: (P) => ({ text: "מוסיפים לשק 1 kg. מה התאוצה? (+ = הדמות עולה, 0 אם במנוחה)", change: { mB: P.mB + 1 }, field: { he: "a", unit: "m/s²", value: (Q) => evaluate("pulley", Q).a || 0 } })
+    },
+    spring: {
+      pred: () => ({ q: "ברגע השחרור, כוח הקפיץ על הגוף מצביע…", opts: ["ימינה (+)", "שמאלה (−)", "אין כוח"], truth: (r) => (Math.abs(r.ev.F) < 1e-9 ? 2 : r.ev.F > 0 ? 0 : 1) }),
+      why: { q: "מותחים פי 2. מה קורה?", opts: ["הכוח פי 2 והאנרגיה פי 4", "שניהם פי 2", "שניהם פי 4"], right: 0 },
+      xfer: (P) => { const k = P.k * 2 <= 250 ? 2 : 0.5; return { text: `קפיץ ${k === 2 ? "קשיח פי 2" : "רך פי 2"}, אותה מתיחה. מה הכוח? (+ = ימינה)`, change: { k: P.k * k }, field: { he: "F", unit: "N", value: (Q) => evaluate("spring", Q).F } }; }
+    },
+    energy: {
+      pred: () => ({ q: "הגוף יעבור את כל הרצועה המחוספסת?", opts: ["כן", "לא, ייעצר עליה"], truth: (r) => (r.ev.endV > 0 ? 0 : 1) }),
+      why: { q: "כמה אנרגיה החיכוך לוקח על הרצועה?", opts: ["μ·m·g·d, ולא יותר ממה שיש לגוף", "תמיד את כל האנרגיה", "תלוי רק בגובה"], right: 0 },
+      xfer: (P) => ({ text: "מחליקים את הרצועה: μ קטן פי 2. מה המהירות בסופה?", change: { mu: P.mu / 2 }, field: { he: "v בסוף", unit: "m/s", value: (Q) => evaluate("energy", Q).endV } })
+    },
+    circle: {
+      pred: () => ({ q: "במהירות הזו הגוף…", opts: ["נשאר על המעגל", "מחליק החוצה"], truth: (r) => (has(r, "slip") ? 1 : 0) }),
+      why: { q: "מה מחזיק את הגוף על המעגל במשטח אופקי?", opts: ["החיכוך הסטטי, שפונה למרכז", "כוח צנטריפוגלי החוצה", "הנורמל"], right: 0 },
+      xfer: (P) => ({ text: P.r * 2 <= 9 ? "אותה מהירות, רדיוס כפול. מה הכוח הדרוש למרכז?" : "אותה מהירות, חצי רדיוס. מה הכוח הדרוש למרכז?", change: { r: P.r * 2 <= 9 ? P.r * 2 : P.r / 2 }, field: { he: "F למרכז", unit: "N", value: (Q) => evaluate("circle", Q).Fc } })
+    },
+    bank: {
+      pred: () => ({ q: "בלי חיכוך, הרכב במהירות הזו…", opts: ["נשאר באותו גובה", "נסחף כלפי מעלה בעיקול", "מחליק כלפי מטה"], truth: (r) => (Math.abs(r.P.v / r.ev.idealV - 1) <= 0.03 ? 0 : r.P.v > r.ev.idealV ? 1 : 2) }),
+      why: { q: "מה מספק את הכוח למרכז בעיקול מוטה בלי חיכוך?", opts: ["הרכיב האופקי של הנורמל", "המשקל", "המנוע"], right: 0 },
+      xfer: (P) => { const a = Math.min(55, P.angle + 10); return { text: `מגדילים את ההטיה ל-${a}°. מה המהירות האידיאלית?`, change: { angle: a }, field: { he: "v אידיאלית", unit: "m/s", value: (Q) => evaluate("bank", Q).idealV } }; }
+    },
+    loop: {
+      pred: () => ({ q: "הכדור יקיף את כל הלולאה?", opts: ["כן", "לא, ינתק לפני הפסגה"], truth: (r) => (has(r, "full_loop") ? 0 : 1) }),
+      why: { q: "בפסגה, מה התנאי לשמירה על מגע?", opts: ["mv²/r ≥ mg, כי N לא יכול להיות שלילי", "v > 0 מספיק", "N = mg"], right: 0 },
+      xfer: (P) => ({ text: "לולאה ברדיוס כפול. מה המהירות המינימלית בפסגה?", change: { r: P.r * 2 }, field: { he: "v מינימלי", unit: "m/s", value: (Q) => evaluate("loop", Q).minV } })
+    },
+    impulse: {
+      pred: () => ({ q: "הכוח הממוצע של הכרית מצביע…", opts: ["בכיוון התנועה ההתחלתית", "נגד התנועה ההתחלתית", "אין כוח"], truth: (r) => (Math.abs(r.ev.Favg) < 1e-9 ? 2 : sgn(r.ev.Favg) === sgn(r.P.v0) ? 0 : 1) }),
+      why: { q: "כרית רכה מאריכה את זמן המגע. אז…", opts: ["אותו שינוי תנע, כוח ממוצע קטן יותר", "שינוי תנע קטן יותר", "כוח גדול יותר"], right: 0 },
+      xfer: (P) => ({ text: "זמן מגע כפול, אותן מהירויות. מה הכוח הממוצע?", change: { dt: P.dt * 2 }, field: { he: "F ממוצע", unit: "N", value: (Q) => evaluate("impulse", Q).Favg } })
+    },
+    collision: {
+      pred: () => ({ q: "אחרי ההתנגשות העגלה הראשונה…", opts: ["ממשיכה קדימה", "נעצרת", "חוזרת אחורה"], truth: (r) => (Math.abs(r.ev.v1) <= 0.05 ? 1 : r.ev.v1 > 0 ? 0 : 2) }),
+      why: { q: "מה נשמר תמיד בהתנגשות בין שתי העגלות?", opts: ["התנע הכולל. האנרגיה הקינטית רק אם e = 1", "האנרגיה הקינטית תמיד", "המהירות של כל עגלה"], right: 0 },
+      xfer: (P) => { const e = P.e < 1 ? 1 : 0; return { text: `אותן עגלות, עכשיו e = ${e}. מה מהירות העגלה השנייה אחרי?`, change: { e }, field: { he: "v₂", unit: "m/s", value: (Q) => evaluate("collision", Q).v2 } }; }
+    },
+    recoil: {
+      pred: (P) => ({ q: "אחרי הדחיפה, מי מהיר יותר?", opts: ["הקלה", "הכבדה", "שתיהן באותה מהירות"], truth: (r) => (r.P.m1 === r.P.m2 ? 2 : (r.P.m1 < r.P.m2) ? 0 : 1) }),
+      why: { q: "למה התנע הכולל נשאר אפס?", opts: ["התחילו במנוחה ואין כוח חיצוני אופקי", "כי המהירויות שוות", "כי הדחיפה קצרה"], right: 0 },
+      xfer: (P) => { const k = P.m2 * 2 <= 8 ? 2 : 0.5; return { text: `המסה השנייה ${k === 2 ? "כפולה" : "חצי"}. מה המהירות שלה?`, change: { m2: P.m2 * k }, field: { he: "v₂", unit: "m/s", value: (Q) => evaluate("recoil", Q).v2 } }; }
+    },
+    gravity: {
+      pred: (P) => ({ q: `שיגור במהירות ${f2(P.vf, 2)} × v מסלול: הלוויין…`, opts: ["מקיף במעגל", "מקיף באליפסה", "נופל לכוכב", "בורח"],
+        truth: (r) => (has(r, "crash") ? 2 : has(r, "escape") ? 3 : Math.abs(r.P.vf - 1) <= 0.01 ? 0 : 1) }),
+      why: { q: "במרחק כפול ממרכז הכוכב, g…", opts: ["קטן פי 4", "קטן פי 2", "לא משתנה"], right: 0 },
+      xfer: (P) => { const k = P.r * 2 <= 32e6 ? 2 : 0.5; return { text: `מרחק ${k === 2 ? "כפול" : "חצי"} ממרכז הכוכב. מה g שם?`, change: { r: P.r * k }, field: { he: "g", unit: "m/s²", value: (Q) => evaluate("gravity", Q).g } }; }
+    },
+    oscillator: {
+      pred: (P) => ({ q: `ברגע t = ${f2(P.t, 1)} s, המיקום x…`, opts: ["חיובי", "שלילי", "בערך 0"], truth: (r) => { const x = evaluate("oscillator", r.P).x; return Math.abs(x) <= 0.05 * r.P.A ? 2 : x > 0 ? 0 : 1; } }),
+      why: { q: "מה קובע את זמן המחזור?", opts: ["רק m ו-k: T = 2π√(m/k)", "גם המשרעת", "רק הפאזה"], right: 0 },
+      xfer: (P) => { const k = P.m * 4 <= 8 ? 4 : 0.25; return { text: `מסה ${k === 4 ? "פי 4" : "רבע"}, אותו קפיץ. מה זמן המחזור?`, change: { m: P.m * k }, field: { he: "T", unit: "s", value: (Q) => evaluate("oscillator", Q).period } }; }
+    },
+    capstone: {
+      pred: () => ({ q: "הגוף יגיע לקפיץ בתחתית?", opts: ["כן", "לא, ייעצר על המדרון"], truth: (r) => (has(r, "contact") ? 0 : 1) }),
+      why: { q: "איזו אנרגיה הקפיץ מקבל?", opts: ["מה שנשאר בתחתית: אנרגיית גובה ותנועה פחות החום במדרון", "כל אנרגיית הגובה", "רק האנרגיה הקינטית ההתחלתית"], right: 0 },
+      xfer: (P) => ({ text: "מאריכים את המדרון ב-2 m. מה הכיווץ המרבי?", change: { d: P.d + 2 }, field: { he: "כיווץ", unit: "m", value: (Q) => evaluate("capstone", Q).compression } })
+    }
+  };
+  function accDx(P, brake) { const tS = stopT(P); if (brake && P.t > tS) return P.v0 * tS + 0.5 * P.a * tS * tS; return P.v0 * P.t + 0.5 * P.a * P.t * P.t; }
+  // a few situations ask a sharper reasoning question than their family's
+  const WHY = {
+    "W01-S04": { q: "מיקום סופי שלילי אומר שההעתק שלילי?", opts: ["לא: ההעתק תלוי בשינוי, לא במיקום הסופי", "כן, תמיד", "רק אם המהירות שלילית"], right: 0 },
+    "W03-S07": { q: "מתי לא יהיה מפגש עתידי?", opts: ["כשהאחורי לא מהיר מהקדמי (v₁ ≤ v₂ כשהוא מאחור)", "כשהמרחק גדול", "אף פעם"], right: 0 },
+    "W04-S01": { q: "למה אסור להמשיך את v = v₀ + at אחרי העצירה?", opts: ["בלם לא דוחף אחורה: אחרי v = 0 החיכוך הסטטי מחזיק", "כי הזמן נגמר", "כי a הופכת לחיובית"], right: 0 },
+    "W04-S07": { q: "מה המודל לא יודע?", opts: ["אין בו גרר או רוח: צריך להוסיף כוח אופקי שתלוי במהירות", "אין בו כובד", "הוא לא יודע זוויות"], right: 0 },
+    "W06-S05": { q: "בשיווי משקל של משקולת תלויה…", opts: ["kx = mg, ולכן x = mg/k", "kx = 0", "x = k/mg"], right: 0 },
+    "W07-S03": { q: "המהירות פי 2. האנרגיה הקינטית…", opts: ["פי 4", "פי 2", "לא משתנה"], right: 0 },
+    "W08-S05": { q: "מהירות כפולה באותו מעגל: זמן המחזור…", opts: ["חצי", "כפול", "לא משתנה"], right: 0 },
+    "W09-S02": { q: "בהתנגשות עם e = 1…", opts: ["גם התנע וגם האנרגיה הקינטית נשמרים", "רק האנרגיה נשמרת", "שום דבר לא נשמר"], right: 0 },
+    "W10-S06": { q: "מה משתנה כשמחליפים מסה של הגוף?", opts: ["המשקל F = mg משתנה, g לא", "g משתנה", "שום דבר"], right: 0 },
+    "W11-S02": { q: "משרעת גדולה יותר: זמן המחזור…", opts: ["לא משתנה; המהירות המרבית גדלה", "גדל", "קטן"], right: 0 },
+    "W11-S06": { q: "מה נשאר קבוע כשמשנים רק את t?", opts: ["האנרגיה הכוללת ½kA² וזמן המחזור", "x", "v"], right: 0 }
+  };
+
+  // ---------------- the 84 situations ----------------
+  const SCENES = D.scenes.map((sc) => {
+    const setup = SETUP[sc.id] || {};
+    const model = D.models[sc.family];
+    const knobs = { ...model.knobs, ...(EXTRA_KNOBS[sc.family] || {}) };
+    const start = { ...sc.params, ...(EXTRA_DEFAULTS[sc.family] || {}), ...(setup.start || {}) };
+    const s = { ...sc, setup, knobs, start, topic: TOPIC_OF[sc.family], icon: ICON_OF_FAMILY[sc.family], readouts: model.readouts, label: model.label };
+    const pr = (P) => FAM[sc.family].pred(P, s);
+    s.missions = [
+      { id: sc.id + "-M1", kind: "predict", type: "predict", text: "תחזית לפני הניסוי", pred: pr, weight: 0.1, coins: 3 },
+      { id: sc.id + "-M2", kind: "goal", type: "manipulate", text: sc.objective, goal: setup.goal, weight: 0.35, coins: 5 },
+      { id: sc.id + "-M3", kind: "choice", type: "explain", text: "הסבר", ...(WHY[sc.id] || FAM[sc.family].why), weight: 0.25, coins: 5 },
+      { id: sc.id + "-M4", kind: "transfer", type: "transfer", text: "העברה: תנאי חדש", xfer: (P) => FAM[sc.family].xfer(P, s), weight: 0.3, coins: 5 }
+    ];
+    return s;
+  });
+  const ALL = SCENES.flatMap((s) => s.missions);
+  const byId = (id) => SCENES.find((s) => s.id === id);
+
+  // ======================================================================
+  //  a lab: one situation's live state (shared by the screen and the tests)
+  // ======================================================================
+  function newLab(scene, saved = {}) {
+    return { scene, P: { ...scene.start, ...(saved.P || {}) }, runs: [], cur: null, sim: null, nextId: 0, pred: {}, since: {}, xfer: {}, running: false };
+  }
+  const simOpts = (sc, P) => ({ brake: !!sc.setup.brake, gap: sc.setup.gap, v: P.v, vf: P.vf });
+  function evalP(sc, P) { try { return evaluate(sc.family, P); } catch (e) { return { invalid: e.message }; } }
+  function clampP(sc, P) {
+    for (const k in sc.knobs) { const [, lo, hi] = sc.knobs[k]; if (typeof P[k] === "number") P[k] = Math.min(hi, Math.max(lo, P[k])); }
+    if (P.muK !== undefined && P.muS !== undefined && P.muK > P.muS) P.muK = P.muS;
+    if (sc.family === "bank" && P.angle <= 0) P.angle = 1;
+    return P;
+  }
+  function idle(L) { finishRun(L); L.sim = null; L.running = false; }
+  function startRun(L) {
+    finishRun(L);
+    const sc = L.scene, P = { ...L.P }, e = evalP(sc, P);
+    if (e.invalid) return null;
+    L.sim = W.makeSim(sc.family, P, simOpts(sc, P));
+    L.cur = { id: ++L.nextId, P, ev: e, events: [], end: {}, moved: false, dir: 0, a0: null, changed: changedCount(sc, P) };
+    L.running = true;
+    return L.cur;
+  }
+  function stepRun(L, dt) {
+    if (!L.running || !L.sim) return;
+    L.sim.step(dt);
+    const r = L.cur, s = L.sim;
+    for (const e of s.events.slice(r.events.length)) r.events.push(e.type);
+    r.end = { ...s.st };
+    if (s.tr) { const R = s.tr.resolve(); if (r.a0 === null && R.mode === "kinetic") r.a0 = R.a; if (!r.moved && Math.abs(s.tr.s - (s.tr.def.s0 || 0)) > 1e-4) { r.moved = true; r.dir = Math.sign(s.tr.s - (s.tr.def.s0 || 0)); } }
+    if (s.done) { finishRun(L); L.running = false; }
+  }
+  function finishRun(L) { if (!L.cur) return; L.cur.done = true; L.runs.push(L.cur); if (L.runs.length > 40) L.runs.shift(); L.cur = null; }
+  const runsOf = (L) => (L.cur ? L.runs.concat([L.cur]) : L.runs);
+  function setParam(L, k, v) { L.P[k] = v; clampP(L.scene, L.P); idle(L); }
+  function changedCount(sc, P) { return Object.keys(sc.knobs).filter((k) => Math.abs((P[k] || 0) - (sc.start[k] || 0)) > 1e-9).length; }
+  // the run must come from the player's own change (a goal that keeps other values fixed may need only one)
+  const needChanges = () => 1;
+  function activate(L, m) { if (L.since[m.id] === undefined) L.since[m.id] = L.nextId + 1; }
+  const since = (L, m) => runsOf(L).filter((r) => r.done && r.id >= (L.since[m.id] || 1));
+
+  // M2: the situation's goal
+  function goalReached(L, m) {
+    const g = m.goal, rs = since(L, m);
+    if (!g) return false;
+    if (g.kind === "one") return rs.some((r) => r.changed >= needChanges(L.scene) && g.check(r));
+    const only = (a, b) => { const diff = Object.keys(L.scene.knobs).filter((k) => Math.abs((a.P[k] || 0) - (b.P[k] || 0)) > 1e-9); return g.keys ? diff.length > 0 && diff.every((k) => g.keys.includes(k)) : diff.length === 1; };
+    for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) if (only(rs[i], rs[j]) && g.check(rs[i], rs[j])) return true;
+    return false;
+  }
+  // M1: the question is asked about the values on screen; the run with those values decides
+  function predQuestion(L, m) { return m.pred(L.P); }
+  function lockPrediction(L, m, pick) { L.pred[m.id] = { pick, P: { ...L.P }, at: L.nextId + 1, q: m.pred(L.P) }; }
+  function predictionResult(L, m) {
+    const pr = L.pred[m.id]; if (!pr) return null;
+    const r = runsOf(L).find((x) => x.done && x.id >= pr.at && Object.keys(L.scene.knobs).every((k) => Math.abs((x.P[k] || 0) - (pr.P[k] || 0)) < 1e-9));
+    if (!r) return { ready: false, changed: Object.keys(L.scene.knobs).some((k) => Math.abs((L.P[k] || 0) - (pr.P[k] || 0)) > 1e-9) };
+    const t = pr.q.truth(r);
+    return { ready: true, ok: t === pr.pick, truth: t };
+  }
+  // M3: open after at least one run
+  const explainOpen = (L) => runsOf(L).some((r) => r.done);
+  // M4: compute for the new condition, then the run with it confirms
+  function transferTask(L, m) { const x = m.xfer(L.P); const Q = clampP(L.scene, { ...L.P, ...x.change }); return { text: x.text, field: x.field, Q, truth: x.field.value(Q) }; }
+  function checkTransfer(L, m, value, task) {
+    const t = task.truth, tol = Math.max(0.02, 0.02 * Math.abs(t));
+    return { ok: Number.isFinite(value) && Number.isFinite(t) && Math.abs(value - t) <= tol, truth: t };
+  }
+  function armTransfer(L, m, task) { L.xfer[m.id] = { Q: task.Q, at: L.nextId + 1 }; L.P = { ...task.Q }; idle(L); }
+  function transferConfirmed(L, m) {
+    const x = L.xfer[m.id]; if (!x) return false;
+    return runsOf(L).some((r) => r.done && r.id >= x.at && Object.keys(L.scene.knobs).every((k) => Math.abs((r.P[k] || 0) - (x.Q[k] || 0)) < 1e-9));
+  }
+
+  // ---------------- progress: evidence per topic, weighted by mission type ----------------
+  // a situation's four missions weigh 0.1 / 0.35 / 0.25 / 0.3: one lucky prediction is never mastery
+  function topicEvidence(done) {
+    const out = {};
+    for (const sc of SCENES) {
+      const o = out[sc.topic] || (out[sc.topic] = { have: 0, total: 0 });
+      for (const m of sc.missions) { o.total += m.weight; if (done.includes(m.id)) o.have += m.weight; }
+    }
+    for (const k in out) out[k].frac = out[k].have / out[k].total;
+    return out;
+  }
+  const worldDone = (w, done) => { const ids = SCENES.filter((s) => s.w === w).flatMap((s) => s.missions.map((m) => m.id)); return ids.filter((id) => done.includes(id)).length / ids.length; };
+
+  return { DATA: D, SCENES, ALL, byId, TOPIC_OF, newLab, startRun, stepRun, finishRun, idle, setParam, clampP, evalP, runsOf, activate, goalReached, predQuestion, lockPrediction, predictionResult,
+    explainOpen, transferTask, checkTransfer, armTransfer, transferConfirmed, topicEvidence, worldDone, needChanges, changedCount };
 })();
 
 // ======================================================================
@@ -5553,9 +6244,19 @@ const EggExplain = (() => {
     if (changed) P.save();
     return ph.ramp;
   };
-  const familyCoverage = (id) => id === "newton" ? RampScenes.coverage(rampState().completed, done()).total
-    : FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : 0;
-  const doneUnits = () => Object.keys(FAMILY_UNITS).reduce((n, id) => n + familyCoverage(id) * weightOf(id), 0);
+  // "עולמות המכניקה": 84 situations that feed the existing topics. Topics that had no game yet are measured by
+  // them alone; the three that already had a game keep it as 60% of their meter (40% from the worlds).
+  const worldsState = () => { const ph = P.data.physics; if (!ph.worlds) { ph.worlds = { v: 1, done: [], params: {} }; P.save(); } return ph.worlds; };
+  const WORLD_EVIDENCE = () => WorldScenes.topicEvidence(worldsState().done);
+  const ownCoverage = (id) => id === "newton" ? RampScenes.coverage(rampState().completed, done()).total
+    : FAMILY_UNITS[id] ? FAMILY_UNITS[id].filter((u) => done().includes(u.id)).length / FAMILY_UNITS[id].length : null;
+  const familyCoverage = (id) => {
+    const own = ownCoverage(id), w = WORLD_EVIDENCE()[id];
+    if (!w) return own || 0;
+    return own === null ? w.frac : 0.6 * own + 0.4 * w.frac;
+  };
+  const doneUnits = () => TOPICS.reduce((n, t) => n + familyCoverage(t.id) * weightOf(t.id, t), 0);
+  for (const t of TOPICS) if (["projectiles", "circular", "gravitation", "momentum", "energy"].includes(t.id)) t.ready = true;
   const overallCoverage = () => doneUnits() / TOTAL_UNITS;
   const pct = (x) => Math.round(x * 100) + "%";
 
@@ -5696,7 +6397,7 @@ const EggExplain = (() => {
     ui.hidden = false; G.covered = true;
     screenEl.className = ""; void screenEl.offsetWidth; screenEl.className = "screen-in";
     screenEl.scrollTop = 0;
-    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", ramps: "physics", rscene: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
+    const tab = { mode: "physics", lever: "physics", card: "physics", lab: "physics", wall: "physics", incline: "physics", ramps: "physics", rscene: "physics", worlds: "physics", world: "physics", wscene: "physics", creatures: "creatures", creature: "creatures", map: "map" }[name];
     for (const b of document.querySelectorAll(".tabs button")) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
     SCREENS[name](args);
     paintCoins();
@@ -5784,13 +6485,20 @@ const EggExplain = (() => {
           <p>מסע בנושאים, צעד אחרי צעד</p>
           <span class="btn secondary">להמשיך במסלול</span>
         </button>
+        <button class="card mode-card" id="toWorlds" type="button">
+          <span class="art">${icon("planet", "#8A60E8")}</span>
+          <h2>עולמות המכניקה</h2>
+          <p>12 עולמות, 84 מכונות ניסוי. בוחרים עולם ומשחקים.</p>
+          <span class="btn secondary">למפת העולמות</span>
+        </button>
         <div class="card">
           <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${Math.round(doneUnits())}/${TOTAL_UNITS}</span></div>
           <div class="meter-row"><span class="meter teal"><i style="width:0"></i></span><span class="pct">${pct(overallCoverage())}</span></div>
         </div>
       </div>`;
     requestAnimationFrame(() => { const i = screenEl.querySelector(".meter i"); if (i) i.style.width = Math.max(2, overallCoverage() * 100) + "%"; });
-    for (const b of screenEl.querySelectorAll(".mode-card")) b.addEventListener("click", () => {
+    $("#toWorlds").addEventListener("click", () => { G.sfx.pop(); show("worlds"); });
+    for (const b of screenEl.querySelectorAll(".mode-card[data-path]")) b.addEventListener("click", () => {
       P.data.physics.path = b.dataset.path; P.save(); G.sfx.pop();
       show("lever");
     });
@@ -5899,11 +6607,22 @@ const EggExplain = (() => {
     newton: { title: "מישור משופע, כוחות וחיכוך", name: "הרפתקאות על המדרון", bubble: "18 מדרונות. אחד מהם בטח מחליק.", screen: "ramps",
       art: `<svg viewBox="0 0 90 210"><path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 196L84 120v76z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M28 196a20 20 0 0 0-4-12" fill="none" stroke="#F49A35" stroke-width="2.4"/><circle cx="84" cy="120" r="6" fill="#F49A35" stroke="currentColor" stroke-width="2"/></svg>` }
   };
+  const worldGame = (id, title, name, bubble, art) => ({ title, name, bubble, screen: "world", args: { id }, art: `<svg viewBox="0 0 90 210">${art}</svg>` });
+  Object.assign(GAMES, {
+    projectiles: worldGame("W04", "נפילה וזריקה", "פארק התאוצה", "מי זרק אותי לאוויר?!", `<path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M10 196q34-150 72 0" fill="none" stroke="#F49A35" stroke-width="2.6" stroke-dasharray="5 6"/>`),
+    circular: worldGame("W08", "תנועה מעגלית", "קרקס המעגלים", "סחרחורת זה חלק מהניסוי.", `<circle cx="45" cy="120" r="36" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="81" cy="120" r="6" fill="#F49A35"/><path d="M45 120h36" stroke="#8969C6" stroke-width="2.4"/>`),
+    gravitation: worldGame("W10", "כבידה", "פלנטריום הכבידה", "למה אני לא נופל מהכוכב?", `<circle cx="45" cy="120" r="18" fill="none" stroke="currentColor" stroke-width="2.6"/><ellipse cx="45" cy="120" rx="40" ry="28" fill="none" stroke="#F49A35" stroke-width="2.2" stroke-dasharray="4 5"/>`),
+    momentum: worldGame("W09", "מתקף ותנע", "זירת ההתנגשויות", "בום! ומה נשמר?", `<path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3"/><rect x="8" y="170" width="30" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="52" y="170" width="30" height="22" rx="4" fill="none" stroke="#F49A35" stroke-width="2.4"/>`),
+    energy: worldGame("W07", "עבודה ואנרגיה", "בנק האנרגיה", "לאן הלכה האנרגיה שלי?", `<path d="M4 200h82" fill="none" stroke="currentColor" stroke-width="3"/><path d="M6 110q30 0 40 90" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M50 196h34" stroke="#F49A35" stroke-width="6"/>`)
+  });
   SCREENS.card = ({ topic = "springs", ordered = false }) => {
     const t = TOPICS.find((x) => x.id === topic), g = GAMES[topic] || GAMES.springs, units = FAMILY_UNITS[topic] || SPRING_UNITS;
     setTitle(g.title, ordered ? "לפי הסדר" : t ? t.world_he : "");
     const sp = activeSpecies(), cov = familyCoverage(topic);
-    const isRamp = topic === "newton", n = isRamp ? rampState().completed.length : units.filter((u) => done().includes(u.id)).length, of = isRamp ? RampScenes.ALL.length : units.length;
+    const isRamp = topic === "newton", isWorld = !FAMILY_UNITS[topic];
+    const worldIds = isWorld ? WorldScenes.ALL.filter((m) => WorldScenes.byId(m.id.slice(0, 7)).topic === topic).map((m) => m.id) : [];
+    const n = isRamp ? rampState().completed.length : isWorld ? worldIds.filter((id) => worldsState().done.includes(id)).length : units.filter((u) => done().includes(u.id)).length;
+    const of = isRamp ? RampScenes.ALL.length : isWorld ? worldIds.length : units.length;
     screenEl.innerHTML = `
       <div class="stack intro">
         <div class="scene">
@@ -5919,7 +6638,7 @@ const EggExplain = (() => {
         </div>
         <button class="btn primary block" id="go" type="button">בוא ננסה</button>
       </div>`;
-    $("#go").addEventListener("click", () => { G.sfx.pop(); show(g.screen, { topic }); });
+    $("#go").addEventListener("click", () => { G.sfx.pop(); show(g.screen, { topic, ...(g.args || {}) }); });
   };
 
   SCREENS.creatures = () => {
@@ -9363,7 +10082,7 @@ const EggExplain = (() => {
   window.eggPhysics.kit = {
     G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, back, setTitle, sheet, isSheetOpen, reward, forceArrow, paintCoins,
     activeSpecies, phys, nameOf, artOf, creatureImg, familyCoverage, overallCoverage, pct, rampState, done,
-    onCleanup: (fn) => { cleanup = fn; }, closeInfo, icon
+    onCleanup: (fn) => { cleanup = fn; }, closeInfo, icon, worldsState
   };
 })();
 
@@ -10260,6 +10979,591 @@ const EggExplain = (() => {
     window.__ramp = () => ({ L, ui, hist, sc, paused, slow });                 // for tests
     K.onCleanup(() => { alive = false; cancelAnimationFrame(raf); ro.disconnect(); K.closeInfo(); document.querySelector(".sheet-back")?.remove(); R0.params[sc.id] = { ...L.P }; P.save(); clearTimeout(toast.t); });
   };
+})();
+
+// ======================================================================
+//  "עולמות המכניקה": the worlds map, a world, and a situation screen.
+//  Physics: WorldPhys (worlds-engine.js). Missions and checks: WorldScenes.
+//  Shell, coins, meters, sheets and arrows from ui.js (kit). The creature is
+//  the body in the machines; what it does comes from the simulator.
+// ======================================================================
+(() => {
+  "use strict";
+  const K = window.eggPhysics && window.eggPhysics.kit;
+  if (!K) return;
+  const { G, P, SCREENS, $, esc, fmt, FONT, reduceMotion, clamp, show, setTitle, sheet, isSheetOpen, reward, forceArrow, activeSpecies, phys, nameOf, artOf } = K;
+  const S = WorldScenes, WP = WorldPhys, D = S.DATA;
+  const st = () => K.worldsState();
+  const isDone = (id) => st().done.includes(id);
+  const sceneN = (sc) => sc.missions.filter((m) => isDone(m.id)).length;
+  const num = (s) => { const t = String(s).trim().replace(/[−–]/g, "-").replace(",", "."); return t === "" ? NaN : Number(t); };
+  const SUP = { "-": "⁻", 0: "⁰", 1: "¹", 2: "²", 3: "³", 4: "⁴", 5: "⁵", 6: "⁶", 7: "⁷", 8: "⁸", 9: "⁹" };
+  const nice = (x, d = 2) => {
+    if (x === null || x === undefined) return "–";
+    if (typeof x === "string") return x;
+    if (!Number.isFinite(x)) return "–";
+    const a = Math.abs(x);
+    if (a !== 0 && (a >= 1e5 || a < 1e-3)) { const e = Math.floor(Math.log10(a)), m = x / Math.pow(10, e); return fmt(m, 2) + "×10" + String(e).split("").map((c) => SUP[c]).join(""); }
+    return fmt(x, d);
+  };
+  const UNIT = { baseSI: "", Rx: "", Ry: "", magnitude: "", angle: "°", x: "m", displacement: "m", distance: "m", tMeeting: "s", xMeeting: "m", v: "m/s", dx: "m", stoppingTime: "s", y: "m", tPeak: "s", maxY: "m", tLand: "s",
+    range: "m", N: "N", friction: "N", a: "m/s²", staticLimit: "N", T: "N", F: "N", E: "J", initialE: "J", heat: "J", endV: "m/s", remainingE: "J", aC: "m/s²", Fc: "N", period: "s", safeSpeed: "m/s",
+    idealV: "m/s", idealKmh: "km/h", NTop: "N", minV: "m/s", J: "N·s", Favg: "N", deltaP: "kg·m/s", v1: "m/s", v2: "m/s", pBefore: "kg·m/s", pAfter: "kg·m/s", lostK: "J", pTotal: "kg·m/s", g: "m/s²",
+    vOrbit: "m/s", vEscape: "m/s", energyAtBottom: "J", compression: "m" };
+  const WORLD_LINK = { W05: { screen: "ramps", title: "הרפתקאות על המדרון", sub: "הפרק המלא: 18 מצבים ו-90 משימות" }, W06: { screen: "lab", title: "קפיץ־קפוץ", sub: "מעבדת הקפיץ המלאה" } };
+  const WORLD_ICON = { W01: "ruler", W02: "arrows", W03: "belt", W04: "arc", W05: "ramp", W06: "spring", W07: "energy", W08: "carousel", W09: "carts", W10: "orbit", W11: "wave", W12: "tower" };
+
+  // ---------------- pictograms ----------------
+  const ICONS = (() => {
+    const s = `fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`, a = `fill="none" stroke="#8A60E8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"`;
+    return {
+      ruler: `<rect ${s} x="6" y="20" width="40" height="12" rx="2"/><path ${a} d="M12 20v5M18 20v3M24 20v5M30 20v3M36 20v5M42 20v3"/>`,
+      arrows: `<path ${s} d="M8 42L24 14"/><path ${s} d="M24 14l18 10"/><path ${a} d="M8 42L42 24"/><path ${a} d="M36 22l6 2-3 5"/>`,
+      belt: `<rect ${s} x="4" y="30" width="44" height="10" rx="5"/><circle ${s} cx="9" cy="35" r="3"/><circle ${s} cx="43" cy="35" r="3"/><path ${a} d="M18 22h16M30 18l4 4-4 4"/>`,
+      meet: `<path ${s} d="M4 38h44"/><circle ${s} cx="12" cy="31" r="5"/><circle ${s} cx="40" cy="31" r="5"/><path ${a} d="M20 20h6M24 17l3 3-3 3M32 20h-6"/>`,
+      brake: `<path ${s} d="M4 40h44"/><rect ${s} x="10" y="24" width="20" height="12" rx="3"/><path ${a} d="M34 30h10M40 26l4 4-4 4"/>`,
+      drop: `<path ${s} d="M6 44h40"/><circle ${a} cx="26" cy="14" r="5"/><path ${s} stroke-dasharray="2 4" d="M26 22v18"/>`,
+      arc: `<path ${s} d="M4 44h44"/><path ${a} stroke-dasharray="3 4" d="M8 42q16-36 34 0"/>`,
+      ramp: `<path ${s} d="M4 44h44M6 44L46 18v26"/><rect ${a} x="24" y="22" width="9" height="9" transform="rotate(-33 28 26)"/>`,
+      pulley: `<path ${s} d="M4 44h30M6 44L32 26v18"/><circle ${s} cx="36" cy="22" r="4"/><path ${a} d="M40 22v14"/><rect ${s} x="36" y="36" width="8" height="8"/>`,
+      spring: `<path ${s} d="M6 10v34"/><path ${a} d="M6 27l4-6 4 12 4-12 4 12 4-12 4 6"/><rect ${s} x="32" y="18" width="14" height="18" rx="3"/>`,
+      energy: `<path ${s} d="M4 44h44"/><path ${s} d="M6 14q10 0 16 30"/><path ${a} stroke-width="4" d="M26 44h16"/>`,
+      carousel: `<circle ${s} cx="26" cy="26" r="18"/><circle ${a} cx="44" cy="26" r="4"/><path ${s} d="M26 26h14"/>`,
+      bank: `<path ${s} d="M4 44h44"/><path ${s} d="M6 44l40-18"/><rect ${a} x="22" y="28" width="10" height="7" transform="rotate(-24 27 31)"/>`,
+      loop: `<path ${s} d="M4 44h44"/><circle ${a} cx="26" cy="24" r="16"/><circle ${s} cx="26" cy="40" r="3"/>`,
+      cushion: `<path ${s} d="M4 42h44"/><rect ${s} x="8" y="28" width="16" height="12" rx="3"/><path ${a} d="M40 14v28M34 18q6 10 0 20"/>`,
+      carts: `<path ${s} d="M4 42h44"/><rect ${s} x="6" y="28" width="16" height="12" rx="3"/><rect ${a} x="30" y="28" width="16" height="12" rx="3"/>`,
+      recoil: `<path ${s} d="M4 42h44"/><rect ${s} x="8" y="28" width="12" height="12" rx="3"/><rect ${s} x="32" y="28" width="12" height="12" rx="3"/><path ${a} d="M20 34l4-3 4 6 4-3"/>`,
+      orbit: `<circle ${s} cx="26" cy="26" r="8"/><ellipse ${a} cx="26" cy="26" rx="21" ry="13"/><circle ${s} cx="47" cy="26" r="3"/>`,
+      wave: `<path ${a} d="M4 26q6-16 12 0t12 0 12 0 12 0"/><path ${s} d="M4 42h44"/>`,
+      slide: `<path ${s} d="M4 44h44M6 18L26 38h20"/><path ${a} d="M38 38l3-5 3 5 3-5"/>`,
+      tower: `<path ${s} d="M16 46V12l10-6 10 6v34z"/><path ${a} d="M22 20h8M22 28h8M22 36h8"/>`
+    };
+  })();
+  const pict = (k) => `<svg viewBox="0 0 52 52" aria-hidden="true">${ICONS[k] || ICONS.ramp}</svg>`;
+
+  // ======================================================================
+  //  THE WORLDS MAP
+  // ======================================================================
+  SCREENS.worlds = () => {
+    setTitle("עולמות המכניקה", "12 עולמות · 84 מכונות ניסוי");
+    const done = st().done;
+    K.$("#screen").innerHTML = `
+      <div class="stack wmap">
+        <div class="card">
+          <div class="meter-label"><span>התקדמות כללית בפיזיקה</span><span class="ltr">${K.pct(K.overallCoverage())}</span></div>
+          <span class="meter teal"><i data-w="${K.overallCoverage()}"></i></span>
+          <p class="fine" style="margin:8px 0 0">כל עולם מזין נושא מהמפה: תנועה, כוחות, אנרגיה, תנע, כבידה ועוד. מטבעות רק בפעם הראשונה.</p>
+        </div>
+        <ol class="wpath">${D.worlds.map((w, i) => {
+          const f = S.worldDone(w.id, done), n = S.SCENES.filter((s) => s.w === w.id && sceneN(s) === 4).length;
+          return `<li><button class="card wtile ${i % 2 ? "alt" : ""} ${f >= 1 ? "full" : ""}" type="button" data-w="${w.id}">
+            <span class="wicon">${pict(WORLD_ICON[w.id])}</span>
+            <span class="rtxt"><small class="ltr">${w.id}${w.track !== "ליבה" ? ` · ${esc(w.track)}` : ""}</small><b>${esc(w.title)}</b><small>${esc(w.subtitle)}</small>
+              <span class="meter thin violet"><i data-w="${f}"></i></span><small>${n}/7 מכונות הושלמו</small></span></button></li>`; }).join("")}</ol>
+        <p class="fine">המצבים והמשימות מקוריים, בנויים לפי סדר נושאי המכניקה. "גן התנודות" הוא העשרה.</p>
+      </div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of document.querySelectorAll("#screen [data-w] .meter i, #screen .card > .meter i")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
+    for (const b of document.querySelectorAll("#screen [data-w].wtile")) b.addEventListener("click", () => { G.sfx.pop(); show("world", { id: b.dataset.w }); });
+  };
+
+  SCREENS.world = ({ id }) => {
+    const w = D.worlds.find((x) => x.id === id) || D.worlds[0];
+    setTitle(w.title, `${w.id} · ${w.subtitle}`);
+    const scenes = S.SCENES.filter((s) => s.w === w.id), link = WORLD_LINK[w.id];
+    const topic = scenes[0].topic, cov = K.familyCoverage(topic);
+    K.$("#screen").innerHTML = `
+      <div class="stack">
+        <div class="card">
+          <div class="meter-label"><span>העולם הזה</span><span class="ltr">${K.pct(S.worldDone(w.id, st().done))}</span></div>
+          <span class="meter violet"><i data-w="${S.worldDone(w.id, st().done)}"></i></span>
+          <div class="meter-label" style="margin-top:10px"><span>הנושא במפה</span><span class="ltr">${K.pct(cov)}</span></div>
+          <span class="meter violet"><i data-w="${cov}"></i></span>
+        </div>
+        ${link ? `<button class="card rtile tut" type="button" id="wlink"><span class="ricon">${pict(WORLD_ICON[w.id])}</span><span class="rtxt"><b>${esc(link.title)}</b><small>${esc(link.sub)}</small></span></button>` : ""}
+        <div class="rgrid">${scenes.map((sc) => `<button class="card rtile ${sceneN(sc) === 4 ? "full" : ""}" type="button" data-sc="${sc.id}">
+          <span class="ricon">${pict(sc.icon)}</span>
+          <span class="rtxt"><small class="ltr">${sc.id.slice(4)} · ${esc(sc.label)}</small><b>${esc(sc.title)}</b><small>${esc(sc.objective)}</small>
+            <span class="dots">${sc.missions.map((m) => `<i class="${isDone(m.id) ? "on" : ""}"></i>`).join("")}</span></span></button>`).join("")}</div>
+      </div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { for (const i of document.querySelectorAll("#screen [data-w]")) i.style.width = Math.max(2, +i.dataset.w * 100) + "%"; }));
+    $("#wlink")?.addEventListener("click", () => { G.sfx.pop(); show(link.screen, { topic: link.screen === "lab" ? "springs" : "newton" }); });
+    for (const b of document.querySelectorAll("#screen [data-sc]")) b.addEventListener("click", () => { G.sfx.pop(); show("wscene", { id: b.dataset.sc }); });
+  };
+
+  // ======================================================================
+  //  ONE SITUATION
+  // ======================================================================
+  SCREENS.wscene = ({ id }) => {
+    const sc = S.byId(id) || S.SCENES[0], world = D.worlds.find((w) => w.id === sc.w);
+    setTitle(sc.title, `${world.title} · ${sc.label}`);
+    let sp = activeSpecies();
+    const R0 = st(); R0.params = R0.params || {};
+    const L = S.newLab(sc, { P: R0.params[sc.id] });
+    let paused = false, slow = false, view = "forces", graphOpen = false, graphKey = null, raf = 0, lastT = performance.now(), evalT = 0, sayT = 0, alive = true, W = 0, H = 0, DPR = 1, frameN = 0;
+    const hist = [];
+    const later = (fn, ms) => setTimeout(() => { if (alive) fn(); }, ms);
+    const ui = { mi: Math.max(0, sc.missions.findIndex((m) => !isDone(m.id))), attempts: {}, xtask: null, replay: false, predShown: false };
+    const curM = () => sc.missions[ui.mi];
+
+    K.$("#screen").innerHTML = `
+      <div class="lab-screen rscene wscene">
+        <div class="mbar four" id="mbar">${sc.missions.map((m, i) => `<button type="button" data-i="${i}">${["תחזית", "ניסוי", "הסבר", "העברה"][i]}</button>`).join("")}</div>
+        <div class="card task mission" id="task" aria-live="polite"></div>
+        <div class="lab" id="lab">
+          <canvas id="labCanvas" aria-label="${esc(sc.title)}"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="toast card" id="toast" hidden></div>
+          <div class="lab-tools">
+            <span class="story-chip">${esc(sc.label)}</span>
+            <span class="transport">
+              <button class="tbtn" id="tPlay" type="button" aria-label="הפעלה">▶</button>
+              <button class="tbtn" id="tStep" type="button" aria-label="צעד">⏭</button>
+              <button class="tbtn" id="tReset" type="button" aria-label="איפוס">⟲</button>
+              <button class="tbtn" id="tSlow" type="button" aria-label="הילוך איטי" aria-pressed="false">🐢</button>
+            </span>
+          </div>
+        </div>
+        <div class="seg viewseg"><button type="button" data-v="forces" aria-pressed="true">ניסוי</button><button type="button" data-v="none" aria-pressed="false">בלי חצים</button><button type="button" data-v="graph" aria-pressed="false">גרפים</button><button type="button" data-v="explain" aria-pressed="false">הסבר</button></div>
+        <div class="card graphcard" id="graph" hidden><div class="seg gseg" id="gseg"></div><canvas id="gCanvas"></canvas><p class="fine" id="gNote"></p></div>
+        <div class="card" id="explain" hidden></div>
+        <div class="readouts wreadouts" id="readouts"></div>
+        <p class="sr" id="srText" aria-live="polite"></p>
+        <div class="card controls" id="controls"></div>
+      </div>`;
+    const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab"), gcv = $("#gCanvas"), gctx = gcv.getContext("2d");
+    const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); const g = gcv.getBoundingClientRect(); gcv.width = Math.round(g.width * DPR); gcv.height = Math.round(g.height * DPR); };
+    resize(); const ro = new ResizeObserver(resize); ro.observe(box); ro.observe(gcv);
+    const img = new Image(); img.src = artOf(sp);
+    const say = (t, s = 2.4) => { const el = $("#say"); el.textContent = t; el.hidden = false; sayT = s; };
+
+    // ---------------- controls ----------------
+    function paintControls() {
+      $("#controls").innerHTML = Object.entries(sc.knobs).map(([k, [he, lo, hi, step]]) => `
+        <div class="slider-row"><label for="k_${k}"><span>${esc(he)}</span><span class="val" id="kv_${k}"></span></label>
+          <div class="srow"><button class="step" type="button" data-step="${k}" data-d="-1" aria-label="להקטין">−</button><input id="k_${k}" data-k="${k}" type="range" min="${lo}" max="${hi}" step="${step}"><button class="step" type="button" data-step="${k}" data-d="1" aria-label="להגדיל">+</button></div></div>`).join("")
+        + `<p class="fine" id="pnote"></p>`;
+      for (const inp of $("#controls").querySelectorAll("input[type=range]")) { inp.value = L.P[inp.dataset.k]; inp.addEventListener("input", () => setK(inp.dataset.k, +inp.value)); inp.addEventListener("change", save); }
+      for (const b of $("#controls").querySelectorAll("[data-step]")) b.addEventListener("click", () => { const [, lo, hi, step] = sc.knobs[b.dataset.step]; setK(b.dataset.step, clamp(+(L.P[b.dataset.step] + step * +b.dataset.d).toFixed(6), lo, hi)); save(); G.sfx.tick && G.sfx.tick(); });
+      paintValues();
+    }
+    function paintValues() {
+      for (const [k, kn] of Object.entries(sc.knobs)) { const el = $("#kv_" + k); if (el) el.textContent = nice(L.P[k], kn[3] < 0.01 ? 3 : kn[3] < 1 ? 2 : 0); const inp = $("#k_" + k); if (inp && +inp.value !== L.P[k]) inp.value = L.P[k]; }
+      const e = S.evalP(sc, L.P); $("#pnote").textContent = e.invalid ? "הערכים מחוץ לתחום של המודל. שנה ערך." : "";
+    }
+    function setK(k, v) { S.setParam(L, k, v); hist.length = 0; paused = false; paintValues(); paintReadouts(); paintTransport(); evaluate(true); }
+    let saveT = 0; function save() { clearTimeout(saveT); saveT = setTimeout(() => { R0.params[sc.id] = { ...L.P }; P.save(); }, 300); }
+
+    // ---------------- transport ----------------
+    function paintTransport() { $("#tPlay").textContent = L.running && !paused ? "⏸" : "▶"; $("#tSlow").setAttribute("aria-pressed", slow); }
+    function start() { if (!S.startRun(L)) { say("הערכים מחוץ לתחום של המודל.", 2); return false; } hist.length = 0; paused = false; G.sfx.whoosh && G.sfx.whoosh(); return true; }
+    $("#tPlay").addEventListener("click", () => { G.audio.unlock(); if (L.running) paused = !paused; else start(); paintTransport(); });
+    $("#tStep").addEventListener("click", () => { if (!L.running) { if (!start()) return; } paused = true; S.stepRun(L, 1 / 30); sample(); paintTransport(); });
+    $("#tReset").addEventListener("click", () => { S.idle(L); hist.length = 0; paused = false; paintTransport(); G.sfx.pop(); });
+    $("#tSlow").addEventListener("click", () => { slow = !slow; paintTransport(); G.sfx.pop(); if (slow) say("הילוך איטי: רק השעון של המסך מאט.", 2); });
+    for (const b of document.querySelectorAll(".viewseg [data-v]")) b.addEventListener("click", () => {
+      const v = b.dataset.v; G.sfx.pop();
+      if (v === "graph") { graphOpen = !graphOpen; $("#graph").hidden = !graphOpen; b.setAttribute("aria-pressed", graphOpen); if (graphOpen) { resize(); paintGseg(); } return; }
+      if (v === "explain") { const el = $("#explain"), open = el.hidden; el.hidden = !open; b.setAttribute("aria-pressed", open); if (open) paintExplain(); return; }
+      view = v; for (const x of document.querySelectorAll('.viewseg [data-v="forces"], .viewseg [data-v="none"]')) x.setAttribute("aria-pressed", x.dataset.v === view);
+    });
+    function paintExplain() {
+      $("#explain").innerHTML = `<h3 style="margin:0 0 6px">${esc(sc.title)}</h3><p style="margin:0 0 8px">${esc(sc.story)}</p>
+        <p class="fine">המודל: ${esc(sc.label)}. ${esc(MODEL_NOTE[sc.family] || "")}</p>`;
+    }
+
+    // ---------------- missions ----------------
+    function paintBar() { for (const b of document.querySelectorAll("#mbar [data-i]")) { const i = +b.dataset.i; b.classList.toggle("done", isDone(sc.missions[i].id)); if (i === ui.mi) b.setAttribute("aria-selected", "true"); else b.removeAttribute("aria-selected"); } }
+    for (const b of document.querySelectorAll("#mbar [data-i]")) b.addEventListener("click", () => { select(+b.dataset.i); G.sfx.pop(); });
+    function select(i) { ui.mi = i; ui.replay = false; ui.xtask = null; ui.predShown = false; S.activate(L, curM()); paintBar(); paintMission(); }
+    const head = (m, extra = "") => `<div class="mhead"><small>${["תחזית", "ניסוי", "הסבר", "העברה"][ui.mi]}${isDone(m.id) ? " · ✓ הושלמה" : ""}</small><p>${esc(extra || m.text)}</p></div>`;
+    function paintMission() {
+      const m = curM(), el = $("#task"); let h = "";
+      if (isDone(m.id) && !ui.replay) h = head(m, m.kind === "goal" ? sc.objective : m.kind === "choice" ? m.q : m.text) + `<p class="learn">✓ ${esc(LEARN(m))}</p><div class="mrow"><button class="btn quiet" type="button" id="again">שוב (בלי מטבעות)</button>${nextBtn()}</div>`;
+      else if (m.kind === "predict") h = predictHtml(m);
+      else if (m.kind === "goal") h = head(m, sc.objective) + `<p class="target">🎯 ${esc(m.goal.text)}</p><details class="mhint"><summary class="linkish">איך?</summary><p>${esc(m.goal.kind === "pair" ? "שתי הרצות: אחת לפני השינוי ואחת אחריו. נספרות רק הרצות שאחריהן כל השאר נשאר זהה." : "שנה ערכים בבקרים ואז ▶. נספרת רק הרצה שבה שינית לפחות ערך אחד מההתחלה.")}</p></details>`;
+      else if (m.kind === "choice") h = head(m, m.q) + (S.explainOpen(L) ? `<div class="options">${m.opts.map((o, i) => `<button type="button" data-ch="${i}">${esc(o)}</button>`).join("")}</div><p class="why" id="why" hidden></p>` : `<p class="gate">👉 קודם הרץ את המכונה פעם אחת (▶).</p>`);
+      else if (m.kind === "transfer") h = transferHtml(m);
+      el.innerHTML = h; bind(m);
+    }
+    const nextBtn = () => { const n = sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id)); if (n >= 0) return `<button class="btn primary" type="button" id="nextM">ל${["תחזית", "ניסוי", "הסבר", "העברה"][n]}</button>`; const ws = S.SCENES.filter((s) => s.w === sc.w), nx = ws.find((s) => sceneN(s) < 4 && s.id !== sc.id); return nx ? `<button class="btn primary" type="button" id="nextS">למכונה הבאה</button>` : `<button class="btn primary" type="button" id="toWorld">לעולם</button>`; };
+    function predictHtml(m) {
+      const pr = L.pred[m.id];
+      if (!pr) { const q = S.predQuestion(L, m); return head(m, q.q) + `<p class="fine">בחר לפני שאתה מריץ. אחר כך ▶ באותם ערכים.</p><div class="options">${q.opts.map((o, i) => `<button type="button" data-pr="${i}">${esc(o)}</button>`).join("")}</div>`; }
+      const r = S.predictionResult(L, m);
+      if (r && !r.ready && r.changed) return head(m, pr.q.q) + `<p class="locked">🔒 ${esc(pr.q.opts[pr.pick])}</p><p class="bad">שינית ערכים: הניבוי היה על הערכים הקודמים.</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">ניבוי חדש</button></div>`;
+      if (r && r.ready && !r.ok) return head(m, pr.q.q) + `<p class="locked">🔒 ${esc(pr.q.opts[pr.pick])}</p><p class="bad">הניסוי הראה: ${esc(pr.q.opts[r.truth])}.</p><p class="why">${esc(LEARN(m))}</p><div class="mrow"><button class="btn secondary" type="button" id="unlockP">ניבוי חדש</button></div>`;
+      return head(m, pr.q.q) + `<p class="locked">🔒 התחזית שלך: ${esc(pr.q.opts[pr.pick])}</p><p class="gate">👉 עכשיו ▶ (בלי לשנות ערכים).</p>`;
+    }
+    function transferHtml(m) {
+      const x = L.xfer[m.id];
+      if (x) return head(m) + `<p class="ok">✓ החישוב נכון. הערכים החדשים כבר בבקרים.</p><p class="gate">👉 ▶ כדי לבדוק בניסוי.</p>`;
+      if (!S.explainOpen(L)) return head(m) + `<p class="gate">👉 קודם הרץ את המכונה פעם אחת (▶).</p>`;
+      ui.xtask = ui.xtask || S.transferTask(L, m);
+      const t = ui.xtask;
+      return head(m, t.text) + `<div class="numgrid"><label><span>${esc(t.field.he)}</span><span class="inp"><input data-f="x" inputmode="decimal" dir="ltr" autocomplete="off"><em class="ltr">${esc(t.field.unit)}</em></span></label></div>
+        <div class="mrow"><button class="btn primary" type="button" id="checkX">בדוק</button></div><p class="why" id="why" hidden></p>`;
+    }
+    function bind(m) {
+      const el = $("#task");
+      el.querySelector("#again")?.addEventListener("click", () => { ui.replay = true; delete L.pred[m.id]; delete L.xfer[m.id]; ui.xtask = null; L.since[m.id] = undefined; S.activate(L, m); paintMission(); });
+      el.querySelector("#nextM")?.addEventListener("click", () => select(sc.missions.findIndex((x, i) => i !== ui.mi && !isDone(x.id))));
+      el.querySelector("#nextS")?.addEventListener("click", () => { const nx = S.SCENES.filter((s) => s.w === sc.w).find((s) => sceneN(s) < 4 && s.id !== sc.id); show("wscene", { id: nx.id }, false); });
+      el.querySelector("#toWorld")?.addEventListener("click", () => show("world", { id: sc.w }, false));
+      for (const b of el.querySelectorAll("[data-pr]")) b.addEventListener("click", () => { S.lockPrediction(L, m, +b.dataset.pr); ui.predShown = false; G.sfx.pop(); say("נעול. עכשיו ▶", 1.4); paintMission(); });
+      el.querySelector("#unlockP")?.addEventListener("click", () => { delete L.pred[m.id]; paintMission(); });
+      for (const b of el.querySelectorAll("[data-ch]")) b.addEventListener("click", () => {
+        if (el.dataset.answered) return; const ok = +b.dataset.ch === m.right; b.classList.add(ok ? "right" : "wrong"); const why = el.querySelector("#why"); why.hidden = false;
+        if (ok) { el.dataset.answered = "1"; why.textContent = "נכון!"; later(() => complete(m), 700); }
+        else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; why.textContent = ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "לא בדיוק. חזור לניסוי ונסה שוב."; G.sfx.hmph && G.sfx.hmph(0.4); later(() => b.classList.remove("wrong"), 900); }
+      });
+      el.querySelector("#checkX")?.addEventListener("click", () => {
+        const v = num(el.querySelector("[data-f]").value), why = el.querySelector("#why"); why.hidden = false;
+        if (!Number.isFinite(v)) { why.textContent = "כתוב מספר (אפשר עם מינוס)."; return; }
+        const r = S.checkTransfer(L, m, v, ui.xtask);
+        if (r.ok) { S.armTransfer(L, m, ui.xtask); hist.length = 0; paintControls(); paintReadouts(); G.sfx.sparkle && G.sfx.sparkle(1); paintMission(); }
+        else { ui.attempts[m.id] = (ui.attempts[m.id] || 0) + 1; el.querySelector("[data-f]").classList.add("bad"); G.sfx.hmph && G.sfx.hmph(0.4);
+          const sign = Math.abs(Math.abs(v) - Math.abs(r.truth)) <= Math.max(0.02, 0.02 * Math.abs(r.truth));
+          why.textContent = sign ? "הגודל נכון, הסימן לא." : ui.attempts[m.id] >= 2 ? "רמז: " + LEARN(m) : "עוד לא. נסה להציב בנוסחה של המודל (בכפתור 'הסבר')."; }
+      });
+      el.querySelector("[data-f]")?.addEventListener("keydown", (e) => { if (e.key === "Enter") el.querySelector("#checkX")?.click(); });
+    }
+    function evaluate(force) {
+      const m = curM(); if (isDone(m.id) && !ui.replay) return;
+      if (m.kind === "goal" && S.goalReached(L, m)) return complete(m);
+      if (m.kind === "predict" && L.pred[m.id]) { const r = S.predictionResult(L, m); if (r && r.ready && r.ok) return complete(m); if (r && (r.ready || r.changed) && !ui.predShown) { ui.predShown = true; paintMission(); if (r.ready) { G.sfx.hmph && G.sfx.hmph(0.5); say("הממ, לא מה שחשבנו.", 1.8); } } return; }
+      if (m.kind === "transfer" && L.xfer[m.id] && S.transferConfirmed(L, m)) return complete(m);
+      if (force || ((m.kind === "choice" || m.kind === "transfer") && S.explainOpen(L) !== ui.lastOpen)) { ui.lastOpen = S.explainOpen(L); paintMission(); }
+    }
+    function complete(m) {
+      const first = !isDone(m.id); ui.replay = false;
+      if (first) { st().done.push(m.id); P.save(); }
+      const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
+      if (first) reward("world:" + m.id, m.coins, from);
+      G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
+      toast(m, first); paintBar();
+      if (first && sceneN(sc) === 4) later(() => reward("worldscene:" + sc.id, 10, from), 900);
+      const n = sc.missions.findIndex((x) => !isDone(x.id));
+      if (first && n >= 0) later(() => select(n), 1300); else paintMission();
+    }
+    function toast(m, first) {
+      const t = $("#toast");
+      t.innerHTML = `<b>${first ? `<span class="coin"></span> +${m.coins} · ` : ""}${["תחזית נכונה", "הגעת ליעד", "הסבר נכון", "העברת את זה הלאה"][ui.mi]}</b><p>${esc(LEARN(m))}</p>
+        <div class="tmeters"><span>הנושא</span><span class="meter thin violet"><i style="width:${Math.max(2, K.familyCoverage(sc.topic) * 100)}%"></i></span><span>כללי</span><span class="meter thin teal"><i style="width:${Math.max(2, K.overallCoverage() * 100)}%"></i></span></div>`;
+      t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 6000); t.onclick = () => { t.hidden = true; };
+    }
+    const LEARN = (m) => m.kind === "choice" ? m.opts[m.right] : (LEARN_FAMILY[sc.family] || sc.objective);
+
+    // ---------------- readouts ----------------
+    function paintReadouts() {
+      const e = S.evalP(sc, L.P);
+      if (e.invalid) { $("#readouts").innerHTML = `<div class="readout"><small>המודל</small><b>מחוץ לתחום</b></div>`; return; }
+      $("#readouts").innerHTML = Object.entries(sc.readouts).map(([k, he]) => `<div class="readout"><small>${esc(he)}</small><b>${esc(nice(e[k]))}${typeof e[k] === "number" && UNIT[k] ? " " + UNIT[k] : ""}</b></div>`).join("");
+      const t = Object.entries(sc.readouts).map(([k, he]) => `${he}: ${nice(e[k])} ${UNIT[k] || ""}`).join(". ");
+      if ($("#srText").textContent !== t) $("#srText").textContent = t;
+    }
+
+    // ---------------- graphs from the simulator's own samples ----------------
+    const GLABEL = { x: "x (m)", y: "y (m)", v: "v (m/s)", a: "a (m/s²)", F: "F (N)", s: "s (m)", r: "r (m)", K: "K (J)", U: "U (J)", E: "E (J)", x1: "x₁ (m)", x2: "x₂ (m)", v1: "v₁ (m/s)", v2: "v₂ (m/s)", p: "p (kg·m/s)", vy: "v_y (m/s)", gap: "מרחק (m)" };
+    function sample() { if (!L.sim) return; const s = L.sim.st, row = { t: L.sim.t }; for (const k in GLABEL) if (typeof s[k] === "number" && Number.isFinite(s[k])) row[k] = s[k]; hist.push(row); if (hist.length > 2500) hist.splice(0, hist.length - 2500); }
+    function keysAvail() { const ks = new Set(); for (const r of hist.slice(-5)) for (const k in r) if (k !== "t") ks.add(k); return [...ks]; }
+    function paintGseg() {
+      const ks = keysAvail(); if (!ks.length) { $("#gseg").innerHTML = ""; return; }
+      if (!ks.includes(graphKey)) graphKey = ks.includes("v") ? "v" : ks[0];
+      $("#gseg").innerHTML = ks.map((k) => `<button type="button" data-g="${k}" aria-pressed="${k === graphKey}">${esc(GLABEL[k])}</button>`).join("");
+      for (const b of $("#gseg").querySelectorAll("[data-g]")) b.addEventListener("click", () => { graphKey = b.dataset.g; paintGseg(); });
+    }
+    function paintGraph() {
+      if (!graphOpen) return;
+      const w = gcv.width / DPR, h = gcv.height / DPR; gctx.setTransform(DPR, 0, 0, DPR, 0, 0); gctx.clearRect(0, 0, w, h);
+      if ($("#gseg").children.length !== keysAvail().length) paintGseg();
+      const pts = hist.filter((q) => q[graphKey] !== undefined);
+      if (pts.length < 2) { gctx.fillStyle = "#606671"; gctx.font = "600 13px " + FONT; gctx.textAlign = "center"; gctx.direction = "rtl"; gctx.fillText("הרץ ניסוי כדי לראות גרף", w / 2, h / 2); gctx.direction = "ltr"; return; }
+      let x0 = pts[0].t, x1 = pts[pts.length - 1].t, y0 = 0, y1 = 0; for (const q of pts) { y0 = Math.min(y0, q[graphKey]); y1 = Math.max(y1, q[graphKey]); }
+      if (x1 - x0 < 1e-9) x1 = x0 + 1; if (y1 - y0 < 1e-9) { y1 += 1; y0 -= 1; } const pad = (y1 - y0) * 0.1; y0 -= pad; y1 += pad;
+      const L0 = 46, gx = (v) => L0 + (v - x0) / (x1 - x0) * (w - L0 - 8), gy = (v) => 10 + (y1 - v) / (y1 - y0) * (h - 32);
+      gctx.strokeStyle = "#DFE1E4"; gctx.lineWidth = 1; gctx.beginPath(); gctx.moveTo(L0, 10); gctx.lineTo(L0, h - 22); gctx.lineTo(w - 8, h - 22); gctx.stroke();
+      if (y0 < 0 && y1 > 0) { gctx.strokeStyle = "#B9BCC2"; gctx.setLineDash([3, 3]); gctx.beginPath(); gctx.moveTo(L0, gy(0)); gctx.lineTo(w - 8, gy(0)); gctx.stroke(); gctx.setLineDash([]); }
+      gctx.fillStyle = "#606671"; gctx.font = "600 11px " + FONT; gctx.direction = "ltr"; gctx.textAlign = "right"; gctx.textBaseline = "middle";
+      gctx.fillText(nice(y1 - pad, 1), L0 - 4, gy(y1 - pad)); gctx.fillText(nice(y0 + pad, 1), L0 - 4, gy(y0 + pad));
+      gctx.textAlign = "center"; gctx.textBaseline = "top"; gctx.fillText(fmt(x0, 1), L0, h - 18); gctx.fillText(fmt(x1, 1) + "  t (s)", w - 34, h - 18);
+      gctx.strokeStyle = "#8A60E8"; gctx.lineWidth = 2.2; gctx.beginPath(); pts.forEach((q, i) => (i ? gctx.lineTo(gx(q.t), gy(q[graphKey])) : gctx.moveTo(gx(q.t), gy(q[graphKey])))); gctx.stroke();
+      // events on the time axis
+      gctx.strokeStyle = "#E39B28"; gctx.setLineDash([4, 3]); for (const e of (L.sim ? L.sim.events : [])) if (e.t >= x0 && e.t <= x1) { gctx.beginPath(); gctx.moveTo(gx(e.t), 10); gctx.lineTo(gx(e.t), h - 22); gctx.stroke(); } gctx.setLineDash([]);
+      $("#gNote").textContent = (L.sim && L.sim.scale ? `זמן הסימולציה מואץ ×${nice(L.sim.scale, 0)} בשביל המסך. ` : "") + "קווים מקווקווים: אירועים (עצירה, נחיתה, מפגש, פגיעה).";
+    }
+
+    // ======================================================================
+    //  DRAWING: one machine per family
+    // ======================================================================
+    let cam = null;
+    const sx = (x) => cam.ox + x * cam.S, sy = (y) => cam.oy - y * cam.S;
+    function fit(x0, x1, y0, y1) { const S_ = Math.min((W - 24) / (x1 - x0), (H - 70) / (y1 - y0)); cam = { S: S_, ox: W / 2 - S_ * (x0 + x1) / 2, oy: (H - 56) / 2 + S_ * (y0 + y1) / 2 + 6 }; }
+    const line = (x0, y0, x1, y1, w = 2, c = "#2e2e33") => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
+    const label = (x, y, t, c = "#606671", al = "center", f = "600 12px ") => { ctx.save(); ctx.font = f + FONT; ctx.fillStyle = c; ctx.textAlign = al; ctx.textBaseline = "middle"; ctx.direction = "ltr"; ctx.fillText(t, x, y); ctx.restore(); };
+    const ground = (y = 0) => { line(0, sy(y), W, sy(y), 2.2); };
+    const arrowS = (x, y, vx, vy, c, lab, val) => forceArrow(ctx, x, y, vx, vy, c, lab, val !== undefined ? { value: val } : {});
+    // the creature as the body: feet at (px, py) in screen pixels, height hpx, rotated
+    function critter(px, py, hpx, rot = 0, flip = false) {
+      if (!(img.complete && img.naturalWidth)) { ctx.fillStyle = "#F7D9B5"; ctx.beginPath(); ctx.arc(px, py - hpx / 2, hpx / 2, 0, Math.PI * 2); ctx.fill(); return; }
+      const w = hpx * img.naturalWidth / img.naturalHeight; ctx.save(); ctx.translate(px, py); ctx.rotate(rot); if (flip) ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -hpx, w, hpx); ctx.restore();
+    }
+    function cart(px, py, wpx, hpx, txt, fill = "#F5F1E8") {
+      ctx.fillStyle = fill; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px - wpx / 2, py - hpx, wpx, hpx, 6) : ctx.rect(px - wpx / 2, py - hpx, wpx, hpx); ctx.fill(); ctx.stroke();
+      for (const d of [-0.3, 0.3]) { ctx.beginPath(); ctx.arc(px + d * wpx, py, 5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); }
+      if (txt) label(px, py - hpx / 2, txt, "#20232A", "center", "700 12px ");
+    }
+    function banner(t, c = "#606671") { ctx.save(); ctx.font = "700 14px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; const tw = ctx.measureText(t).width + 22, y = H - 102; ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W / 2 - tw / 2, y, tw, 28, 12) : ctx.rect(W / 2 - tw / 2, y, tw, 28); ctx.fill(); ctx.stroke(); ctx.fillStyle = c; ctx.fillText(t, W / 2, y + 14); ctx.restore(); }
+    const has = (t) => L.sim && L.sim.events.some((e) => e.type === t);
+    const P_ = () => (L.sim && L.cur ? L.cur.P : L.P);
+    const SIM = () => L.sim || (L._preview && L._previewP === JSON.stringify(L.P) ? L._preview : (L._previewP = JSON.stringify(L.P), L._preview = (() => { const e = S.evalP(sc, L.P); if (e.invalid) return null; const s = WP.makeSim(sc.family, { ...L.P }, { brake: !!sc.setup.brake, gap: sc.setup.gap, v: L.P.v, vf: L.P.vf }); return s; })()));
+    const forces = () => view !== "none";
+
+    const DRAW = {
+      units(s, p) {
+        const gap = sc.setup.gap, Lm = p.value * p.factor, span = Math.max(gap, Math.min(Lm, gap * 2.2));
+        fit(-0.6 * gap, span + 0.6 * gap, -0.5 * gap, 0.9 * gap);
+        const top = 0; ctx.fillStyle = "rgba(107,107,112,0.10)"; ctx.fillRect(0, sy(top), sx(0), H); ctx.fillRect(sx(gap), sy(top), W - sx(gap), H);
+        line(0, sy(top), sx(0), sy(top), 2.4); line(sx(gap), sy(top), W, sy(top), 2.4); line(sx(0), sy(top), sx(0), H, 2); line(sx(gap), sy(top), sx(gap), H, 2);
+        const tilt = Lm + 1e-9 < gap && s.st.x > Lm ? 0.6 : 0;
+        ctx.save(); ctx.translate(sx(0), sy(top)); ctx.rotate(tilt); ctx.fillStyle = "#B58A55"; ctx.fillRect(0, -6, Math.min(Lm, span + gap) * cam.S, 8); ctx.restore();
+        label((sx(0) + sx(gap)) / 2, sy(top) + 26, `${sc.setup.unitText}: ${nice(gap)} ${sc.setup.unitSI}`, "#20232A");
+        label(sx(0) + Math.min(Lm, span) * cam.S / 2, sy(top) - 18, `${p.value} × ${p.factor} = ${nice(Lm, 3)} ${sc.setup.unitSI}`, Math.abs(Lm - gap) <= 0.01 * gap ? "#137556" : "#B8741A");
+        const x = s.st.x, fall = s.st.fell; critter(sx(Math.min(x, gap + 0.2 * gap)), sy(top) + (fall ? Math.min(H, (x - Lm) * 6 * cam.S) : -6), 0.45 * Math.min(cam.S * gap, 120));
+        if (fall) banner("הקרש קצר מדי!", "#E2574C"); else if (L.cur && L.cur.done !== undefined && s.done && Lm > gap * 1.01) banner("ארוך מדי: לא נכנס בין הקצוות", "#B8741A");
+      },
+      vectors(s, p) {
+        const R = WP.evaluate("vectors", p), m = Math.max(4, Math.abs(p.ax) + Math.abs(p.bx) + 1, Math.abs(p.ay) + Math.abs(p.by) + 1, Math.abs(R.Rx) + 1, Math.abs(R.Ry) + 1);
+        fit(-m, m, -m, m);
+        ctx.strokeStyle = "#EEF0F3"; ctx.lineWidth = 1; for (let i = -Math.ceil(m); i <= m; i++) { line(sx(i), sy(-m), sx(i), sy(m), 1, "#EEF0F3"); line(sx(-m), sy(i), sx(m), sy(i), 1, "#EEF0F3"); }
+        line(sx(-m), sy(0), sx(m), sy(0), 1.4, "#B9BCC2"); line(sx(0), sy(-m), sx(0), sy(m), 1.4, "#B9BCC2");
+        const k = cam.S, O = { x: sx(0), y: sy(0) };
+        if (sc.id === "W01-S02") { const a = 135 * Math.PI / 180; label(sx(Math.cos(a) * m * 0.8), sy(Math.sin(a) * m * 0.8), "🛠 שולחן", "#20232A"); }
+        if (sc.id === "W01-S07") { ctx.fillStyle = "#E39B28"; ctx.beginPath(); ctx.arc(sx(1), sy(-1), 6, 0, Math.PI * 2); ctx.fill(); }
+        arrowS(O.x, O.y, p.ax * k, -p.ay * k, "#2785C7", "A");
+        ctx.save(); ctx.globalAlpha = 0.45; arrowS(O.x + p.ax * k, O.y - p.ay * k, p.bx * k, -p.by * k, "#E0702F"); ctx.restore();
+        arrowS(O.x, O.y, p.bx * k, -p.by * k, "#E0702F", "B");
+        arrowS(O.x, O.y, R.Rx * k, -R.Ry * k, "#8A60E8", "R");
+        critter(sx(s.st.x), sy(s.st.y) + 12, 34);
+      },
+      uniform(s, p) {
+        const xs = [p.x0, p.x0 + p.v * p.t, 0, sc.setup.target || 0]; const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 3;
+        fit(lo, hi, -2, 3); ground(0);
+        ctx.fillStyle = "#ECEEF1"; ctx.fillRect(sx(lo), sy(0), (hi - lo) * cam.S, 10);
+        for (let i = Math.ceil(lo); i <= hi; i++) { line(sx(i), sy(0), sx(i), sy(0) + (i % 5 ? 5 : 10), 1.2); if (i % 5 === 0) label(sx(i), sy(0) + 20, String(i)); }
+        line(sx(0), sy(0) - 40, sx(0), sy(0) + 8, 2, "#20232A"); label(sx(0), sy(0) - 48, "0", "#20232A");
+        if (sc.setup.target !== undefined) { line(sx(sc.setup.target), sy(0) - 34, sx(sc.setup.target), sy(0), 3, "#E2574C"); label(sx(sc.setup.target), sy(0) - 42, "🎯", "#E2574C"); }
+        const x = s.st.x; critter(sx(x), sy(0), Math.min(70, cam.S * 1.6), 0, p.v < 0);
+        if (forces() && Math.abs(x - p.x0) > 0.05) { ctx.save(); ctx.setLineDash([4, 4]); line(sx(p.x0), sy(0) - 70, sx(p.x0), sy(0), 1.2, "#9A9AA0"); ctx.restore(); arrowS(sx(p.x0), sy(0) - 70, (x - p.x0) * cam.S, 0, "#8A60E8", "Δx"); }
+        if (forces()) arrowS(sx(x), sy(0) - Math.min(70, cam.S * 1.6) - 14, p.v * 8, 0, "#20232A", "v");
+      },
+      meeting(s, p) {
+        const xs = [p.x1, p.x2, s.st.x1, s.st.x2]; const lo = Math.min(...xs, 0) - 3, hi = Math.max(...xs, 16) + 3;
+        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        if (sc.id === "W03-S05") { ctx.fillStyle = "rgba(226,87,76,0.35)"; ctx.fillRect(sx(14), sy(0) - 4, 2 * cam.S, 8); }
+        if (sc.id === "W03-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 4 * cam.S, 8); label(sx(12), sy(0) - 14, "תחנה", "#137556"); }
+        critter(sx(s.st.x1), sy(0), Math.min(64, cam.S * 2), 0, false);
+        cart(sx(s.st.x2), sy(0) - 4, Math.min(46, cam.S * 1.6), Math.min(30, cam.S), "ב׳", "#FFF3D6");
+        if (L.sim && L.sim.met) { ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx(L.sim.met.x), sy(0) - 30, 22, 0, Math.PI * 2); ctx.stroke(); label(sx(L.sim.met.x), sy(0) - 62, `מפגש: ${nice(L.sim.met.t)} s, ${nice(L.sim.met.x)} m`, "#B8741A"); }
+        if (forces()) { arrowS(sx(s.st.x1), sy(0) - 80, p.v1 * 6, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 60, p.v2 * 6, 0, "#20232A", "v₂"); }
+        if (s.done && !L.sim.met && L.sim.t > 0) banner("אין מפגש", "#606671");
+      },
+      acceleration(s, p) {
+        const xs = [0, s.st.x, WP.evaluate("acceleration", p).dx, sc.id === "W12-S01" ? 12 : 0]; const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 4;
+        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        if (sc.id === "W12-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 2 * cam.S, 8); line(sx(12.4), sy(0) - 50, sx(12.4), sy(0), 6, "#E2574C"); label(sx(12.4), sy(0) - 58, "מחסום", "#E2574C"); }
+        const x = s.st.x; cart(sx(x), sy(0) - 4, 56, 30, ""); critter(sx(x), sy(0) - 30, 40);
+        if (sc.setup.brake && L.sim && L.sim.stopped) banner("עצרה ונשארה: בלם לא דוחף אחורה");
+        if (forces()) { arrowS(sx(x), sy(0) - 92, s.st.v * 7, 0, "#20232A", "v"); if (s.st.a) arrowS(sx(x), sy(0) - 120, s.st.a * 14, 0, "#8A60E8", "a"); }
+      },
+      vertical(s, p) {
+        const e = WP.evaluate("vertical", { ...p, t: 0 }), top = Math.max(e.maxY, p.h) + 1.5;
+        fit(-top * 0.6, top * 0.6, -0.5, top); ground(0);
+        if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-top * 0.5), sy(p.h), (top * 0.35) * cam.S, p.h * cam.S); line(sx(-top * 0.5), sy(p.h), sx(-top * 0.15), sy(p.h), 2); }
+        for (let y = 0; y <= top; y += top > 20 ? 5 : top > 8 ? 2 : 1) { line(sx(top * 0.45), sy(y), sx(top * 0.45) + 6, sy(y), 1.2); label(sx(top * 0.45) + 18, sy(y), String(y)); }
+        if (has("peak") || s.st.landed) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(-top * 0.3), sy(e.maxY), sx(top * 0.3), sy(e.maxY), 1.4, "#20232A"); ctx.restore(); label(sx(top * 0.3) + 4, sy(e.maxY) - 10, "שיא " + nice(e.maxY) + " m", "#20232A", "left"); }
+        critter(sx(0), sy(s.st.y), Math.min(60, cam.S * 1.5));
+        if (forces()) { arrowS(sx(0) + 40, sy(s.st.y) - 20, 0, -s.st.v * 5, "#20232A", "v"); arrowS(sx(0) - 40, sy(s.st.y) - 20, 0, p.g * 5, "#2785C7", "g"); }
+        label(14, 20, "g = " + nice(p.g) + " m/s²", "#2785C7", "left");
+        if (s.st.landed) banner("נחת אחרי " + nice(e.tLand) + " s");
+      },
+      projectile(s, p) {
+        const e = WP.evaluate("projectile", { ...p, t: 0 }), tgt = sc.setup.goal && sc.id === "W04-S04" ? [18, 19] : sc.id === "W12-S06" ? [25, 26] : null;
+        const xm = Math.max(e.range, tgt ? tgt[1] : 0) + 2, ym = Math.max(e.maxY, p.h) + 2; fit(-2, xm, -0.5, Math.max(ym, xm * 0.35)); ground(0);
+        if (p.h > 0) { ctx.fillStyle = "rgba(107,107,112,0.12)"; ctx.fillRect(sx(-2), sy(p.h), 2 * cam.S, p.h * cam.S); line(sx(-2), sy(p.h), sx(0), sy(p.h), 2); }
+        if (tgt) { ctx.fillStyle = "rgba(226,87,76,0.3)"; ctx.fillRect(sx(tgt[0]), sy(0) - 5, (tgt[1] - tgt[0]) * cam.S, 10); label(sx((tgt[0] + tgt[1]) / 2), sy(0) - 16, "🎯", "#E2574C"); }
+        for (let x = 0; x <= xm; x += xm > 30 ? 10 : 5) label(sx(x), sy(0) + 16, String(x));
+        // the path so far (from the same formulas the simulator steps)
+        ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath();
+        const tt = L.sim ? L.sim.t : 0, vy0 = p.v0 * Math.sin(p.angle * Math.PI / 180); for (let i = 0; i <= 60; i++) { const t = tt * i / 60; const X = e.vx * t, Y = p.h + vy0 * t - 0.5 * p.g * t * t; i ? ctx.lineTo(sx(X), sy(Math.max(0, Y))) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke(); ctx.restore();
+        critter(sx(s.st.x), sy(s.st.y), Math.min(46, cam.S * 1.4));
+        if (forces() && !s.st.landed) { arrowS(sx(s.st.x), sy(s.st.y) - 24, s.st.vx * 5, 0, "#2785C7", "vx"); arrowS(sx(s.st.x), sy(s.st.y) - 24, 0, -s.st.vy * 5, "#E0702F", "vy"); }
+        if (s.st.landed) banner(`נחת: ${nice(e.range)} m אחרי ${nice(e.tLand)} s`);
+      },
+      incline(s, p) {
+        const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lr = 6, tr = s.tr || null, pos = tr ? tr.s : 3;
+        fit(-0.6, Lr * c + 0.6, -0.3, Lr * sn + 1.2); ground(0);
+        ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lr * c), sy(0)); ctx.lineTo(sx(Lr * c), sy(Lr * sn)); ctx.closePath(); ctx.fill();
+        line(sx(0), sy(0), sx(Lr * c), sy(Lr * sn), 6, "#B58A55"); line(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * sn), 2);
+        const fx = pos * c, fy = pos * sn, hpx = Math.min(70, cam.S * 0.75); critter(sx(fx), sy(fy), hpx, -th);
+        if (forces() && tr) { const R = tr.resolve(), C = { x: sx(fx) - sn * hpx * 0.45, y: sy(fy) - c * hpx * 0.45 }, k = 90 / (p.m * p.g);
+          arrowS(C.x, C.y, 0, p.m * p.g * k, "#2785C7", "mg", p.m * p.g); if (R.N) arrowS(C.x, C.y, -sn * R.N * k, -c * R.N * k, "#8969C6", "N", R.N);
+          if (Math.abs(R.f) > 1e-3) arrowS(C.x, C.y, c * R.f * k, -sn * R.f * k, "#CC5794", R.mode === "static" ? "f_s" : "f_k", Math.abs(R.f));
+          if (p.F) arrowS(C.x, C.y, c * p.F * k, -sn * p.F * k, "#E0702F", "F", p.F); }
+        if (tr && tr.resolve().mode === "wall") banner("הגענו לקצה המסלול (לא חיכוך)");
+      },
+      pulley(s, p) {
+        const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lh = 2.6, base = 1.5, tr = s.tr, d = 1.3 + (tr ? tr.s : 0);
+        const pt = (q) => [q * c, base + q * sn], top = pt(Lh); fit(-0.4, top[0] + 0.9, -0.1, top[1] + 0.7); ground(0);
+        ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.fillRect(sx(-0.2), sy(base), (top[0] + 0.2) * cam.S, base * cam.S);
+        line(sx(0), sy(base), sx(top[0]), sy(top[1]), 6, "#B58A55");
+        const pul = [top[0] + 0.12, top[1] + 0.1]; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(sx(pul[0]), sy(pul[1]), 0.1 * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        const f = pt(d), hpx = Math.min(64, cam.S * 0.6), By = pul[1] - 0.6 - (tr ? tr.s : 0);
+        line(sx(f[0]) - sn * hpx * 0.4, sy(f[1]) - c * hpx * 0.4, sx(pul[0] - 0.02), sy(pul[1] + 0.1), 1.8, "#3a3a40"); line(sx(pul[0] + 0.1), sy(pul[1]), sx(pul[0] + 0.1), sy(By), 1.8, "#3a3a40");
+        critter(sx(f[0]), sy(f[1]), hpx, -th); cart(sx(pul[0] + 0.1), sy(By - 0.34), 0.34 * cam.S, 0.34 * cam.S, nice(p.mB, 1) + " kg", "#FFF3D6");
+        if (tr && forces()) { const R = tr.resolve(), T = tr.tension(), k = 90 / (p.mA * p.g), C = { x: sx(f[0]) - sn * hpx * 0.45, y: sy(f[1]) - c * hpx * 0.45 };
+          arrowS(C.x, C.y, c * T * k, -sn * T * k, "#3A9E6E", "T", T); if (Math.abs(R.f) > 1e-3) arrowS(C.x, C.y, c * R.f * k, -sn * R.f * k, "#CC5794", "f", Math.abs(R.f)); }
+      },
+      spring(s, p) {
+        const xm = Math.max(0.9, Math.abs(p.x) + 0.3); fit(-1.2, xm + 0.4, -0.3, 0.9); ground(0);
+        line(sx(-1.1), sy(0), sx(-1.1), sy(0.8), 6, "#2e2e33");
+        const x = s.st.x !== undefined ? s.st.x : p.x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
+        for (let i = 0; i <= 20; i++) { const X = -1.1 + (end + 1.1) * i / 20, Y = 0.25 + (i % 2 ? 0.08 : -0.08) * (i && i < 20 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
+        ctx.save(); ctx.setLineDash([3, 4]); line(sx(0), sy(0) + 4, sx(0), sy(0.75), 1.2, "#9A9AA0"); ctx.restore(); label(sx(0), sy(0.8), "x = 0", "#606671");
+        critter(sx(x + 0.1), sy(0), Math.min(80, cam.S * 0.55));
+        if (forces()) { const F = -p.k * x; arrowS(sx(x + 0.1), sy(0.3), F * 2.2, 0, "#6A7F2A", "F = −kx", Math.abs(F)); }
+        label(sx(x + 0.1), sy(0) + 16, "x = " + nice(x) + " m", "#20232A");
+      },
+      energy(s, p) {
+        const tr = s.tr; if (!tr) return; const segs = s.segs, pts = [[0, p.h]]; for (const g_ of segs) { const a = g_.angleDeg * Math.PI / 180, q = pts[pts.length - 1]; pts.push([q[0] + g_.length * Math.cos(a), q[1] - g_.length * Math.sin(a)]); }
+        fit(-0.5, pts[pts.length - 1][0] + 0.5, -0.4, Math.max(p.h, 1.5) + 1.2); ground(0);
+        for (let i = 0; i < segs.length; i++) line(sx(pts[i][0]), sy(pts[i][1]), sx(pts[i + 1][0]), sy(pts[i + 1][1]), segs[i].muK > 0 ? 9 : 5, segs[i].muK > 0 ? "#E39B28" : "#B58A55");
+        const si = s.stripStart, sEnd = s.stripEnd; label(sx((pts[segs.length - 2][0] + pts[segs.length - 1][0]) / 2), sy(0) + 18, `רצועה: μ = ${nice(p.mu)}, ${nice(p.d)} m`, "#B8741A");
+        let d = tr.s, i = 0; while (i < segs.length - 1 && d > segs[i].length) { d -= segs[i].length; i++; }
+        const a = -segs[i].angleDeg * Math.PI / 180, fx = pts[i][0] + d * Math.cos(a), fy = pts[i][1] + d * Math.sin(a); critter(sx(fx), sy(fy), Math.min(60, cam.S * 0.7), -a);
+        const e = tr.energy(), tot = Math.max(1e-6, e.K + e.U + e.Q), bh = Math.min(90, H * 0.25), bars = [["U", e.U, "#2785C7"], ["K", e.K, "#42A47A"], ["חום", e.Q, "#E2574C"]];
+        bars.forEach(([lab, v, col], j) => { const x = 14 + j * 34, y = 40 + bh; ctx.fillStyle = "#ECEEF1"; ctx.fillRect(x, 40, 22, bh); ctx.fillStyle = col; ctx.fillRect(x, y - bh * v / tot, 22, bh * v / tot); label(x + 11, y + 10, lab, "#20232A"); label(x + 11, 30, nice(v, 1), col); });
+        if (s.done && tr.v === 0 && tr.s < sEnd) banner("נעצר על הרצועה אחרי " + nice(tr.s - si) + " m");
+        else if (s.passed) banner("עבר את הרצועה ב-" + nice(tr.v) + " m/s");
+      },
+      circle(s, p) {
+        const plate = p.r * 1.6; fit(-plate * 1.1, plate * 1.1, -plate * 1.1, plate * 1.1);
+        ctx.fillStyle = "rgba(107,107,112,0.07)"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(0), sy(0), plate * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.save(); ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.arc(sx(0), sy(0), p.r * cam.S, 0, Math.PI * 2); ctx.strokeStyle = "#9A9AA0"; ctx.stroke(); ctx.restore();
+        ctx.fillStyle = "#2e2e33"; ctx.beginPath(); ctx.arc(sx(0), sy(0), 4, 0, Math.PI * 2); ctx.fill();
+        const x = s.st.x, y = s.st.y; critter(sx(x), sy(y) + 18, Math.min(48, cam.S * 0.6));
+        if (forces() && s.st.on && !has("slip")) { const Fc = p.m * p.v * p.v / p.r, k = 70 / Math.max(Fc, p.mu * p.m * p.g, 1e-6), d = Math.hypot(x, y) || 1; arrowS(sx(x), sy(y), -x / d * Fc * k, y / d * Fc * k, "#CC5794", "f_s", Fc); }
+        if (has("slip")) banner("החיכוך לא מספיק: מחליק בקו ישר", "#E2574C");
+        label(14, 20, `v²/r = ${nice(p.v * p.v / p.r)}  ·  μg = ${nice(p.mu * p.g)}`, "#20232A", "left");
+      },
+      bank(s, p) {
+        const th = p.angle * Math.PI / 180, Lb = 4; fit(-0.6, Lb * Math.cos(th) + 1.2, -0.4, Lb * Math.sin(th) + 1.2); ground(0);
+        ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lb * Math.cos(th)), sy(0)); ctx.lineTo(sx(Lb * Math.cos(th)), sy(Lb * Math.sin(th))); ctx.closePath(); ctx.fill();
+        line(sx(0), sy(0), sx(Lb * Math.cos(th)), sy(Lb * Math.sin(th)), 6, "#7D7F86");
+        const q = 2 + (s.st.up || 0) * 1.6, fx = q * Math.cos(th), fy = q * Math.sin(th); critter(sx(fx), sy(fy), Math.min(64, cam.S * 0.7), -th);
+        label(W - 12, 20, "← מרכז העיקול", "#606671", "right");
+        const e = WP.evaluate("bank", p); label(14, 20, `v = ${nice(p.v)} · v אידיאלית = ${nice(e.idealV)} m/s`, "#20232A", "left");
+        if (Math.abs(s.st.drift) > 1e-6 && L.sim) banner(s.st.drift > 0 ? "מהר מדי: נסחף למעלה בעיקול" : "לאט מדי: מחליק פנימה ולמטה", "#B8741A");
+      },
+      loop(s, p) {
+        const r = p.r; fit(-r * 1.6, r * 2.8, -0.3, 2 * r + 0.6); ground(0);
+        ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx(0), sy(r), r * cam.S, 0, Math.PI * 2); ctx.stroke();
+        const x = s.st.x, y = s.st.y, hpx = Math.min(44, cam.S * 0.5); critter(sx(x), sy(y), hpx, s.st.onTrack ? -(s.st.th || 0) : 0);
+        if (forces() && s.st.onTrack && s.st.N > 1e-6) { const N = s.st.N, k = Math.min(60 / (p.m * p.g), 110 / N); arrowS(sx(x), sy(y), (-x / r) * N * k, -((r - y) / r) * N * k, "#8969C6", "N", N); }
+        label(14, 20, `v בפסגה (אם נשאר במגע) = ${nice(p.vTop)} · מינימום √(gr) = ${nice(Math.sqrt(p.g * r))}`, "#20232A", "left");
+        if (has("lost_contact")) banner("איבד מגע: עף בקשת חופשית", "#E2574C"); else if (has("full_loop")) banner("הקפה שלמה!", "#137556");
+      },
+      impulse(s, p) {
+        fit(-6, 2.5, -0.5, 2); ground(0);
+        ctx.fillStyle = "#F5E6CC"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; const cx = sx(1.0); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S, 10) : ctx.rect(cx, sy(1.2), 0.4 * cam.S, 1.2 * cam.S); ctx.fill(); ctx.stroke();
+        line(sx(1.4), sy(0), sx(1.4), sy(1.6), 6); label(sx(1.2), sy(1.45), "כרית", "#606671");
+        const x = Math.min(0.6, s.st.x); cart(sx(x), sy(0) - 4, 60, 32, ""); critter(sx(x), sy(0) - 32, 40);
+        if (forces()) { arrowS(sx(x), sy(0) - 96, s.st.v * 8, 0, "#20232A", "v"); if (s.st.F) arrowS(sx(x) + 30, sy(0) - 20, Math.sign(s.st.F) * Math.min(120, 30 + Math.abs(s.st.F)), 0, "#E0702F", "F", Math.abs(s.st.F)); }
+        label(14, 20, `Δt = ${nice(p.dt)} s · J = ${nice(p.m * (p.v1 - p.v0))} N·s`, "#20232A", "left");
+      },
+      collision(s, p) {
+        fit(-5, 5, -0.5, 2); ground(0);
+        const w = 0.4 * cam.S; cart(sx(s.st.x1), sy(0) - 4, w, 30, nice(p.m1, 1) + " kg"); critter(sx(s.st.x1), sy(0) - 34, 36);
+        cart(sx(s.st.x2), sy(0) - 4, w, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
+        if (forces()) { arrowS(sx(s.st.x1), sy(0) - 84, s.st.v1 * 8, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 52, s.st.v2 * 8, 0, "#20232A", "v₂"); }
+        label(14, 20, `p = ${nice(s.st.p !== undefined ? s.st.p : p.m1 * p.u1 + p.m2 * p.u2)} kg·m/s · K = ${nice(s.st.K !== undefined ? s.st.K : 0.5 * p.m1 * p.u1 ** 2 + 0.5 * p.m2 * p.u2 ** 2)} J · e = ${nice(p.e)}`, "#20232A", "left");
+        if (has("hit")) { const e = L.sim.events.find((q) => q.type === "hit"); if (L.sim.t - e.t < 0.3) banner("בום!", "#E39B28"); }
+      },
+      recoil(s, p) {
+        fit(-6, 6, -0.5, 2); ground(0);
+        cart(sx(s.st.x1), sy(0) - 4, 0.45 * cam.S, 30, nice(p.m1, 1) + " kg"); critter(sx(s.st.x1), sy(0) - 34, 36);
+        cart(sx(s.st.x2), sy(0) - 4, 0.45 * cam.S, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
+        if (!has("push")) { ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.4; ctx.beginPath(); for (let i = 0; i <= 8; i++) { const X = sx(s.st.x1) + 0.22 * cam.S + i * (sx(s.st.x2) - sx(s.st.x1) - 0.44 * cam.S) / 8; const Y = sy(0) - 18 + (i % 2 ? -6 : 6); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke(); }
+        if (forces()) { arrowS(sx(s.st.x1), sy(0) - 84, s.st.v1 * 8, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 52, s.st.v2 * 8, 0, "#20232A", "v₂"); }
+        label(14, 20, "p כולל = " + nice(s.st.p || 0) + " kg·m/s", "#20232A", "left");
+      },
+      gravity(s, p) {
+        const rmax = Math.max(p.r * 1.25, Math.hypot(s.st.x || p.r, s.st.y || 0) * 1.05); fit(-rmax, rmax, -rmax, rmax);
+        ctx.fillStyle = "#EEF3FA"; ctx.strokeStyle = "#2e2e33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(0), sy(0), 6.0e6 * cam.S, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.save(); ctx.setLineDash([3, 5]); ctx.strokeStyle = "#9A9AA0"; ctx.beginPath(); ctx.arc(sx(0), sy(0), p.r * cam.S, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        if (!L.trail || L.trailRun !== (L.cur && L.cur.id)) { L.trail = []; L.trailRun = L.cur && L.cur.id; }
+        if (L.sim && s.st.x !== undefined) { L.trail.push([s.st.x, s.st.y]); if (L.trail.length > 600) L.trail.shift(); }
+        ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 2; ctx.beginPath(); L.trail.forEach(([x, y], i) => (i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)))); ctx.stroke();
+        const x = s.st.x !== undefined ? s.st.x : p.r, y = s.st.y || 0; critter(sx(x), sy(y) + 14, 32);
+        if (forces()) { const d = Math.hypot(x, y); arrowS(sx(x), sy(y), -x / d * 50, y / d * 50, "#2785C7", "g", undefined); }
+        label(14, 20, `r = ${nice(p.r / 1000, 0)} km · g = ${nice(WP.evaluate("gravity", p).g)} m/s²`, "#20232A", "left");
+        if (has("crash")) banner("נפל אל הכוכב", "#E2574C"); else if (has("escape")) banner("ברח מהשדה!", "#8A60E8");
+      },
+      oscillator(s, p) {
+        fit(-1.4, 1.4, -0.4, 1); ground(0); line(sx(-1.35), sy(0), sx(-1.35), sy(0.8), 6);
+        const x = s.st.x !== undefined ? s.st.x : WP.evaluate("oscillator", p).x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
+        for (let i = 0; i <= 22; i++) { const X = -1.35 + (end + 1.35) * i / 22, Y = 0.25 + (i % 2 ? 0.07 : -0.07) * (i && i < 22 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
+        for (const d of [-p.A, p.A]) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(d), sy(0) + 4, sx(d), sy(0.7), 1.2, "#9A9AA0"); ctx.restore(); }
+        critter(sx(x + 0.1), sy(0), Math.min(70, cam.S * 0.5));
+        if (forces() && s.st.v !== undefined) { arrowS(sx(x + 0.1), sy(0.85), s.st.v * 30, 0, "#20232A", "v"); arrowS(sx(x + 0.1), sy(0.55), s.st.a * 4, 0, "#8A60E8", "a"); }
+        label(14, 20, `T = 2π√(m/k) = ${nice(WP.evaluate("oscillator", p).period)} s`, "#20232A", "left");
+      },
+      capstone(s, p) {
+        const th = p.angle * Math.PI / 180, top = p.d * Math.sin(th), run = p.d * Math.cos(th); fit(-0.4, run + 2.2, -0.3, top + 1);
+        ground(0); line(sx(0), sy(top), sx(run), sy(0), 7, "#E39B28"); line(sx(run), sy(0), sx(run + 2), sy(0), 5, "#B58A55");
+        line(sx(run + 2), sy(0), sx(run + 2), sy(0.6), 6);
+        const comp = s.st.phase === "spring" ? s.st.x : 0, sEnd = run + 0.6, sNat = run + 2 - 0.6 - 0.8; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
+        const a0 = run + 2, a1 = run + 0.6 + 0.0 + comp; for (let i = 0; i <= 14; i++) { const X = a0 + (a1 - a0) * i / 14, Y = 0.22 + (i % 2 ? 0.07 : -0.07) * (i && i < 14 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
+        let fx, fy, rot = 0; if (s.st.phase === "ramp" || !L.sim) { const q = s.st.s || 0; fx = q * Math.cos(th); fy = top - q * Math.sin(th); rot = th; } else if (s.st.phase === "flat") { fx = run + (L.sim.u || 0); fy = 0; } else { fx = run + 0.6 + comp; fy = 0; }
+        critter(sx(fx), sy(fy), Math.min(56, cam.S * 0.6), rot);
+        label(14, 20, `μ על המדרון = ${nice(p.mu)} · k = ${nice(p.k, 0)} N/m`, "#20232A", "left");
+        if (has("stays") || has("stopped_on_ramp")) banner("נעצר על המדרון", "#B8741A"); else if (s.st.xMax > 0) banner("כיווץ מרבי: " + nice(s.st.xMax * 100, 1) + " cm", "#137556");
+      }
+    };
+    function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
+      const s = SIM(); if (!s) { label(W / 2, H / 2, "הערכים מחוץ לתחום של המודל", "#E2574C"); return; }
+      try { DRAW[sc.family](s, P_()); } catch (e) { label(W / 2, H / 2, "…", "#606671"); }
+      if (L.sim) label(W - 12, H - 66, "t = " + fmt(L.sim.t, 2) + " s", "#606671", "right");
+    }
+
+    // ---------------- loop ----------------
+    function frame(now) {
+      const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); } }
+      draw();
+      if ((frameN++ & 3) === 0) paintGraph();
+      if ((evalT += dt) > 0.3) { evalT = 0; evaluate(false); }
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      raf = requestAnimationFrame(frame);
+    }
+    paintControls(); paintReadouts(); paintTransport(); paintBar(); select(ui.mi);
+    raf = requestAnimationFrame(frame);
+    later(() => say(sc.story, 3.2), 300);
+    window.__wscene = () => ({ L, ui, sc, hist });
+    K.onCleanup(() => { alive = false; cancelAnimationFrame(raf); ro.disconnect(); K.closeInfo(); document.querySelector(".sheet-back")?.remove(); R0.params[sc.id] = { ...L.P }; P.save(); clearTimeout(toast.t); });
+  };
+
+  const MODEL_NOTE = {
+    units: "ערך × מקדם יחידה = ערך ב-SI.", vectors: "מחברים רכיבים: Rx = Ax + Bx, Ry = Ay + By; |R| = √(Rx² + Ry²).", uniform: "x = x₀ + v·t. העתק עם סימן, דרך תמיד חיובית.",
+    meeting: "x₁ = x₂ ⇒ t = (x₂ − x₁)/(v₁ − v₂), רק אם t ≥ 0.", acceleration: "v = v₀ + a·t, Δx = v₀t + ½at². בלם נעצר ב-v = 0 ולא נוסע אחורה.", vertical: "y = h + v₀t − ½gt², בלי גרר. הקרקע עוצרת.",
+    projectile: "x = v₀cosα·t, y = h + v₀sinα·t − ½gt², בלי גרר ורוח.", incline: "ציר לאורך המדרון. חיכוך סטטי רק כמה שצריך; קינטי נגד המהירות.", pulley: "חבל מתוח, גלגלת אידאלית. mB·g − T = mB·a.",
+    spring: "F = −kx, E = ½kx², רצפה חלקה.", energy: "ירידה חלקה מגובה h ואז רצועה מחוספסת: חום = μmgd, ולא יותר מהאנרגיה שיש.", circle: "משטח אופקי: f_s למרכז, עד μmg. מעבר לזה החלקה.",
+    bank: "בלי חיכוך: tanθ = v²/(rg) נותן מהירות אידיאלית.", loop: "בפסגה: N + mg = mv²/r, ו-N ≥ 0. בלי מגע, מעוף חופשי.", impulse: "J = Δp = F_avg·Δt.",
+    collision: "תנע נשמר; אנרגיה קינטית רק ב-e = 1.", recoil: "מתחילים במנוחה: m₁v₁ + m₂v₂ = 0.", gravity: "g = GM/r², v מסלול = √(GM/r), v בריחה = √2·v מסלול. r ממרכז הכוכב.",
+    oscillator: "x = A·cos(ωt + φ), ω = √(k/m). בלי דעיכה (העשרה).", capstone: "חיכוך רק על המדרון, קפיץ על רצפה חלקה: ½kx² = האנרגיה בתחתית."
+  };
+  const LEARN_FAMILY = MODEL_NOTE;
 })();
 
 </script>

@@ -53,6 +53,11 @@
       tower: `<path ${s} d="M16 46V12l10-6 10 6v34z"/><path ${a} d="M22 20h8M22 28h8M22 36h8"/>`
     };
   })();
+  // remembered per viewer: is the equipment bag / measurement drawer open
+  const uiPref = (k, def) => { try { const v = localStorage.getItem("egg.ui." + k); return v === null ? def : v === "1"; } catch (e) { return def; } };
+  uiPref.set = (k, v) => { try { localStorage.setItem("egg.ui." + k, v ? "1" : "0"); } catch (e) {} };
+  // families with a hands-on handle on the stage
+  const DRAGGABLE = { meeting: 1, uniform: 1, vectors: 1, spring: 1, oscillator: 1, incline: 1, projectile: 1, vertical: 1, coulomb: 1 };
   const pict = (k) => `<svg viewBox="0 0 52 52" aria-hidden="true">${ICONS[k] || ICONS.ramp}</svg>`;
 
   // ======================================================================
@@ -121,7 +126,9 @@
     let paused = false, slow = false, view = "forces", graphOpen = false, graphKey = null, raf = 0, lastT = performance.now(), evalT = 0, sayT = 0, alive = true, W = 0, H = 0, DPR = 1, frameN = 0;
     const hist = [];
     const later = (fn, ms) => setTimeout(() => { if (alive) fn(); }, ms);
-    const ui = { mi: Math.max(0, sc.missions.findIndex((m) => !isDone(m.id))), attempts: {}, xtask: null, replay: false, predShown: false };
+    // play first: the hands-on goal opens the scene; the question and the transfer come after trying
+    const firstOpen = [1, 0, 2, 3].find((i) => sc.missions[i] && !isDone(sc.missions[i].id));
+    const ui = { mi: firstOpen === undefined ? 0 : firstOpen, attempts: {}, xtask: null, replay: false, predShown: false };
     const curM = () => sc.missions[ui.mi];
 
     K.$("#screen").innerHTML = `
@@ -139,15 +146,19 @@
               <button class="tbtn" id="tStep" type="button" aria-label="צעד">⏭</button>
               <button class="tbtn" id="tReset" type="button" aria-label="איפוס">⟲</button>
               <button class="tbtn" id="tSlow" type="button" aria-label="הילוך איטי" aria-pressed="false">🐢</button>
+              <button class="tbtn" id="tArrows" type="button" aria-label="חיצי כוח" aria-pressed="true">↗</button>
+              ${sc.id === "W03-S05" ? `<button class="tbtn" id="tSplash" type="button" aria-label="בדיחת מים">💦</button>` : ""}
             </span>
           </div>
         </div>
-        <div class="seg viewseg"><button type="button" data-v="forces" aria-pressed="true">ניסוי</button><button type="button" data-v="none" aria-pressed="false">בלי חצים</button><button type="button" data-v="graph" aria-pressed="false">גרפים</button><button type="button" data-v="explain" aria-pressed="false">הסבר</button></div>
-        <div class="card graphcard" id="graph" hidden><div class="seg gseg" id="gseg"></div><canvas id="gCanvas"></canvas><p class="fine" id="gNote"></p></div>
-        <div class="card" id="explain" hidden></div>
-        <div class="readouts wreadouts" id="readouts"></div>
+        <details class="card bag" id="bag" ${uiPref("bag", true) ? "open" : ""}><summary><span>🎒 תיק ציוד</span><small>${DRAGGABLE[sc.family] ? "גרור על הבמה או כוון כאן" : "כוון כאן ואז ▶"}</small></summary><div class="controls" id="controls"></div></details>
+        <details class="card drawer" id="drawer" ${uiPref("drawer", false) ? "open" : ""}><summary><span>📏 מדידות</span><span class="dsum ltr" id="dsum"></span></summary>
+          <div class="readouts wreadouts" id="readouts"></div>
+          <div class="seg viewseg"><button type="button" data-v="graph" aria-pressed="false">📈 גרפים</button><button type="button" data-v="explain" aria-pressed="false">💡 הסבר</button></div>
+          <div class="graphcard" id="graph" hidden><div class="seg gseg" id="gseg"></div><canvas id="gCanvas"></canvas><p class="fine" id="gNote"></p></div>
+          <div id="explain" hidden></div>
+        </details>
         <p class="sr" id="srText" aria-live="polite"></p>
-        <div class="card controls" id="controls"></div>
       </div>`;
     const cv = $("#labCanvas"), ctx = cv.getContext("2d"), box = $("#lab"), gcv = $("#gCanvas"), gctx = gcv.getContext("2d");
     const resize = () => { const r = box.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); const g = gcv.getBoundingClientRect(); gcv.width = Math.round(g.width * DPR); gcv.height = Math.round(g.height * DPR); };
@@ -164,7 +175,12 @@
       else if (sev === "fold") { sf.slap && sf.slap(); later(() => sf.boof && sf.boof(), 250); G.buzz && G.buzz(30); }
       else { sf.crack && sf.crack(); later(() => sf.crash && sf.crash(), 60); G.buzz && G.buzz([40, 30, 60]); if (!reduceMotion) shakeT = 0.45; later(() => sf.boing && sf.boing(1), 2000); later(() => sf.phew && sf.phew(), 2700); }
       if (line) later(() => say(line, 2.4), sev === "crash" ? 2600 : sev === "squash" ? 1500 : 500);
+      life && life.event("impact");
     } }) : null;
+    // the place around the machine (life-layer.js): background, one quiet motion, a companion that reacts to the model
+    const life = typeof LifeLayer !== "undefined" ? LifeLayer.create({ id: sc.id, reduceMotion, onSay: (t) => {
+      // the pack's reaction lines are stage directions; only a quoted line is spoken
+      const q = t.match(/[״"]([^״"]+)[״"]/); if (q && sc.id !== "W03-S05") say(q[1], 2.6); } }) : null;
     // the body in falls: the egg; everywhere else the creature. info = { impact, vImpact, sev, vy, g, standing, nervous }
     function eggBody(px, py, hpx, info = {}, rot = 0) {
       if (!egg) return critter(px, py, hpx, rot);
@@ -185,6 +201,42 @@
         d.style.left = (r.left + r.width / 2) + "px"; d.style.top = (r.top + r.height / 2) + "px"; d.style.setProperty("--dx", Math.cos(a) * dist + "px"); d.style.setProperty("--dy", Math.sin(a) * dist + "px");
         d.textContent = ["✦", "★", "✧"][i % 3]; document.body.appendChild(d); setTimeout(() => d.remove(), 800); }
     }
+    // ---------------- hands-on: drag the machine itself on the stage ----------------
+    // each handle maps the finger to a knob of the model (snapped and clamped like the sliders); the run restarts
+    const snapK = (k, v) => { const [, lo, hi, step] = sc.knobs[k]; return clamp(+(Math.round((v - lo) / step) * step + lo).toFixed(6), lo, hi); };
+    const wx = (px) => (px - cam.ox) / cam.S, wy = (py) => (cam.oy - py) / cam.S;
+    function setMany(o) { for (const k in o) if (sc.knobs[k] && Number.isFinite(o[k])) S.setParam(L, k, snapK(k, o[k])); hist.length = 0; paused = false; egg && egg.reset(); paintValues(); paintReadouts(); paintTransport(); evaluate(true); }
+    const DRAG = {
+      meeting: () => [{ x: sx(L.P.x1), y: sy(0) - 26, set: (px) => setMany({ x1: wx(px) }) }, { x: sx(L.P.x2), y: sy(0) - 22, set: (px) => setMany({ x2: wx(px) }) }],
+      uniform: () => [{ x: sx(L.P.x0), y: sy(0) - 26, set: (px) => setMany({ x0: wx(px) }) }],
+      vectors: () => [{ x: sx(L.P.ax), y: sy(L.P.ay), set: (px, py) => setMany({ ax: wx(px), ay: wy(py) }) }, { x: sx(L.P.bx), y: sy(L.P.by), set: (px, py) => setMany({ bx: wx(px), by: wy(py) }) }],
+      spring: () => [{ x: sx(L.P.x + 0.1), y: sy(0) - 30, set: (px) => setMany({ x: wx(px) - 0.1 }) }],
+      oscillator: () => [{ x: sx(L.P.A + 0.1), y: sy(0) - 30, set: (px) => setMany({ A: Math.abs(wx(px) - 0.1) }) }],
+      incline: () => { const th = L.P.angle * Math.PI / 180; return [{ x: sx(6 * Math.cos(th)), y: sy(6 * Math.sin(th)), set: (px, py) => setMany({ angle: Math.atan2(Math.max(0, wy(py)), Math.max(0.05, wx(px))) * 180 / Math.PI }) }]; },
+      vertical: () => [{ x: sx(0), y: sy(L.P.h) - 24, set: (px, py) => setMany({ h: wy(py + 24) }) }],
+      projectile: () => [{ x: sx(0), y: sy(L.P.h) - 18, aim: true, set: (px, py, d) => { const dx = d.x0 - px, dy = py - d.y0; if (Math.hypot(dx, dy) < 10) return; setMany({ angle: clamp(Math.atan2(dy, Math.max(0.01, dx)) * 180 / Math.PI, 0, 85), v0: Math.hypot(dx, dy) / 6 }); } }],
+      coulomb: () => [{ x: sx(L.P.r / 2), y: sy(0.55), set: (px) => setMany({ r: 2 * Math.abs(wx(px)) }) }]
+    };
+    let drag = null, dragMoved = false, suppressClick = false, dragged = false;
+    const hitHandle = (px, py) => { const f = DRAG[sc.family]; if (!f || L.running || !cam) return null; try { for (const h of f()) if (Math.hypot(h.x - px, h.y - py) < 36) return h; } catch (e) {} return null; };
+    // a touch that starts on a handle drags it; anywhere else the page scrolls as usual
+    cv.addEventListener("touchstart", (e) => { const r = cv.getBoundingClientRect(), q = e.touches[0]; if (q && hitHandle(q.clientX - r.left, q.clientY - r.top)) e.preventDefault(); }, { passive: false });
+    cv.addEventListener("pointerdown", (e) => { const h = hitHandle(e.offsetX, e.offsetY); if (!h) return; drag = { h, x0: h.x, y0: h.y, px: e.offsetX, py: e.offsetY }; dragMoved = false; try { cv.setPointerCapture(e.pointerId); } catch (_) {} G.audio.unlock(); G.sfx.tick && G.sfx.tick(); });
+    cv.addEventListener("pointermove", (e) => { if (!drag) return; drag.cx = e.offsetX; drag.cy = e.offsetY; if (Math.hypot(e.offsetX - drag.px, e.offsetY - drag.py) > 4) dragMoved = true; if (dragMoved) drag.h.set(e.offsetX, e.offsetY, drag); });
+    const endDrag = () => { if (!drag) return; if (dragMoved) { suppressClick = true; dragged = true; save(); G.sfx.pop(); } drag = null; };
+    cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag); cv.addEventListener("lostpointercapture", endDrag);
+    function drawHandles(now) {
+      const f = DRAG[sc.family]; if (!f || L.running || !cam) return;
+      let hs = []; try { hs = f(); } catch (e) { return; }
+      const pulse = reduceMotion ? 0 : Math.sin(now / 300) * 3;
+      for (const h of hs) { ctx.save(); ctx.strokeStyle = "rgba(138,96,232,0.85)"; ctx.fillStyle = "rgba(138,96,232,0.10)"; ctx.lineWidth = 2.2; ctx.setLineDash(drag && drag.h === h ? [] : [5, 4]);
+        ctx.beginPath(); ctx.arc(h.x, h.y, 17 + pulse, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+        if (!dragged) label(h.x, h.y - 28 - pulse, h.aim ? "משוך ושחרר" : "גרור", "#6E48C9", "center", "700 11px "); }
+      if (drag && drag.h.aim && drag.cx !== undefined) { // the slingshot band and where it will fly
+        ctx.save(); ctx.strokeStyle = "#B58A55"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(drag.x0, drag.y0); ctx.lineTo(drag.cx, drag.cy); ctx.stroke(); ctx.restore();
+        const a = L.P.angle * Math.PI / 180, len = 24 + L.P.v0 * 4; arrowS(drag.x0, drag.y0, Math.cos(a) * len, -Math.sin(a) * len, "#8A60E8", `${nice(L.P.v0, 1)} m/s · ${nice(L.P.angle, 0)}°`); }
+    }
+
     // how close the last run came to a goal window ("hot / cold")
     function paintHotCold() {
       const el = $("#hotcold"), m = curM(); if (!el) return;
@@ -220,19 +272,22 @@
 
     // ---------------- transport ----------------
     function paintTransport() { $("#tPlay").textContent = L.running && !paused ? "⏸" : "▶"; $("#tSlow").setAttribute("aria-pressed", slow); if (L.running) $("#tPlay").classList.remove("nudge"); }
-    function start() { if (!S.startRun(L)) { say("הערכים מחוץ לתחום של המודל.", 2); return false; } hist.length = 0; paused = false; G.sfx.whoosh && G.sfx.whoosh(); return true; }
+    function start() { if (!S.startRun(L)) { say("הערכים מחוץ לתחום של המודל.", 2); return false; } hist.length = 0; paused = false; G.sfx.whoosh && G.sfx.whoosh(); life && life.event("start"); bridge.reset(); return true; }
     $("#tPlay").addEventListener("click", () => { G.audio.unlock(); if (L.running) paused = !paused; else start(); paintTransport(); });
     // tap the machine itself: run / pause (a swipe still scrolls the page)
-    cv.addEventListener("click", (e) => { G.audio.unlock(); if (L.running) paused = !paused; else if (!start()) return; paintTransport(); ripple(e.offsetX, e.offsetY); });
+    cv.addEventListener("click", (e) => { if (suppressClick) { suppressClick = false; return; } G.audio.unlock(); if (L.running) paused = !paused; else if (!start()) return; paintTransport(); ripple(e.offsetX, e.offsetY); });
     const ripples = []; const ripple = (x, y) => { if (!reduceMotion) ripples.push({ x, y, t: 0 }); };
     $("#tStep").addEventListener("click", () => { if (!L.running) { if (!start()) return; } paused = true; S.stepRun(L, 1 / 30); sample(); paintTransport(); });
     $("#tReset").addEventListener("click", () => { S.idle(L); hist.length = 0; paused = false; egg && egg.reset(); paintTransport(); G.sfx.pop(); });
+    $("#tSplash")?.addEventListener("click", () => { G.audio.unlock(); bridge.gag(); });
+    $("#tArrows").addEventListener("click", () => { view = view === "none" ? "forces" : "none"; $("#tArrows").setAttribute("aria-pressed", view !== "none"); G.sfx.pop(); });
+    for (const id of ["bag", "drawer"]) $("#" + id).addEventListener("toggle", () => { uiPref.set(id, $("#" + id).open); if (id === "drawer" && $("#drawer").open) resize(); });
     $("#tSlow").addEventListener("click", () => { slow = !slow; paintTransport(); G.sfx.pop(); if (slow) say("הילוך איטי: רק השעון של המסך מאט.", 2); });
     for (const b of document.querySelectorAll(".viewseg [data-v]")) b.addEventListener("click", () => {
       const v = b.dataset.v; G.sfx.pop();
       if (v === "graph") { graphOpen = !graphOpen; $("#graph").hidden = !graphOpen; b.setAttribute("aria-pressed", graphOpen); if (graphOpen) { resize(); paintGseg(); } return; }
       if (v === "explain") { const el = $("#explain"), open = el.hidden; el.hidden = !open; b.setAttribute("aria-pressed", open); if (open) paintExplain(); return; }
-      view = v; for (const x of document.querySelectorAll('.viewseg [data-v="forces"], .viewseg [data-v="none"]')) x.setAttribute("aria-pressed", x.dataset.v === view);
+      
     });
     function paintExplain() {
       $("#explain").innerHTML = `<h3 style="margin:0 0 6px">${esc(sc.title)}</h3><p style="margin:0 0 8px">${esc(sc.story)}</p>
@@ -302,10 +357,20 @@
       });
       el.querySelector("[data-f]")?.addEventListener("keydown", (e) => { if (e.key === "Enter") el.querySelector("#checkX")?.click(); });
     }
+    // a finished run that missed the goal of this situation: a short, funny miss (never a penalty)
+    function runEnded() {
+      const m = curM(); if (!life || isDone(m.id) && !ui.replay) return;
+      if (m.kind === "goal" && m.goal && m.goal.kind === "one" && !S.goalReached(L, m)) {
+        life.event("miss"); ui.misses = (ui.misses || 0) + 1;
+        // a quick way back in: one change, then ▶ (or a tap on the stage)
+        if (ui.misses % 2 === 1) later(() => { if ($("#say").hidden) say(["כמעט! שנה דבר אחד ונסה שוב.", "עוד ניסיון? ערך אחד, ואז הקשה על הבמה.", "לא הפעם. מה אם רק מהירות אחת תשתנה?"][(ui.misses >> 1) % 3], 2.2); }, 700);
+        $("#tPlay").classList.add("nudge");
+      }
+    }
     function evaluate(force) {
       const m = curM(); if (isDone(m.id) && !ui.replay) return;
       if (m.kind === "goal" && S.goalReached(L, m)) return complete(m);
-      if (m.kind === "predict" && L.pred[m.id]) { const r = S.predictionResult(L, m); if (r && r.ready && r.ok) return complete(m); if (r && (r.ready || r.changed) && !ui.predShown) { ui.predShown = true; paintMission(); if (r.ready) { G.sfx.hmph && G.sfx.hmph(0.5); say("הממ, לא מה שחשבנו.", 1.8); } } return; }
+      if (m.kind === "predict" && L.pred[m.id]) { const r = S.predictionResult(L, m); if (r && r.ready && r.ok) return complete(m); if (r && (r.ready || r.changed) && !ui.predShown) { ui.predShown = true; paintMission(); if (r.ready) { G.sfx.hmph && G.sfx.hmph(0.5); say("הממ, לא מה שחשבנו.", 1.8); life && life.event("miss"); } } return; }
       if (m.kind === "transfer" && L.xfer[m.id] && S.transferConfirmed(L, m)) return complete(m);
       if (force || ((m.kind === "choice" || m.kind === "transfer") && S.explainOpen(L) !== ui.lastOpen)) { ui.lastOpen = S.explainOpen(L); paintMission(); }
     }
@@ -315,12 +380,12 @@
       const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
       if (first) reward(cfg.coin + ":" + m.id, m.coins, from);
       G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
-      confetti(W / 2, H * 0.45, first ? 48 : 20);
+      confetti(W / 2, H * 0.45, first ? 48 : 20); life && life.event("success");
       toast(m, first); paintBar();
       const mb = document.querySelector(`#mbar [data-i="${ui.mi}"]`); if (mb) { mb.classList.remove("popdone"); void mb.offsetWidth; mb.classList.add("popdone"); }
       if (first && sceneN(sc) === 4) later(() => reward(cfg.coin + "scene:" + sc.id, 10, from), 900);
-      const n = sc.missions.findIndex((x) => !isDone(x.id));
-      if (first && n >= 0) later(() => select(n), 1300); else paintMission();
+      const n = [1, 0, 2, 3].find((i) => sc.missions[i] && !isDone(sc.missions[i].id));
+      if (first && n !== undefined) later(() => select(n), 1300); else paintMission();
     }
     function toast(m, first) {
       const t = $("#toast");
@@ -335,6 +400,7 @@
       const e = S.evalP(sc, L.P);
       if (e.invalid) { $("#readouts").innerHTML = `<div class="readout"><small>המודל</small><b>מחוץ לתחום</b></div>`; return; }
       $("#readouts").innerHTML = Object.entries(sc.readouts).map(([k, he]) => `<div class="readout"><small>${esc(he)}</small><b>${esc(nice(e[k]))}${typeof e[k] === "number" && (UNIT || {})[k] ? " " + UNIT[k] : ""}</b></div>`).join("");
+      $("#dsum").textContent = Object.keys(sc.readouts).slice(0, 2).map((k) => `${nice(e[k])}${typeof e[k] === "number" && (UNIT || {})[k] ? " " + UNIT[k] : ""}`).join(" · ");
       const t = Object.entries(sc.readouts).map(([k, he]) => `${he}: ${nice(e[k])} ${(UNIT || {})[k] || ""}`).join(". ");
       if ($("#srText").textContent !== t) $("#srText").textContent = t;
     }
@@ -382,10 +448,39 @@
     const arrowS = (x, y, vx, vy, c, lab, val) => (val !== undefined && (Math.abs(val) < 0.05 || Math.abs(val) >= 1e4 || sc.id[0] === "E"))
       ? forceArrow(ctx, x, y, vx, vy, c, `${lab} ${nice(Math.abs(val))}`, {}) : forceArrow(ctx, x, y, vx, vy, c, lab, val !== undefined ? { value: val } : {});
     // the creature as the body: feet at (px, py) in screen pixels, height hpx, rotated
-    function critter(px, py, hpx, rot = 0, flip = false) {
+    function critter(px, py, hpx, rot = 0, flip = false, squash = 1) {
       if (!(img.complete && img.naturalWidth)) { ctx.fillStyle = "#F7D9B5"; ctx.beginPath(); ctx.arc(px, py - hpx / 2, hpx / 2, 0, Math.PI * 2); ctx.fill(); return; }
-      const w = hpx * img.naturalWidth / img.naturalHeight; ctx.save(); ctx.translate(px, py); ctx.rotate(rot); if (flip) ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -hpx, w, hpx); ctx.restore();
+      const w = hpx * img.naturalWidth / img.naturalHeight; ctx.save(); ctx.translate(px, py); ctx.rotate(rot); if (flip) ctx.scale(-1, 1); if (squash !== 1) ctx.scale(squash, 1 / Math.sqrt(squash)); ctx.drawImage(img, -w / 2, -hpx, w, hpx); ctx.restore();
     }
+    // ---------------- the shark bridge (W03-S05): a place, sharks that follow shadows, a water gag ----------------
+    const bridge = {
+      fins: [{ x: 0.3, d: 0.35, s: 1 }, { x: 0.7, d: 0.75, s: -1 }, { x: 0.5, d: 0.55, s: 1 }], splash: 0, flee: 0,
+      reset() { this.splash = 0; },
+      draw(s, p, lo, hi, dt) {
+        const y0 = sy(0), now = performance.now(), water = Math.max(30, H - 56 - y0);
+        // sharks under the bridge: fins drift toward the shadow of the walkers, at three depths
+        const targets = [sx(s.st.x1), sx(s.st.x2), W * (0.5 + 0.35 * Math.sin(now / 5000))];
+        const fleeing = now - this.flee < 1800;
+        this.fins.forEach((f, i) => { const tx = targets[i] / W; if (!reduceMotion) { if (fleeing) f.x += f.s * dt * 0.5; else f.x += (tx - f.x) * Math.min(1, dt * 0.25 * (1 + i * 0.3)); if (f.x < -0.2 || f.x > 1.2) { f.x = fleeing ? f.x : tx; } }
+          const yy = y0 + 18 + f.d * water * 0.8, hh = 26 + (1 - f.d) * 14; const dir = targets[i] / W > f.x;
+          life && life.sprite(ctx, fleeing ? "shark_startled" : "shark_fin", f.x * W, yy + (reduceMotion ? 0 : Math.sin(now / 700 + i) * 2), fleeing ? hh * 1.4 : hh, fleeing ? f.s < 0 : !dir, 0, 0.55 + (1 - f.d) * 0.45); });
+        // posts, hand ropes, deck
+        const a = sx(lo + 0.6), b = sx(hi - 0.6), postH = 54;
+        ctx.save(); ctx.strokeStyle = "#7A5534"; ctx.lineWidth = 7; ctx.lineCap = "round";
+        for (const x of [a, b]) { ctx.beginPath(); ctx.moveTo(x, y0 + 26); ctx.lineTo(x, y0 - postH); ctx.stroke(); }
+        ctx.strokeStyle = "#6E5A4A"; ctx.lineWidth = 2.4; for (const k of [0, 1]) { ctx.beginPath(); ctx.moveTo(a, y0 - postH + 6 + k * 16); ctx.quadraticCurveTo((a + b) / 2, y0 - postH * 0.35 + k * 16, b, y0 - postH + 6 + k * 16); ctx.stroke(); }
+        ctx.fillStyle = "#C08A55"; ctx.strokeStyle = "#5D4330"; ctx.lineWidth = 1.4;
+        const step = Math.max(15, cam.S * 0.9); for (let x = a; x < b - 4; x += step) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y0 - 4, Math.min(step - 3, b - x), 8, 2) : ctx.rect(x, y0 - 4, step - 3, 8); ctx.fill(); ctx.stroke(); }
+        ctx.restore();
+        // the flag on the red band (the goal of this situation: 14–16 m)
+        const fx = sx(15); line(fx, y0, fx, y0 - 58, 2.4, "#5D4330"); ctx.fillStyle = "#D94F70"; ctx.beginPath(); ctx.moveTo(fx, y0 - 58); ctx.lineTo(fx + 22, y0 - 51); ctx.lineTo(fx, y0 - 44); ctx.closePath(); ctx.fill();
+      },
+      // the comic fall is theatre, separate from the model: the walker drops, the sharks flee, it is back with a ring in 1.5 s
+      gag() { if (reduceMotion) { say("(נפל למים, הכרישים ברחו, חזר עם מצוף)", 2.4); return; } this.splash = performance.now(); this.flee = this.splash + 300; G.sfx.whoa && G.sfx.whoa(); later(() => G.sfx.boof && G.sfx.boof(), 420); later(() => G.sfx.phew && G.sfx.phew(), 1600); later(() => say("הכרישים הם קהל בלבד.", 2.2), 1700); },
+      offset() { const q = (performance.now() - this.splash) / 1000; if (!this.splash || q > 3.6) return null; return q < 0.45 ? { dy: q * q * 900, ring: false, q } : q < 1.5 ? { dy: 200, ring: false, q, under: true } : { dy: Math.max(0, 200 * (1 - (q - 1.5) / 0.35)), ring: true, q }; }
+    };
+    const fx_ = { prevX: null, dust: [] };
+    function circusBeat(x) { if (L.running && !paused && fx_.prevX !== null && Math.sign(x) !== Math.sign(fx_.prevX) && Math.abs(x - fx_.prevX) < 0.5) G.sfx.tick && G.sfx.tick(); fx_.prevX = L.running ? x : null; }
     // gravity of real places, for a label and a background tint (approximate surface values)
     const PLANETS = [["הירח", 1.62, "#E6E8F0"], ["מאדים", 3.71, "#F6E1D6"], ["כוכב חמה", 3.7, "#EAE5DF"], ["אורנוס", 8.69, "#DDF2F2"], ["נוגה", 8.87, "#F5EBD6"], ["כדור הארץ", 9.81, null], ["שבתאי", 10.44, "#F3ECD8"], ["נפטון", 11.15, "#DDE6F8"]];
     const nearPlanet = (g) => { let b = null; for (const q of PLANETS) if (Math.abs(q[1] - g) <= 0.35 && (!b || Math.abs(q[1] - g) < Math.abs(b[1] - g))) b = q; return b; };
@@ -488,11 +583,24 @@
       },
       meeting(s, p) {
         const xs = [p.x1, p.x2, s.st.x1, s.st.x2]; const lo = Math.min(...xs, 0) - 3, hi = Math.max(...xs, 16) + 3;
-        fit(lo, hi, -2, 3); ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
+        fit(lo, hi, -2, 3); if (sc.id !== "W03-S05") ground(0); for (let i = Math.ceil(lo / 5) * 5; i <= hi; i += 5) label(sx(i), sy(0) + 18, String(i));
         if (sc.id === "W03-S05") { ctx.fillStyle = "rgba(226,87,76,0.35)"; ctx.fillRect(sx(14), sy(0) - 4, 2 * cam.S, 8); }
         if (sc.id === "W03-S01") { ctx.fillStyle = "rgba(37,181,139,0.25)"; ctx.fillRect(sx(10), sy(0) - 4, 4 * cam.S, 8); label(sx(12), sy(0) - 14, "תחנה", "#137556"); }
-        critter(sx(s.st.x1), sy(0), Math.min(64, cam.S * 2), 0, false);
-        cart(sx(s.st.x2), sy(0) - 4, Math.min(46, cam.S * 1.6), Math.min(30, cam.S), "ב׳", "#FFF3D6");
+        if (sc.id === "W03-S05") {
+          bridge.draw(s, p, lo, hi, 1 / 60);
+          const met = L.sim && L.sim.met, ok = met && met.x >= 14 && met.x <= 16, after = met && L.sim.t >= met.t;
+          const bow = after && ok ? Math.min(0.35, (L.sim.t - met.t) * 1.5) : 0, look = after && !ok;
+          const off = bridge.offset(), hp = Math.min(60, cam.S * 2);
+          if (off && off.under) { ctx.save(); ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.lineWidth = 2; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse(sx(s.st.x1), sy(0) + 40, 10 + k * 10 + off.q * 20, 4 + k * 3, 0, 0, Math.PI * 2); ctx.stroke(); } ctx.restore(); }
+          else critter(sx(s.st.x1), sy(0) + (off ? off.dy : 0), hp, bow, look ? sx(s.st.x1) > sx(15) : false);
+          if (off && off.ring) life && life.sprite(ctx, "life_ring", sx(s.st.x1), sy(0) + off.dy - hp * 0.15, hp * 0.6);
+          critter(sx(s.st.x2), sy(0), hp * 0.9, -bow, look ? sx(s.st.x2) > sx(15) : true);
+          if (look) { label(sx(s.st.x1), sy(0) - hp - 10, "?", "#B8741A", "center", "800 18px "); label(sx(s.st.x2), sy(0) - hp - 10, "?", "#B8741A", "center", "800 18px "); }
+          if (after && ok) { const sh = Math.min(1, (L.sim.t - met.t) * 2); life && life.sprite(ctx, "shark_happy", sx(met.x) + 40, sy(0) + 70 - sh * 30, 46); life && life.sprite(ctx, "life_ring", sx(met.x) + 40, sy(0) + 30 - sh * 30, 28); }
+        } else {
+          critter(sx(s.st.x1), sy(0), Math.min(64, cam.S * 2), 0, false);
+          cart(sx(s.st.x2), sy(0) - 4, Math.min(46, cam.S * 1.6), Math.min(30, cam.S), "ב׳", "#FFF3D6");
+        }
         if (L.sim && L.sim.met) { ctx.strokeStyle = "#E39B28"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx(L.sim.met.x), sy(0) - 30, 22, 0, Math.PI * 2); ctx.stroke(); label(sx(L.sim.met.x), sy(0) - 62, `מפגש: ${nice(L.sim.met.t)} s, ${nice(L.sim.met.x)} m`, "#B8741A"); }
         if (forces()) { arrowS(sx(s.st.x1), sy(0) - 80, p.v1 * 6, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 60, p.v2 * 6, 0, "#20232A", "v₂"); }
         if (s.done && !L.sim.met && L.sim.t > 0) banner("אין מפגש", "#606671");
@@ -535,8 +643,16 @@
         const th = p.angle * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), Lr = 6, tr = s.tr || null, pos = tr ? tr.s : 3;
         fit(-0.6, Lr * c + 0.6, -0.3, Lr * sn + 1.2); ground(0);
         ctx.fillStyle = "rgba(107,107,112,0.08)"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(Lr * c), sy(0)); ctx.lineTo(sx(Lr * c), sy(Lr * sn)); ctx.closePath(); ctx.fill();
-        line(sx(0), sy(0), sx(Lr * c), sy(Lr * sn), 6, "#B58A55"); line(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * sn), 2);
-        const fx = pos * c, fy = pos * sn, hpx = Math.min(70, cam.S * 0.75); critter(sx(fx), sy(fy), hpx, -th);
+        const mat = p.muK < 0.08 ? ["#A9D6F2", "קרח"] : p.muK < 0.35 ? ["#B58A55", "עץ"] : ["#D9B77A", "חול"];
+        line(sx(0), sy(0), sx(Lr * c), sy(Lr * sn), 7, mat[0]); line(sx(Lr * c), sy(0), sx(Lr * c), sy(Lr * sn), 2);
+        if (mat[1] === "חול") { ctx.fillStyle = "rgba(150,110,60,0.5)"; for (let i = 1; i < 18; i++) { const q = i / 18; ctx.beginPath(); ctx.arc(sx(q * Lr * c) + (i % 3) * 2, sy(q * Lr * sn) - 3, 1.3, 0, Math.PI * 2); ctx.fill(); } }
+        if (mat[1] === "קרח" && !reduceMotion) { const q = (performance.now() / 2600) % 1; label(sx(q * Lr * c), sy(q * Lr * sn) - 8, "✦", "rgba(255,255,255,0.95)", "center", "700 12px "); }
+        label(sx(Lr * c * 0.5) + 10, sy(Lr * sn * 0.5) + 16, mat[1] + ` · μk ${nice(p.muK)}`, "#606671", "left", "600 11px ");
+        const fx = pos * c, fy = pos * sn, hpx = Math.min(70, cam.S * 0.75);
+        const vT = tr && tr.v !== undefined ? tr.v : 0; if (L.running && Math.abs(vT) > 0.15 && !reduceMotion && Math.random() < 0.5) fx_.dust.push({ x: sx(fx) - Math.sign(vT) * c * 14, y: sy(fy) + Math.sign(vT) * sn * 14, t: 0 });
+        for (let i = fx_.dust.length - 1; i >= 0; i--) { const d = fx_.dust[i]; d.t += 1 / 60; if (d.t > 0.7) { fx_.dust.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = 0.5 * (1 - d.t / 0.7); ctx.fillStyle = mat[1] === "קרח" ? "#FFFFFF" : "#C9B08A"; ctx.beginPath(); ctx.arc(d.x, d.y - d.t * 14, 3 + d.t * 8, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        critter(sx(fx), sy(fy), hpx, -th);
+        life && life.sprite(ctx, "crab", sx(Lr * c) + 26 + (reduceMotion ? 0 : Math.sin(performance.now() / 900) * 10), sy(0) + 2, 30, Math.cos(performance.now() / 900) < 0);
         if (forces() && tr) { const R = tr.resolve(), C = { x: sx(fx) - sn * hpx * 0.45, y: sy(fy) - c * hpx * 0.45 }, k = 90 / (p.m * p.g);
           arrowS(C.x, C.y, 0, p.m * p.g * k, "#2785C7", "mg", p.m * p.g); if (R.N) arrowS(C.x, C.y, -sn * R.N * k, -c * R.N * k, "#8969C6", "N", R.N);
           if (Math.abs(R.f) > 1e-3) arrowS(C.x, C.y, c * R.f * k, -sn * R.f * k, "#CC5794", R.mode === "static" ? "f_s" : "f_k", Math.abs(R.f));
@@ -561,7 +677,9 @@
         const x = s.st.x !== undefined ? s.st.x : p.x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
         for (let i = 0; i <= 20; i++) { const X = -1.1 + (end + 1.1) * i / 20, Y = 0.25 + (i % 2 ? 0.08 : -0.08) * (i && i < 20 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
         ctx.save(); ctx.setLineDash([3, 4]); line(sx(0), sy(0) + 4, sx(0), sy(0.75), 1.2, "#9A9AA0"); ctx.restore(); label(sx(0), sy(0.8), "x = 0", "#606671");
-        critter(sx(x + 0.1), sy(0), Math.min(80, cam.S * 0.55));
+        life && life.sprite(ctx, "glove", sx(-1.1) + 18, sy(0.8) + 6, 34); life && life.sprite(ctx, "cushion", sx(xm + 0.25), sy(0) + 2, 30);
+        circusBeat(x);
+        critter(sx(x + 0.1), sy(0), Math.min(80, cam.S * 0.55), 0, false, x < 0 ? clamp(1 + 0.55 * x, 0.6, 1) : clamp(1 + 0.12 * x, 1, 1.1));
         if (forces()) { const F = -p.k * x; arrowS(sx(x + 0.1), sy(0.3), F * 2.2, 0, "#6A7F2A", "F = −kx", Math.abs(F)); }
         label(sx(x + 0.1), sy(0) + 16, "x = " + nice(x) + " m", "#20232A");
       },
@@ -621,7 +739,9 @@
         cart(sx(s.st.x2), sy(0) - 4, w, 30, nice(p.m2, 1) + " kg", "#FFF3D6");
         if (forces()) { arrowS(sx(s.st.x1), sy(0) - 84, s.st.v1 * 8, 0, "#20232A", "v₁"); arrowS(sx(s.st.x2), sy(0) - 52, s.st.v2 * 8, 0, "#20232A", "v₂"); }
         label(14, 20, `p = ${nice(s.st.p !== undefined ? s.st.p : p.m1 * p.u1 + p.m2 * p.u2)} kg·m/s · K = ${nice(s.st.K !== undefined ? s.st.K : 0.5 * p.m1 * p.u1 ** 2 + 0.5 * p.m2 * p.u2 ** 2)} J · e = ${nice(p.e)}`, "#20232A", "left");
-        if (has("hit")) { const e = L.sim.events.find((q) => q.type === "hit"); if (L.sim.t - e.t < 0.3) banner("בום!", "#E39B28"); }
+        if (has("hit")) { const e = L.sim.events.find((q) => q.type === "hit"); if (L.sim.t - e.t < 0.3) label((sx(s.st.x1) + sx(s.st.x2)) / 2, sy(0) - 48, "טוק", "#B8741A", "center", "800 15px ");
+          if (p.e === 0 && L.sim.t - e.t > 0.3) { const mx = (sx(s.st.x1) + sx(s.st.x2)) / 2; ctx.save(); ctx.fillStyle = "#FFF8E8"; ctx.strokeStyle = "#5D4330"; ctx.lineWidth = 1.6; ctx.fillRect(mx - 62, sy(0) - 100, 124, 24); ctx.strokeRect(mx - 62, sy(0) - 100, 124, 24); line(mx, sy(0) - 76, mx, sy(0) - 40, 1.6, "#5D4330"); ctx.restore(); ctx.save(); ctx.font = "700 12px " + FONT; ctx.direction = "rtl"; ctx.textAlign = "center"; ctx.fillStyle = "#5D4330"; ctx.fillText("אנחנו צוות עכשיו", mx, sy(0) - 84); ctx.restore(); } }
+        for (const [x, c_] of [[s.st.x1, "#F28B82"], [s.st.x2, "#8AB4F8"]]) { const bx = sx(x), by = sy(0) - 44; line(bx, by + 8, bx, sy(0) - 34, 1, "#606671"); ctx.fillStyle = c_; ctx.beginPath(); ctx.ellipse(bx, by, 7, 9, 0, 0, Math.PI * 2); ctx.fill(); }
       },
       recoil(s, p) {
         fit(-6, 6, -0.5, 2); ground(0);
@@ -648,7 +768,8 @@
         const x = s.st.x !== undefined ? s.st.x : WP.evaluate("oscillator", p).x, end = x - 0.15; ctx.strokeStyle = "#6A7F2A"; ctx.lineWidth = 2.6; ctx.beginPath();
         for (let i = 0; i <= 22; i++) { const X = -1.35 + (end + 1.35) * i / 22, Y = 0.25 + (i % 2 ? 0.07 : -0.07) * (i && i < 22 ? 1 : 0); i ? ctx.lineTo(sx(X), sy(Y)) : ctx.moveTo(sx(X), sy(Y)); } ctx.stroke();
         for (const d of [-p.A, p.A]) { ctx.save(); ctx.setLineDash([3, 4]); line(sx(d), sy(0) + 4, sx(d), sy(0.7), 1.2, "#9A9AA0"); ctx.restore(); }
-        critter(sx(x + 0.1), sy(0), Math.min(70, cam.S * 0.5));
+        life && life.sprite(ctx, "glove", sx(-1.35) + 18, sy(0.8) + 6, 32); circusBeat(x);
+        critter(sx(x + 0.1), sy(0), Math.min(70, cam.S * 0.5), 0, false, x < 0 ? clamp(1 + 0.6 * x, 0.6, 1) : 1);
         if (forces() && s.st.v !== undefined) { arrowS(sx(x + 0.1), sy(0.85), s.st.v * 30, 0, "#20232A", "v"); arrowS(sx(x + 0.1), sy(0.55), s.st.a * 4, 0, "#8A60E8", "a"); }
         label(14, 20, `T = 2π√(m/k) = ${nice(WP.evaluate("oscillator", p).period)} s`, "#20232A", "left");
       },
@@ -789,9 +910,13 @@
     function draw(dt = 0) {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const s = SIM(); if (!s) { label(W / 2, H / 2, "הערכים מחוץ לתחום של המודל", "#E2574C"); return; }
+      if (life) life.back(ctx, W, H, cam ? cam.oy : H * 0.75, dt);
       if (shakeT > 0) { shakeT -= dt; const k = 7 * Math.max(0, shakeT / 0.45); ctx.translate((Math.random() - 0.5) * k, (Math.random() - 0.5) * k); }
       try { DRAW[sc.family](s, P_()); } catch (e) { label(W / 2, H / 2, "…", "#606671"); }
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      // the companion stays out when the scene already stages the same prop (sharks on the bridge, the glove, the crab)
+      if (life && cam && !(sc.id === "W03-S05" || (life.info.companion === "glove" && /spring|oscillator/.test(sc.family)) || (life.info.companion === "crab" && sc.family === "incline"))) life.front(ctx, W, H, cam.oy);
+      drawHandles(performance.now());
       if (L.sim) label(W - 12, H - 66, "t = " + fmt(L.sim.t, 2) + " s", "#606671", "right");
       for (let i = ripples.length - 1; i >= 0; i--) { const q = ripples[i]; q.t += dt; if (q.t > 0.5) { ripples.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = 1 - q.t / 0.5; ctx.strokeStyle = "#8A60E8"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, 10 + q.t * 70, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
       drawParty(dt);
@@ -800,7 +925,7 @@
     // ---------------- loop ----------------
     function frame(now) {
       const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
-      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); paintHotCold(); } }
+      if (L.running && !paused && !isSheetOpen()) { let rem = dt * (slow ? 0.25 : 1); while (rem > 1e-9 && L.running) { const h = Math.min(rem, 1 / 120); S.stepRun(L, h); rem -= h; } sample(); if (!L.running) { paintTransport(); evaluate(false); paintHotCold(); runEnded(); } }
       draw(dt);
       if ((frameN++ & 3) === 0) paintGraph();
       if ((evalT += dt) > 0.3) { evalT = 0; evaluate(false); }
@@ -810,7 +935,7 @@
     paintControls(); paintReadouts(); paintTransport(); paintBar(); select(ui.mi);
     raf = requestAnimationFrame(frame);
     later(() => say(sc.story, 3.2), 300);
-    window.__wscene = () => ({ L, ui, sc, hist });
+    window.__wscene = () => ({ L, ui, sc, hist, handles: () => (DRAG[sc.family] && cam ? DRAG[sc.family]().map((h) => ({ x: h.x, y: h.y })) : []) });
     K.onCleanup(() => { alive = false; cancelAnimationFrame(raf); ro.disconnect(); K.closeInfo(); document.querySelector(".sheet-back")?.remove(); R0.params[sc.id] = { ...L.P }; P.save(); clearTimeout(toast.t); });
   };
   }

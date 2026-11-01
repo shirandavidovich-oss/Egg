@@ -44,6 +44,7 @@ jobs:
           node tests/elec-engine.test.js
           node tests/elec-missions.test.js
           node tests/egg-actor.test.js
+          node tests/life-layer.test.js
 
       - name: Build
         run: |

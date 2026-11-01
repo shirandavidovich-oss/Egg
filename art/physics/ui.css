@@ -756,3 +756,26 @@
   @media (prefers-reduced-motion: reduce) {
     .lab-screen .options button, .mission .stamp, .mission button.gate, #tPlay.nudge, .mission.swap, .rscene .mbar button.popdone, .slider-row.glow, .hotcold.pop { animation: none; }
   }
+
+  /* ================= STAGE: equipment bag + measurement drawer (living-worlds pack) ================= */
+  #ui .lab-screen details.bag, #ui .lab-screen details.drawer { padding: 0; overflow: hidden; }
+  details.bag > summary, details.drawer > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; cursor: pointer; font: 700 15px var(--ui-font); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+  details.bag > summary::-webkit-details-marker, details.drawer > summary::-webkit-details-marker { display: none; }
+  details.bag > summary::after, details.drawer > summary::after { content: "▾"; color: var(--ink-2); transition: transform .2s; margin-inline-start: 4px; }
+  details[open].bag > summary::after, details[open].drawer > summary::after { transform: rotate(180deg); }
+  details.bag > summary small { flex: 1; text-align: left; font: 500 12px var(--ui-font); color: var(--ink-2); }
+  details.drawer > summary .dsum { flex: 1; text-align: left; font: 700 13px var(--ui-font); color: #5B37B8; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #ui .lab-screen details .controls { border-top: 1px solid var(--line); }
+  details.drawer[open] > :not(summary) { margin: 0 10px 10px; }
+  details.drawer .viewseg { margin-top: 6px; }
+  details.drawer #explain { font-size: 14.5px; }
+  details[open].bag > .controls, details[open].drawer > .readouts { animation: drawerIn .25s cubic-bezier(.2,.8,.2,1); }
+  @keyframes drawerIn { from { opacity: 0; transform: translateY(-6px); } }
+  #ui .lab-screen .lab { height: 50vh; }
+  @media (max-height: 700px) { #ui .lab-screen .lab { height: 46vh; } }
+  #tArrows[aria-pressed="false"] { opacity: 0.5; }
+  #tSplash { background: #E6F6FF; border-color: #6FB6E0; }
+  @media (prefers-reduced-motion: reduce) { details[open].bag > .controls, details[open].drawer > .readouts { animation: none; } }
+  #ui .lab-screen .lab-tools .story-chip { min-width: 0; flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #ui .lab-screen .lab-tools { gap: 6px; }
+  @media (max-width: 420px) { #ui .wscene .lab-tools .story-chip { display: none; } }

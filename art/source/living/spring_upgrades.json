@@ -1,0 +1,254 @@
+[
+  {
+    "id": "wall_horizontal",
+    "title": "קפיץ מחובר לקיר",
+    "original": {
+      "id": "wall_horizontal",
+      "title_he": "קפיץ מחובר לקיר",
+      "description_he": "מושכים את היצור ימינה; הקפיץ מחזיר אותו",
+      "formula": "F=-kx; E=½kx²",
+      "coverage": "core",
+      "implemented_in_demo": true
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "דמות רקע ממצמצת ואז עוקבת אחרי הניסוי",
+    "reaction": "מבט ארוך אל השחקן: ״זה היה בכוונה?״",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "ceiling_hanging",
+    "title": "קפיץ תלוי מהתקרה",
+    "original": {
+      "id": "ceiling_hanging",
+      "title_he": "קפיץ תלוי מהתקרה",
+      "description_he": "מושכים את היצור למטה סביב נקודת שיווי המשקל",
+      "formula": "kx_eq=mg; T=2π√(m/k)",
+      "coverage": "core",
+      "implemented_in_demo": true
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "עלה או בועה חולפים ברוח קלה",
+    "reaction": "הדמות מנערת אבק ומעמידה פנים שלא קרה דבר",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "floor_launcher",
+    "title": "קפיץ משגר מהרצפה",
+    "original": {
+      "id": "floor_launcher",
+      "title_he": "קפיץ משגר מהרצפה",
+      "description_he": "דוחסים ומשחררים; בשחרור מגע היצור עף",
+      "formula": "½kx²→mgh+½mv²",
+      "coverage": "core",
+      "implemented_in_demo": false
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "יצור רקע מנסה לחקות את התנועה ונכשל",
+    "reaction": "מוציאה שלט קטן: ״כמעט מקצועי״",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "incline_spring",
+    "title": "קפיץ על מישור משופע",
+    "original": {
+      "id": "incline_spring",
+      "title_he": "קפיץ על מישור משופע",
+      "description_he": "מסובבים את המישור; בוחנים כבידה, נורמל וחיכוך",
+      "formula": "ma=-kx-mg sinθ+f",
+      "coverage": "core",
+      "implemented_in_demo": true
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "אביזר קטן רוטט לפני האירוע",
+    "reaction": "בודקת אם מישהו ראה ואז קדה לקהל",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "spring_force_graph",
+    "title": "מעבדת מדידת קפיץ",
+    "original": {
+      "id": "spring_force_graph",
+      "title_he": "מעבדת מדידת קפיץ",
+      "description_he": "מוסיפים משקולות ניסוי ומודדים ΔL ו-F",
+      "formula": "k=ΔF/Δx; area=½kx²",
+      "coverage": "core",
+      "implemented_in_demo": true
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "שחף נרדם ומתעורר כשמשהו זז",
+    "reaction": "כרית זעירה נשלפת רגע מאוחר מדי",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "two_in_series",
+    "title": "שני קפיצים בטור",
+    "original": {
+      "id": "two_in_series",
+      "title_he": "שני קפיצים בטור",
+      "description_he": "שתי חוליות נמתחות בכוח זהה; התארכות מצטברת",
+      "formula": "1/k_eq=1/k1+1/k2",
+      "coverage": "exam_example_2008",
+      "implemented_in_demo": true
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "סרטן תחזוקה בודק את הרצפה",
+    "reaction": "העיניים ממשיכות לנוע רגע אחרי שהגוף נעצר",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "two_in_parallel",
+    "title": "שני קפיצים במקביל",
+    "original": {
+      "id": "two_in_parallel",
+      "title_he": "שני קפיצים במקביל",
+      "description_he": "הדמות תלויה משני קפיצים, אותה מתיחה לכל אחד",
+      "formula": "k_eq=k1+k2",
+      "coverage": "extension",
+      "implemented_in_demo": true
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "צל מתקרב ואז מתגלה כיצור זעיר",
+    "reaction": "דמות הרקע מוחאת כפיים פעם אחת בלבד",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "ramp_energy",
+    "title": "קפיץ ומשטח מוגבה",
+    "original": {
+      "id": "ramp_energy",
+      "title_he": "קפיץ ומשטח מוגבה",
+      "description_he": "הקפיץ משחרר דמות למסילה; מגיעים לגובה אחר",
+      "formula": "½kx²=mgΔh+½mv²+E_diss",
+      "coverage": "exam_example_2008",
+      "implemented_in_demo": false
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "דמות רקע ממצמצת ואז עוקבת אחרי הניסוי",
+    "reaction": "מבט ארוך אל השחקן: ״זה היה בכוונה?״",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "two_masses",
+    "title": "קפיץ בין שתי דמויות",
+    "original": {
+      "id": "two_masses",
+      "title_he": "קפיץ בין שתי דמויות",
+      "description_he": "שתי דמויות נעות בכיוונים מנוגדים; תנע כולל נשמר",
+      "formula": "m1v1+m2v2=0",
+      "coverage": "exam_example_2022",
+      "implemented_in_demo": false
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "עלה או בועה חולפים ברוח קלה",
+    "reaction": "הדמות מנערת אבק ומעמידה פנים שלא קרה דבר",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "pulley_spring",
+    "title": "קפיץ וגלגלת",
+    "original": {
+      "id": "pulley_spring",
+      "title_he": "קפיץ וגלגלת",
+      "description_he": "הקפיץ מושך בחוט ללא מסה דרך גלגלת אידיאלית",
+      "formula": "ΣF=ma; T_spring=kx",
+      "coverage": "advanced",
+      "implemented_in_demo": false
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "יצור רקע מנסה לחקות את התנועה ונכשל",
+    "reaction": "מוציאה שלט קטן: ״כמעט מקצועי״",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "horizontal_friction",
+    "title": "קפיץ עם חיכוך",
+    "original": {
+      "id": "horizontal_friction",
+      "title_he": "קפיץ עם חיכוך",
+      "description_he": "מסות הדמות ומקדם החיכוך קבועים; משנים חומר מסילה",
+      "formula": "|fs|≤μsN; fk=μkN",
+      "coverage": "core",
+      "implemented_in_demo": false
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "אביזר קטן רוטט לפני האירוע",
+    "reaction": "בודקת אם מישהו ראה ואז קדה לקהל",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  },
+  {
+    "id": "oscillation_lab",
+    "title": "מעבדת תנודות וגרפים",
+    "original": {
+      "id": "oscillation_lab",
+      "title_he": "מעבדת תנודות וגרפים",
+      "description_he": "רואים x(t), v(t), a(t), E(t) בעת תנודה",
+      "formula": "ω=√(k/m); T=2π/ω",
+      "coverage": "core",
+      "implemented_in_demo": false
+    },
+    "stage": "קרקס הקפיצים",
+    "ambient": "שחף נרדם ומתעורר כשמשהו זז",
+    "reaction": "כרית זעירה נשלפת רגע מאוחר מדי",
+    "assets": [
+      "glove",
+      "cushion",
+      "ghost"
+    ],
+    "integration": "Keep existing spring equations, damping transition and character physics profiles. Add animation around existing events."
+  }
+]

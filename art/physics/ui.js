@@ -199,6 +199,14 @@
     return true;
   }
 
+  // ---------------- the spring circus behind the spring lab screens (living-worlds pack) ----------------
+  // painted circus, one quiet motion and a companion behind the machine; decoration only
+  const lifeStage = (() => { let cur = null, name = null, last = 0;
+    return (ctx, W, H, screen) => { if (typeof LifeLayer === "undefined") return;
+      if (name !== screen) { name = screen; cur = LifeLayer.create({ place: LifeLayer.springPlace(screen), reduceMotion }); }
+      const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+      ctx.save(); cur.back(ctx, W, H, H * 0.86, dt); cur.front(ctx, W, H, H * 0.86); ctx.restore(); }; })();
+
   // ---------------- navigation ----------------
   const stack = [];
   let current = null, cleanup = null;
@@ -1408,7 +1416,7 @@
     }
     function draw() {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      ctx.clearRect(0, 0, W, H);
+      ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "lab");
       ctx.lineCap = "round"; ctx.lineJoin = "round";
       ctx.direction = "ltr";                                 // numbers and units read left to right
       const p = sim.p, s = sim.st.s, eq = SP.equilibrium(p);
@@ -1683,7 +1691,7 @@
 
     function arrow(x0, y0, dx, dy, color, label, below, value) { forceArrow(ctx, x0, y0, dx, dy, color, label, { value, dy: below ? 22 : 0 }); }
     function draw() {
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "wall");
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const g = geo(), p = sim.p, x = sim.st.x;
       // floor: tinted by surface
@@ -1927,7 +1935,7 @@
     }
 
     function draw() {
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "launch");
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const p = sim.p, y = sim.st.y, fy = floorY(), cx = W * 0.5;
       // floor
@@ -2110,7 +2118,7 @@
     });
 
     function draw() {
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "graph");
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const g = G0(), sx = Math.min(70, g.gx * 0.5), top = 16, L0g = 0.12, span = Math.max(0.1, extMax() * 1.08), mpx = (H - 170) / (L0g + span);   // metres → px for the spring drawing
       // stand
@@ -2364,7 +2372,7 @@
       ctx.fillStyle = color; ctx.textAlign = "left"; lines.forEach((l, i) => ctx.fillText(l, x0 + 6, y - h / 2 + 10 + i * 14));
     }
     function draw() {
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "pair");
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const p = sim.p, s = sim.st.s, d = split(s), r = creatureRect(s), x = r.cx, yS = hookY(s);
       // ceiling
@@ -2571,7 +2579,7 @@
 
     const COL = { x: "#2785C7", v: "#E39B28", a: "#CC5794", Ek: "#E39B28", Ep: "#25A06F", E: "#8A60E8" };
     function draw() {
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "osc");
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const l = L(), p = sim.p, x = sim.u, w = om();
       // ---- the track ----
@@ -2786,7 +2794,7 @@
     }
 
     function draw() {
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); lifeStage(ctx, W, H, "ramp");
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr";
       const v = view(), S = v.S;
       // the track, tinted by its surface

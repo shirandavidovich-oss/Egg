@@ -236,7 +236,7 @@
       G.audio.unlock();
       if (S.isLive(L)) { paused = !paused; }
       else if (L.running) paused = !paused;
-      else { S.startRun(L); paused = false; hist.length = 0; histRun = L.cur.id; G.sfx.whoosh && G.sfx.whoosh(); if (sc.launch) say("וווווופ!", 1); }
+      else { S.startRun(L); paused = false; hist.length = 0; histRun = L.cur.id; G.sfx.whoosh && G.sfx.whoosh(); if (sc.launch) say("וווווופ!", 1); life && life.event("start"); }
       paintTransport();
     });
     $("#tReset").addEventListener("click", () => { S.idle(L); paused = false; hist.length = 0; histRun = null; G.sfx.pop(); paintTransport(); say("חזרה להתחלה.", 1.2); });
@@ -398,6 +398,7 @@
       if (first) { st().completed.push(m.id); L.completed = st().completed; P.save(); }
       const r = cv.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height * 0.4 };
       if (first) reward("ramp:" + m.id, MISSION_COINS, from);
+      life && life.event("success");
       G.sfx.harp && G.sfx.harp(); G.buzz && G.buzz(30);
       toast(m, first);
       say(["יש!", "גילינו!", "אני גאה בנו.", "פיזיקה!"][Math.floor(Math.random() * 4)], 1.6);
@@ -742,8 +743,12 @@
 
     function draw() {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+      const nowL = performance.now(); if (life) { life.back(ctx, W, H, H * 0.82, Math.min(0.1, (nowL - lifeT) / 1000)); } lifeT = nowL;
       ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.direction = "ltr"; grip = null;
       const sim = L.sim; if (!sim) return;
+      try { drawScene(sim); } finally { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); if (life) life.front(ctx, W, H, H * 0.82); }
+    }
+    function drawScene(sim) {
       if (sim.xUp !== undefined) { drawLinked(sim); return; }
       const R = sim.resolve();
       if (sim.kind === "piecewise") drawTrack(sim, R);
@@ -855,6 +860,9 @@
 
     // ---------------- the loop ----------------
     function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    // the place (living-worlds look plan for the 18 situations): ice / dunes / wooden dock, a companion that reacts
+    const life = typeof LifeLayer !== "undefined" ? LifeLayer.create({ place: LifeLayer.INCLINE_LOOK(parseInt(sc.id.slice(1), 10) || 1), reduceMotion }) : null;
+    let lifeT = performance.now();
     let lastMode = null, lineT = 0;
     function frame(now) {
       const dtw = Math.min(0.1, (now - lastT) / 1000); lastT = now;

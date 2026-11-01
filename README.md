@@ -76,6 +76,19 @@ surface can change, the creature's body is fixed).
   From there: a timeline chart (year across, scientists down in א-ב order); tap a name to learn who they were.
 - Tests: `tests/explain.test.js`.
 
+**Living worlds** (`art/physics/life-layer.js`, data `life-data.js` from `art/source/living/`, art in `app/src/main/assets/art/life/`,
+test `tests/life-layer.test.js`): every one of the 168 world scenes is a place: a painted background (lagoon, circus, snow, factory,
+mine, city) washed so the machine stays readable, one quiet motion, and a companion that reacts only to what the model decided
+(run start, goal reached, a miss, a hard impact). The scene screen is a big stage with the goal in one line, a folding
+🎒 equipment bag (sliders) and a 📏 measurement drawer (readouts with a summary, graphs, explanation). It opens on the hands-on
+experiment; prediction, question and transfer follow. Drag on the stage: walkers on the bridge, start point, vector tips,
+spring stretch, amplitude, ramp angle, throw (slingshot: pull back and let go), drop height, charge distance.
+Flagship: the shark bridge (W03-S05) with fins following the walkers' shadows, a bow and a life ring on success, "?" on a miss,
+and a 💦 water gag (theatre only). Springs: glove, cushion, a soft tick at each pass through equilibrium, accordion squash.
+Incline: the surface (ice / wood / sand) follows μk, dust behind a moving body, a crab sweeping. Bumpers: "טוק", balloons,
+"אנחנו צוות עכשיו" after e = 0. The incline chapter and the spring lab got the same places. Nothing in this layer writes mass,
+forces, time, results, coins or progress.
+
 **The egg in falls** (`art/physics/egg-actor.js`, test `tests/egg-actor.test.js`): in the worlds machines where something falls,
 lands or hits hard (drop, throw, plank too short, vertical loop, cushion, crashing into a planet) the egg from the drawings is the
 body instead of the creature. The landing speed picks the gag: under 9 m/s a wince, 9–19 m/s pancake then lying dizzy with

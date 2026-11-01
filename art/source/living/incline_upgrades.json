@@ -1,0 +1,272 @@
+[
+  {
+    "id": "S01",
+    "title": "הרמפה החלקה",
+    "sourceModel": "single_frictionless",
+    "mission": "גולשים בלי חיכוך וחוקרים מה משתנה עם הזווית והמסה.",
+    "look": "קרח נוצץ עם שביל החלקה",
+    "ambient": "שחף מחליק ונאחז בעמוד",
+    "reaction": "הרגליים ממשיכות צעד אחד אחרי העצירה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S02",
+    "title": "רגע לפני ההחלקה",
+    "sourceModel": "single_static_threshold",
+    "mission": "מגדילים את הזווית עד שמתגברים על החיכוך הסטטי.",
+    "look": "דיונות עם אבק בעקבות הרגליים",
+    "ambient": "דגלון מתנופף; רוח דקורטיבית בלבד",
+    "reaction": "הדמות נמתחת כמסטיק בלי לשנות את הקוליידר",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S03",
+    "title": "מי מחליק על מה?",
+    "sourceModel": "single_materials",
+    "mission": "משטחים שונים יוצרים התנגדויות שונות באותה רמפה.",
+    "look": "רציף עץ עם סרטן תחזוקה",
+    "ambient": "סרטן אוסף גרגרים בשולי המסלול",
+    "reaction": "הדמות שולפת כרית קטנה לפני קצה הרמפה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S04",
+    "title": "זריקה במעלה המדרון",
+    "sourceModel": "single_uphill_launch",
+    "mission": "דוחפים למעלה; המהירות והכוח אינם חייבים להיות באותו כיוון.",
+    "look": "קרח נוצץ עם שביל החלקה",
+    "ambient": "שחף מחליק ונאחז בעמוד",
+    "reaction": "הרגליים ממשיכות צעד אחד אחרי העצירה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S05",
+    "title": "חבל המשיכה",
+    "sourceModel": "single_parallel_force",
+    "mission": "כוח חיצוני מקביל למישור עשוי לאזן, למשוך או להאיץ.",
+    "look": "דיונות עם אבק בעקבות הרגליים",
+    "ambient": "דגלון מתנופף; רוח דקורטיבית בלבד",
+    "reaction": "הדמות נמתחת כמסטיק בלי לשנות את הקוליידר",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S06",
+    "title": "מושכים באלכסון",
+    "sourceModel": "single_angled_force",
+    "mission": "זווית החבל משנה גם את הנורמל וגם את החיכוך.",
+    "look": "רציף עץ עם סרטן תחזוקה",
+    "ambient": "סרטן אוסף גרגרים בשולי המסלול",
+    "reaction": "הדמות שולפת כרית קטנה לפני קצה הרמפה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S07",
+    "title": "לחיצה לתוך המשטח",
+    "sourceModel": "single_perpendicular_push",
+    "mission": "דוחפים בניצב למדרון כדי לשלוט בנורמל ובחיכוך.",
+    "look": "קרח נוצץ עם שביל החלקה",
+    "ambient": "שחף מחליק ונאחז בעמוד",
+    "reaction": "הרגליים ממשיכות צעד אחד אחרי העצירה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S08",
+    "title": "המנוע שנכבה",
+    "sourceModel": "single_force_timeline",
+    "mission": "כוח פועל רק במשך חלק מהזמן: תנועה רב־שלבית.",
+    "look": "דיונות עם אבק בעקבות הרגליים",
+    "ambient": "דגלון מתנופף; רוח דקורטיבית בלבד",
+    "reaction": "הדמות נמתחת כמסטיק בלי לשנות את הקוליידר",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S09",
+    "title": "מדרון–מישור–מדרון",
+    "sourceModel": "piecewise_segments",
+    "mission": "המשטח והזווית משתנים לאורך הדרך.",
+    "look": "רציף עץ עם סרטן תחזוקה",
+    "ambient": "סרטן אוסף גרגרים בשולי המסלול",
+    "reaction": "הדמות שולפת כרית קטנה לפני קצה הרמפה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S10",
+    "title": "משקולת מן התקרה",
+    "sourceModel": "hanging_pulley",
+    "mission": "משקולת תלויה מושכת את הדמות דרך גלגלת אידיאלית.",
+    "look": "קרח נוצץ עם שביל החלקה",
+    "ambient": "שחף מחליק ונאחז בעמוד",
+    "reaction": "הרגליים ממשיכות צעד אחד אחרי העצירה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S11",
+    "title": "שתי פסגות וגלגלת",
+    "sourceModel": "double_incline_pulley",
+    "mission": "שני גופים על שני שיפועים שונים מחוברים בחבל.",
+    "look": "דיונות עם אבק בעקבות הרגליים",
+    "ambient": "דגלון מתנופף; רוח דקורטיבית בלבד",
+    "reaction": "הדמות נמתחת כמסטיק בלי לשנות את הקוליידר",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S12",
+    "title": "שני חברים על הרמפה",
+    "sourceModel": "linked_same_ramp",
+    "mission": "שתי קופסאות עם חיכוכים שונים מחוברות בחבל לאורך אותו שיפוע.",
+    "look": "רציף עץ עם סרטן תחזוקה",
+    "ambient": "סרטן אוסף גרגרים בשולי המסלול",
+    "reaction": "הדמות שולפת כרית קטנה לפני קצה הרמפה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S13",
+    "title": "מסה כפולה, אותה פיזיקה?",
+    "sourceModel": "mass_comparison",
+    "mission": "מחליפים את מסת הגוף כדי להפריד בין כוחות לתאוצה.",
+    "look": "קרח נוצץ עם שביל החלקה",
+    "ambient": "שחף מחליק ונאחז בעמוד",
+    "reaction": "הרגליים ממשיכות צעד אחד אחרי העצירה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S14",
+    "title": "בלמי חירום",
+    "sourceModel": "single_time_varying_mu",
+    "mission": "חיכוך משתנה ברגע שנלחץ כפתור הבלימה.",
+    "look": "דיונות עם אבק בעקבות הרגליים",
+    "ambient": "דגלון מתנופף; רוח דקורטיבית בלבד",
+    "reaction": "הדמות נמתחת כמסטיק בלי לשנות את הקוליידר",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S15",
+    "title": "לאן נעלמה האנרגיה?",
+    "sourceModel": "energy_on_ramp",
+    "mission": "מאזן אנרגיה בין גובה, תנועה וחום שנוצר בחיכוך.",
+    "look": "רציף עץ עם סרטן תחזוקה",
+    "ambient": "סרטן אוסף גרגרים בשולי המסלול",
+    "reaction": "הדמות שולפת כרית קטנה לפני קצה הרמפה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S16",
+    "title": "קפיץ בקצה הרמפה",
+    "sourceModel": "ramp_spring_contact",
+    "mission": "הדמות דוחסת קפיץ בתחתית המדרון; חקר כוחות ואנרגיה.",
+    "look": "קרח נוצץ עם שביל החלקה",
+    "ambient": "שחף מחליק ונאחז בעמוד",
+    "reaction": "הרגליים ממשיכות צעד אחד אחרי העצירה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S17",
+    "title": "המעבדה הסודית",
+    "sourceModel": "inverse_measurement_lab",
+    "mission": "מגלים חיכוך וזוויות מתוך מדידות במקום לקבל אותם.",
+    "look": "דיונות עם אבק בעקבות הרגליים",
+    "ambient": "דגלון מתנופף; רוח דקורטיבית בלבד",
+    "reaction": "הדמות נמתחת כמסטיק בלי לשנות את הקוליידר",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  },
+  {
+    "id": "S18",
+    "title": "בגרות: שינוי סיטואציה",
+    "sourceModel": "exam_multiphase",
+    "mission": "שאלה אחת שמחליפה הנחות וייצוגים כדי לבדוק הבנה ולא שינון.",
+    "look": "רציף עץ עם סרטן תחזוקה",
+    "ambient": "סרטן אוסף גרגרים בשולי המסלול",
+    "reaction": "הדמות שולפת כרית קטנה לפני קצה הרמפה",
+    "assets": [
+      "crab",
+      "cushion",
+      "seagull_sleep"
+    ],
+    "constraint": "Preserve original scene geometry, forces, static/kinetic transitions and missions; animation is presentation only."
+  }
+]

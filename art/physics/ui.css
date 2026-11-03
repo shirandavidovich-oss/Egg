@@ -779,3 +779,53 @@
   #ui .lab-screen .lab-tools .story-chip { min-width: 0; flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #ui .lab-screen .lab-tools { gap: 6px; }
   @media (max-width: 420px) { #ui .wscene .lab-tools .story-chip { display: none; } }
+
+  /* ================= the hanging spring in 3D: a stage you play with your hands ================= */
+  #ui #screen:has(> .h3d-screen) { overflow: hidden; padding: 2px 10px 10px; }
+  .h3d-screen { height: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .h3d-stage { position: relative; flex: 1 1 auto; min-height: 0; border-radius: 24px; overflow: hidden; background: #f1dfcf; touch-action: none; box-shadow: 0 2px 0 rgba(60,40,20,0.08), inset 0 0 0 1px rgba(60,40,20,0.06); }
+  .h3d-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .h3d-loading { position: absolute; inset: 0; display: grid; place-items: center; font: 700 17px var(--ui-font); color: #8a6a58; animation: h3dPulse 1.2s ease-in-out infinite; }
+  @keyframes h3dPulse { 50% { opacity: 0.45; } }
+  .h3d-stage .say { position: absolute; top: 10px; right: 10px; max-width: 60%; z-index: 3; font-size: 14px; padding: 8px 12px; pointer-events: none; }
+  .h3d-stage .say[hidden] { display: none; }
+  .h3d-formula { position: absolute; top: 10px; left: 10px; width: min(58%, 260px); z-index: 3; margin: 0; padding: 10px 12px; background: rgba(255,255,255,0.86); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 16px; font-size: 13px; }
+  .h3d-formula[hidden] { display: none; }
+  .h3d-formula .eq { padding: 4px 0; }
+  .h3d-hint { position: absolute; left: 50%; top: 52%; transform: translate(-50%, 0); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; transition: opacity 0.4s; }
+  .h3d-hint b { font: 800 16px var(--ui-font); color: #fff; background: rgba(37,142,246,0.92); padding: 6px 12px; border-radius: 999px; box-shadow: 0 3px 10px rgba(26,116,208,0.35); }
+  .h3d-hand { font-size: 40px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); animation: h3dPull 1.4s ease-in-out infinite; }
+  @keyframes h3dPull { 0%, 15% { transform: translateY(-10px); opacity: 0; } 30% { opacity: 1; } 75% { transform: translateY(22px); opacity: 1; } 100% { transform: translateY(22px); opacity: 0; } }
+  .h3d-hint.gone { opacity: 0; }
+
+  .h3d-hud { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 2; display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
+  .h3d-hud > * { pointer-events: auto; }
+  .h3d-reads { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .h3d-read { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px 6px; border: 0; border-radius: 14px; background: rgba(255,255,255,0.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 2px 8px rgba(80,50,30,0.12); font-family: var(--ui-font); color: var(--ink); cursor: pointer; }
+  .h3d-read small { font-size: 11px; font-weight: 600; color: var(--ink-2); }
+  .h3d-read b { font-size: 15px; font-weight: 800; direction: ltr; white-space: nowrap; }
+  .h3d-read b.dim { color: var(--ink-2); font-weight: 700; }
+
+  .h3d-dock { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 22px; background: rgba(255,251,245,0.8); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 6px 22px rgba(80,50,30,0.18); }
+  .h3d-row { display: flex; gap: 6px; align-items: stretch; }
+  .h3d-springs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .h3d-spring { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 52px; padding: 4px; border: 0; border-radius: 15px; background: rgba(255,255,255,0.55); font-family: var(--ui-font); color: var(--ink); cursor: pointer; transition: transform 0.15s, background 0.15s, box-shadow 0.15s; }
+  .h3d-spring svg { width: 20px; height: 34px; flex: none; }
+  .h3d-spring span { display: flex; flex-direction: column; line-height: 1.1; }
+  .h3d-spring b { font-size: 14px; font-weight: 700; }
+  .h3d-spring small { font-size: 11px; color: var(--ink-2); font-weight: 600; }
+  .h3d-spring[aria-checked="true"] { background: #fff; box-shadow: 0 0 0 2.5px var(--violet), 0 4px 12px rgba(138,96,232,0.3); transform: translateY(-2px); }
+  .h3d-spring:active, .h3d-jar:active, .h3d-btn:active { transform: scale(0.94); }
+  .h3d-media { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .h3d-jar { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 3px; border: 0; border-radius: 14px; background: transparent; font: 600 11px var(--ui-font); color: var(--ink-2); cursor: pointer; transition: transform 0.15s, background 0.15s; }
+  .h3d-jar i { width: 22px; height: 28px; border-radius: 5px 5px 8px 8px; border: 2px solid rgba(90,110,130,0.55); border-top-width: 3px; background: linear-gradient(to top, var(--liq) 0 62%, rgba(255,255,255,0.6) 62%); box-shadow: inset 3px 0 0 rgba(255,255,255,0.55); }
+  .h3d-jar[data-medium="air"] i { background: linear-gradient(to top, rgba(220,235,245,0.6), rgba(255,255,255,0.6)); }
+  .h3d-jar[aria-checked="true"] { background: #fff; color: var(--ink); box-shadow: 0 0 0 2px var(--teal); }
+  .h3d-btn { flex: none; width: 48px; display: grid; place-items: center; gap: 0; border: 0; border-radius: 14px; background: rgba(255,255,255,0.7); color: var(--ink); cursor: pointer; padding: 3px; transition: transform 0.15s; }
+  .h3d-btn svg { width: 24px; height: 24px; }
+  .h3d-btn .fx { font: italic 700 24px "Cambria Math", "Times New Roman", serif; line-height: 1; }
+  .h3d-btn.on { background: var(--violet); color: #fff; }
+  .h3d-me img { width: 32px; height: 32px; object-fit: contain; }
+  .h3d-me small { font: 700 10px var(--ui-font); color: var(--ink-2); }
+  .h3d-me.borrowed { box-shadow: 0 0 0 2px var(--orange); }
+  @media (max-height: 640px) { .h3d-reads small { display: none; } .h3d-spring { min-height: 44px; } }

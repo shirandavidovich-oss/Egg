@@ -1089,7 +1089,7 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const L0 = 0.30;                      // natural length of the spring (m)
   const U_MAX = 0.25;                   // how far below equilibrium it can be pulled (m)
-  const lab = { k: 120, massOverride: null, b: 0, lastU0: 0.12, mode: "hang", surface: "dry_wood" };
+  const lab = { k: 100, massOverride: null, b: 0, lastU0: 0.12, mode: "hang", surface: "dry_wood" };
 
   // ======================================================================
   //  THE MEDIUM AROUND THE HANGING SPRING: a wave sweeps the screen left to right when it
@@ -1169,6 +1169,288 @@
     return { to, tick, drawBack, drawFront, destroy, get medium() { return md; }, get tint() { return tint; } };
   }
 
+  // ======================================================================
+  //  THE HANGING SPRING IN 3D: a circus stage, a real spring hooked into the creature's head.
+  //  You play with your hands: pull the creature, pick a spring from the rack, pour a liquid.
+  //  Same physics and the same learning as the flat lab below (which stays as the fallback).
+  // ======================================================================
+  const SPRING_RACK = [{ k: 40, he: "רך" }, { k: 100, he: "בינוני" }, { k: 200, he: "קשיח" }, { k: 350, he: "פלדה" }];
+  const rackIcon = (k) => {
+    const L = Lab3D.springLook(k), n = L.coils - 3, w = 1.4 + 3.6 * L.t, col = L.t > 0.5 ? "#3b4049" : "#8d97a6";
+    let d = "M14 3v4"; for (let i = 0; i < n; i++) { const y = 7 + i * (30 / n); d += `L${i % 2 ? 6 : 22} ${(y + 30 / n / 2).toFixed(1)}`; } d += "L14 37v4";
+    return `<svg viewBox="0 0 28 44" aria-hidden="true"><path d="${d}" fill="none" stroke="${col}" stroke-width="${w.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  };
+  function hang3d(args) {
+    setTitle("קפיץ־קפוץ", "קפיץ תלוי מהתקרה");
+    screenEl.innerHTML = `<div class="h3d-screen">${modeSeg("hang")}<div class="h3d-stage"><div class="h3d-loading">מקימים את הזירה…</div></div></div>`;
+    bindModeSeg(args);
+    let alive = true;
+    cleanup = () => { alive = false; };
+    Lab3D.ensure((ok) => {
+      if (!alive) return;
+      if (!ok) { lab.no3d = true; return SCREENS.lab(args); }
+      try { hang3dRun(args); } catch (e) { console.error(e); lab.no3d = true; if (cleanup) { try { cleanup(); } catch (e2) { } } cleanup = null; SCREENS.lab(args); }
+    });
+  }
+  function hang3dRun(args) {
+    let sp = activeSpecies();
+    const m0 = () => phys(sp).mass_kg;
+    const mass = () => lab.massOverride ?? m0();
+    screenEl.innerHTML = `
+      <div class="h3d-screen">
+        ${modeSeg("hang")}
+        <div class="h3d-stage" id="lab">
+          <canvas id="labCanvas"></canvas>
+          <div class="bubble say" id="say" hidden></div>
+          <div class="h3d-formula card formula" id="formula" hidden></div>
+          <div class="h3d-hint" id="hint" aria-hidden="true"><span class="h3d-hand">☝</span></div>
+          <div class="h3d-hud">
+            <div class="h3d-reads">
+              <button type="button" class="h3d-read" data-info="s"><small>התארכות</small><b id="rS">–</b></button>
+              <button type="button" class="h3d-read" data-info="F"><small>כוח קפיץ</small><b id="rF">–</b></button>
+              <button type="button" class="h3d-read" data-info="E"><small>אנרגיה</small><b id="rE">–</b></button>
+              <button type="button" class="h3d-read" data-info="T"><small>זמן מחזור</small><b id="rT">–</b></button>
+            </div>
+            <div class="h3d-dock">
+              <div class="h3d-row h3d-springs" role="radiogroup" aria-label="בחירת קפיץ">
+                ${SPRING_RACK.map((r) => `<button type="button" class="h3d-spring" role="radio" data-k="${r.k}">${rackIcon(r.k)}<span><b>${r.he}</b><small class="ltr">k ${r.k}</small></span></button>`).join("")}
+              </div>
+              <div class="h3d-row">
+                <div class="h3d-media" role="radiogroup" aria-label="חומר בטנק">
+                  ${SP.MEDIA.map((md) => `<button type="button" class="h3d-jar" role="radio" data-medium="${md.id}" style="--liq:rgb(${md.rgb.join(",")})" aria-label="${md.he}"><i></i><span>${md.he}</span></button>`).join("")}
+                </div>
+                <button type="button" class="h3d-btn h3d-me" id="charChip" aria-label="החלפת דמות"></button>
+                <button type="button" class="h3d-btn" id="formulaBtn" aria-label="נוסחה"><i class="fx">ƒ</i></button>
+                <button type="button" class="h3d-btn" id="fineBtn" aria-label="כוונון מדויק"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.3"/><circle cx="10" cy="17" r="2.3"/></g></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    const cv = $("#labCanvas"), box = $("#lab"), hud = box.querySelector(".h3d-hud");
+    const L3 = Lab3D.create(cv, { font: FONT });
+    window.__lab3d = L3;                                   // for tests
+    const resize = () => {
+      const r = box.getBoundingClientRect();
+      L3.resize(r.width, r.height, Math.min(devicePixelRatio || 1, 2), 8, hud.getBoundingClientRect().height + 4);
+    };
+    resize();
+    const ro = new ResizeObserver(resize); ro.observe(box); ro.observe(hud);
+
+    const img = new Image(); img.crossOrigin = "anonymous";
+    let imgSp = null;
+    const loadImg = () => { if (imgSp !== sp) { imgSp = sp; img.src = artOf(sp); } };
+    img.onload = () => L3.setCreature(img, phys(sp).height_m);
+    loadImg();
+
+    const params = () => SP.params(mass(), lab.k, lab.b);
+    const sim = new SP.Sim(params(), 0);
+    let formulaOpen = false, dragging = null, orbiting = null, everDragged = false, sayT = 0, raf = 0, lastT = performance.now();
+    const releases = [];
+    let trial = null, questionCooldown = 1;
+
+    // ---- the dock: springs, liquids, creature ----
+    function paintDock() {
+      for (const b of screenEl.querySelectorAll(".h3d-spring")) b.setAttribute("aria-checked", +b.dataset.k === lab.k ? "true" : "false");
+      const md = SP.mediumOf(lab.b, lab.k, mass());
+      for (const b of screenEl.querySelectorAll(".h3d-jar")) b.setAttribute("aria-checked", b.dataset.medium === md.id ? "true" : "false");
+      $("#charChip").innerHTML = `<img src="${artOf(sp)}" alt=""><small class="ltr">${fmt(mass(), 1)} kg</small>`;
+      $("#charChip").classList.toggle("borrowed", lab.massOverride !== null);
+    }
+    let shownMedium = null;
+    function paintMedium() {
+      const md = SP.mediumOf(lab.b, lab.k, mass());
+      if (md.id !== shownMedium) { shownMedium = md.id; L3.setMedium(md); }
+    }
+    function reconfigure(why) {
+      if (lab.medium) { const md = SP.MEDIA.find((x) => x.id === lab.medium); lab.b = +SP.dampingFor(md.zeta, lab.k, mass()).toFixed(1); }
+      const before = { eq: SP.equilibrium(sim.p), T: SP.period(sim.p) };
+      sim.reset(params(), 0);
+      trial = null;
+      const after = { eq: SP.equilibrium(sim.p), T: SP.period(sim.p) };
+      if (why) say(`${why} שיווי המשקל: ${fmt(before.eq * 100, 1)} ← ${fmt(after.eq * 100, 1)} ס״מ. T: ${fmt(before.T)} ← ${fmt(after.T)} שנ׳.`, 4);
+      L3.setSpring(lab.k, false);
+      paintDock(); paintFormula(); paintMedium(); paintFine();
+    }
+    for (const b of screenEl.querySelectorAll(".h3d-spring")) b.addEventListener("click", () => {
+      const k = +b.dataset.k; if (k === lab.k) return;
+      const u0 = Math.max(0.06, lab.lastU0 || 0.1);
+      lab.k = k; reconfigure();
+      L3.setSpring(k, true); G.sfx.boing(0.5); G.buzz(12);
+      // the new spring starts with the same pull, so the rhythm can be compared at once
+      sim.reset(params(), Math.min(u0, U_MAX)); sim.release(); trial = startRelease(sim.u);
+      const r = SPRING_RACK.find((x) => x.k === k);
+      say(`קפיץ ${r.he}: k = ${k} N/m. שיווי המשקל ${fmt(SP.equilibrium(sim.p) * 100, 1)} ס״מ, T = ${fmt(SP.period(sim.p))} שנ׳.`, 3.6);
+    });
+    for (const b of screenEl.querySelectorAll(".h3d-jar")) b.addEventListener("click", () => {
+      const md = SP.MEDIA.find((x) => x.id === b.dataset.medium);
+      if (lab.medium === md.id || (!lab.medium && md.id === SP.mediumOf(lab.b, lab.k, mass()).id)) return;
+      lab.medium = md.id; reconfigure();
+      say(`${md.emoji} ${md.he}: ${md.desc}.`, 3.4); G.sfx.whoosh && G.sfx.whoosh();
+    });
+    const burstAt = () => L3.burst(0, -(L0 + sim.st.s) - phys(sp).height_m * 0.4, 0.1, 22, 1);
+    $("#charChip").addEventListener("click", () => pickOwned(sp, "להחליף דמות בניסוי", (newSp) => {
+      const oldName = nameOf(sp), oldT = SP.period(sim.p);
+      sp = newSp; lab.massOverride = null; loadImg();
+      const u0 = Math.max(0.05, lab.lastU0);
+      sim.reset(params(), Math.min(u0, U_MAX)); sim.release();
+      trial = startRelease(sim.u);
+      paintDock(); paintFormula(); paintFine(); burstAt();
+      say(`עם ${nameOf(sp)} המסה אחרת, אז זמן המחזור משתנה: ${fmt(oldT)} ← ${fmt(SP.period(sim.p))} שנ׳ (${oldName} ← ${nameOf(sp)}).`, 5);
+      G.sfx.whoosh();
+    }));
+    $("#formulaBtn").addEventListener("click", () => {
+      formulaOpen = $("#formula").hidden;
+      $("#formula").hidden = !formulaOpen;
+      $("#formulaBtn").classList.toggle("on", formulaOpen);
+      if (formulaOpen) { P.data.physics.formulaSeen = true; P.save(); paintFormula(); }
+      G.sfx.pop();
+    });
+    function paintFormula() {
+      if ($("#formula").hidden) return;
+      const p = sim.p, s = sim.st.s, eq = SP.equilibrium(p);
+      setFormula($("#formula"), `
+        <div class="eq"><span>חוק הוק</span><span class="m">F = −k·s<em>${fmt(-p.k * s, 1)} N</em></span></div>
+        <div class="eq"><span>אנרגיה</span><span class="m">E = ½·k·s²<em>${fmt(SP.elasticEnergy(s, p.k), 2)} J</em></span></div>
+        <div class="eq"><span>שיווי משקל</span><span class="m">s<sub>eq</sub> = m·g / k<em>${fmt(eq * 100, 1)} cm</em></span></div>
+        <div class="eq"><span>זמן מחזור</span><span class="m">T = 2π·√(m/k)<em>${fmt(SP.period(p))} s</em></span></div>`);
+    }
+    // the exact controls, for when a number matters: k, m and b
+    let fineEl = null;
+    function paintFine() {
+      if (!fineEl || !document.body.contains(fineEl)) { fineEl = null; return; }
+      fineEl.querySelector("#kVal").textContent = lab.k + " N/m";
+      fineEl.querySelector("#mVal").textContent = fmt(mass(), 1) + " kg";
+      fineEl.querySelector("#bVal").textContent = fmt(lab.b, 1) + " N·s/m";
+      const bIn = fineEl.querySelector("#bIn"); bIn.max = Math.max(3, Math.ceil(SP.dampingFor(1.8, lab.k, mass()))); bIn.value = lab.b;
+      fineEl.querySelector("#mIn").value = mass();
+      fineEl.querySelector("#mReset").hidden = lab.massOverride === null;
+    }
+    $("#fineBtn").addEventListener("click", () => {
+      fineEl = sheet(`<h3>כוונון מדויק</h3><p>כאן אפשר לבחור כל ערך. הניסוי מתחיל מחדש בשיווי המשקל החדש.</p>
+        <div class="slider-row"><label for="kIn"><span>קשיחות הקפיץ k ${infoBtn("k")}</span><span class="val" id="kVal"></span></label><input id="kIn" type="range" min="30" max="400" step="5" value="${lab.k}"></div>
+        <div class="slider-row"><label for="mIn"><span>מסה m ${infoBtn("m")}</span><span class="val" id="mVal"></span></label><input id="mIn" class="mass" type="range" min="0.5" max="4" step="0.1" value="${mass()}">
+          <button class="linkish" id="mReset" type="button" hidden>חזרה למסת הדמות</button></div>
+        <div class="slider-row"><label for="bIn"><span>מקדם בלימה b ${infoBtn("b")}</span><span class="val" id="bVal"></span></label><input id="bIn" class="damp" type="range" min="0" max="3" step="0.5" value="${lab.b}"></div>
+        <div class="actions"><button class="btn primary" type="button" data-close>חזרה לזירה</button></div>`);
+      fineEl.querySelector("#kIn").addEventListener("input", (e) => { lab.k = +e.target.value; reconfigure(); });
+      fineEl.querySelector("#mIn").addEventListener("input", (e) => { keeper.touched(); lab.massOverride = Math.abs(+e.target.value - m0()) < 0.05 ? null : +e.target.value; reconfigure(); });
+      fineEl.querySelector("#mIn").addEventListener("change", () => { if (lab.massOverride !== null) say(`${FEEL(mass() / m0())} שיווי המשקל עכשיו ${fmt(SP.equilibrium(sim.p) * 100, 1)} ס״מ, T = ${fmt(SP.period(sim.p))} שנ׳. מהר, נסו לפני שאני חוזר לעצמי!`, 4); });
+      fineEl.querySelector("#bIn").addEventListener("input", (e) => { lab.b = +e.target.value; lab.medium = null; reconfigure(); });
+      fineEl.querySelector("#mReset").addEventListener("click", () => { lab.massOverride = null; reconfigure("חזרה למסת הדמות."); });
+      paintFine(); G.sfx.pop();
+    });
+
+    const keeper = massKeeper({ say: (t, d) => say(t, d), m0, apply: () => { sim.reset(params(), 0); trial = null; paintDock(); paintFine(); } });
+    infoLive = () => ({ k: lab.k, m: mass(), m0: m0(), name: nameOf(sp), s: sim.st.s, eq: SP.equilibrium(sim.p) });
+
+    function say(text, secs = 2.6) { const el = $("#say"); el.textContent = text; el.hidden = false; sayT = secs; }
+    const DRAG_LINES = ["תפסיק למשוך, אני לא גומייה!", "עוד קצת ואתה מודד לי את האישיות בניוטון.", "אוי, זה מותח."];
+    const RELEASE_LINES = ["אני לא קופץ, אני מתנודד!", "וואו. שוב!", "למעלה, למטה, למעלה…"];
+
+    // ---- hands: pull the creature down; drag anywhere else to walk around the stage; tap a part to ask about it ----
+    let downAt = null;
+    cv.addEventListener("pointerdown", (e) => {
+      if (isSheetOpen()) return;
+      G.audio.unlock();
+      const part = L3.pick(e.clientX, e.clientY);
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { }
+      downAt = { x: e.clientX, y: e.clientY, part, t: performance.now() };
+      if (part === "creature") {
+        const y = L3.pointerY(e.clientX, e.clientY), hookY = -(L0 + sim.st.s);
+        dragging = { off: (y ?? hookY) - hookY, u: Math.max(0, sim.u) };
+        sim.pull(dragging.u); trial = null;
+        $("#hint").classList.add("gone");
+        if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
+        say(DRAG_LINES[Math.floor(Math.random() * DRAG_LINES.length)], 2);
+        G.buzz(8);
+      } else orbiting = { x: e.clientX };
+    });
+    cv.addEventListener("pointermove", (e) => {
+      if (dragging) {
+        const y = L3.pointerY(e.clientX, e.clientY); if (y === null) return;
+        const s = -(y - dragging.off) - L0;
+        const u = clamp(s - SP.equilibrium(sim.p), 0, U_MAX);
+        dragging.u = u; sim.pull(u);
+      } else if (orbiting) { L3.orbit(-(e.clientX - orbiting.x) * 0.006); orbiting.x = e.clientX; }
+    });
+    const letGo = (e) => {
+      const tap = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 8 && performance.now() - downAt.t < 400;
+      if (tap && downAt.part && downAt.part !== "creature") openInfo({ spring: "k", eq: "eq", tape: "s" }[downAt.part] || "k", { x: e.clientX, y: e.clientY });
+      downAt = null; orbiting = null;
+      if (!dragging) return;
+      dragging = null;
+      const u0 = sim.u;
+      if (u0 < 0.02 && Math.abs(sim.st.v) < 0.05) { sim.reset(sim.p, 0); return; }
+      lab.lastU0 = u0;
+      sim.release();
+      trial = startRelease(u0);
+      G.sfx.boing(0.6); G.buzz(15);
+      say(RELEASE_LINES[Math.floor(Math.random() * RELEASE_LINES.length)], 1.8);
+    };
+    cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
+
+    // ---- what counts as learning (same rules as the flat lab) ----
+    function startRelease(u0) { return { k: lab.k, m: mass(), b: lab.b, u0, seen: false }; }
+    const same = (a, b) => Math.abs(a - b) / Math.max(a, b) < 0.03;
+    function observe() {
+      if (!trial || trial.seen || sim.held) return;
+      if (sim.periods() < 2 && sim.t < SP.period(sim.p) * 1.2) return;
+      trial.seen = true; releases.push(trial); keeper.seen();
+      const r = releases, c = trial, got = [];
+      if (c.u0 >= 0.03) got.push("springs.hooke");
+      if ((formulaOpen || P.data.physics.formulaSeen) && c.u0 >= 0.10) got.push("springs.energy");
+      if (r.some((x) => x !== c && same(x.m, c.m) && Math.max(x.k, c.k) / Math.min(x.k, c.k) >= 1.5)) got.push("springs.oscillation");
+      if (r.some((x) => x !== c && same(x.k, c.k) && Math.max(x.m, c.m) / Math.min(x.m, c.m) >= 1.5)) got.push("springs.shm");
+      const fresh = got.filter((id) => P.completeSubtopic(id));
+      if (fresh.length) { burstAt(); celebrateUnits("springs", fresh, L3.hookScreen(liveState())); questionCooldown = 2; return; }
+      if (!P.data.physics.formulaSeen && c.u0 >= 0.10 && done().includes("springs.hooke")) say("רוצה לראות כמה אנרגיה נאגרה? לחצו על ƒ למטה.", 3.5);
+      else if (!done().includes("springs.oscillation") && releases.length >= 2) say("קחו קפיץ אחר מהמדף ותראו מה קורה לקצב.", 3);
+      else if (!done().includes("springs.shm") && done().includes("springs.oscillation")) say("ומה אם הדמות כבדה יותר? החליפו דמות, או שנו מסה בכוונון.", 3.5);
+      if (questionCooldown > 0) { questionCooldown--; return; }
+      const pool = QUESTIONS.filter((q) => !["springs.wall", "springs.launch", "springs.graph"].includes(q.unit) && (done().includes(q.unit) || q.unit === "springs.hooke"));
+      if (inviteQuestion(box, "springs", pool)) questionCooldown = 3;
+    }
+
+    function liveState() {
+      const p = sim.p;
+      return { L0, s: sim.st.s, v: sim.st.v, a: SP.accel(sim.st.s, sim.st.v, p), eq: SP.equilibrium(p), uMax: U_MAX, k: lab.k, m: p.m, g: p.g,
+        fat: fatness(mass(), m0()), reduceMotion, forces: true };
+    }
+    function paintReadouts() {
+      const p = sim.p, s = sim.st.s;
+      $("#rS").textContent = fmt(s * 100, 1) + " cm";
+      const F = -p.k * s;
+      $("#rF").textContent = fmt(Math.abs(F), 1) + " N " + (F < 0 ? "↑" : F > 0 ? "↓" : "");
+      $("#rE").textContent = fmt(SP.elasticEnergy(s, p.k), 2) + " J";
+      const Tm = sim.measuredPeriod(), rT = $("#rT");
+      if (p.b > 0 && !SP.underdamped(p)) { rT.textContent = "אין תנודה"; rT.className = "dim"; }
+      else if (Tm && !sim.held && p.b === 0) { rT.textContent = fmt(Tm) + " s"; rT.className = ""; }
+      else { rT.textContent = (p.b > 0 ? "≈" : "") + fmt(SP.period(p)) + " s"; rT.className = "dim"; }
+    }
+    let fpaint = 0;
+    function frame(now) {
+      const dt = clamp((now - lastT) / 1000, 0, 0.1); lastT = Math.max(lastT, now);
+      if (!isSheetOpen()) sim.advance(dt);
+      L3.frame(liveState(), dt);
+      if ((fpaint++ & 3) === 0) {
+        paintReadouts(); if (formulaOpen) paintFormula();
+        if (!everDragged) { const at = L3.hookScreen(liveState()), br = box.getBoundingClientRect(), h = $("#hint"); h.style.left = (at.x - br.left) + "px"; h.style.top = (at.y - br.top - 10) + "px"; }
+      }
+      if (sayT > 0) { sayT -= dt; if (sayT <= 0) $("#say").hidden = true; }
+      observe();
+      keeper.tick(!dragging && (!trial || trial.seen));
+      raf = requestAnimationFrame(frame);
+    }
+    L3.setSpring(lab.k, false);
+    paintDock(); paintMedium();
+    raf = requestAnimationFrame(frame);
+    say(nameOf(sp) + " תלוי על הקפיץ. גררו אותו למטה ושחררו.", 3.2);
+    cleanup = () => { cancelAnimationFrame(raf); ro.disconnect(); closeInfo(); infoLive = () => ({}); L3.dispose(); document.querySelector(".sheet-back")?.remove(); };
+    bindModeSeg(args);
+  }
+
   SCREENS.lab = (args = {}) => {
     if (lab.mode === "wall") return SCREENS.wall(args);
     if (lab.mode === "launch") return SCREENS.launch(args);
@@ -1180,6 +1462,7 @@
     if (lab.mode === "two") return SCREENS.two(args);
     if (lab.mode === "pulley") return SCREENS.pulley(args);
     lab.mode = "hang";
+    if (!lab.no3d && typeof Lab3D !== "undefined") return hang3d(args);   // the 3D stage; the flat lab below is the fallback
     setTitle("קפיץ־קפוץ", "קפיץ תלוי מהתקרה");
     let sp = activeSpecies();
     const m0 = () => phys(sp).mass_kg;

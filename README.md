@@ -46,9 +46,16 @@ Inside: choose **תפתיע אותי** (topic machine with a lever) or **לפי 
 Its mass comes from the creature, so switching or trading creatures changes the physics, never the
 player's coins or progress.
 
+The hanging spring ("תלוי") is a 3D stage: pull the creature with a finger, pick a spring from the rack
+(soft, medium, stiff, steel), pour air, water, oil or honey into the tank, drag the background to walk
+around it, and tilt the phone to peek. Exact values are behind the sliders button. Phones without 3D
+get the flat lab.
+
 | What | File |
 |---|---|
 | Spring physics: hanging, and from a wall on a floor with friction | `art/physics/spring.js` |
+| The hanging spring in 3D: circus stage, real spring hooked into the creature, liquid tank (drawing only) | `art/physics/lab3d.js` |
+| 3D engine (three.js r149), loaded only when the 3D stage opens | `app/src/main/assets/lib/three.min.js` |
 | Inclined plane physics (forces, static/kinetic friction, sliding) | `art/physics/incline.js` |
 | "הרפתקאות על המדרון": 18 situations, exact-event engine (forces in time, pulleys, piecewise track, slack rope, spring contact, energy) | `art/physics/ramp-engine.js` |
 | The 18 situations and 90 missions, run tracking and answer checks (all answers computed at run time) | `art/physics/ramp-scenes.js` |

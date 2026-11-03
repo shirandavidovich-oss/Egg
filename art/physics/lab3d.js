@@ -377,6 +377,8 @@ const Lab3D = (() => {
     }
 
     // ---------- camera: frames the whole rig, tilting the phone peeks around it ----------
+    let zoom = 1, zoomS = 1;
+    const ZOOM_IN = 0.32, ZOOM_OUT = 1.35;
     let W = 1, H = 1, padT = 0, padB = 0, yaw = 0.32, yawUser = 0, pitch = 0.1, floorY = -1, camT = new T.Vector3(0, -0.5, 0), camD = 3;
     const tilt = { x: 0, y: 0, rx: null, ry: null, sx: 0, sy: 0 };
     function feedGravity(x, y, z) {
@@ -402,8 +404,11 @@ const Lab3D = (() => {
       const spanH = need.top - need.bottom, spanW = 1.12;
       const d = Math.max(spanH / 2 / tf, spanW / 2 / (tf * camera.aspect)) * 1.04 + 0.25;
       const k = Math.min(1, dt * 4);
-      camD += (d - camD) * k;
-      camT.y += ((need.top + need.bottom) / 2 - camT.y) * k;
+      // zoom: < 1 comes closer and turns the camera onto the creature, > 1 steps back
+      zoomS += (zoom - zoomS) * Math.min(1, dt * 8);
+      const toward = clamp((1 - zoomS) / 0.55, 0, 1), mid = (need.top + need.bottom) / 2;
+      camD += (d * zoomS - camD) * Math.min(1, dt * 8);
+      camT.y += (lerp(mid, need.focus, smooth(toward)) - camT.y) * Math.min(1, dt * 8);
       camT.x += (0.0 - camT.x) * k;
       tilt.sx += (tilt.x - tilt.sx) * Math.min(1, dt * 6); tilt.sy += (tilt.y - tilt.sy) * Math.min(1, dt * 6);
       const t = performance.now() / 1000;
@@ -526,7 +531,7 @@ const Lab3D = (() => {
       }
 
       key.position.set(1.4, floorY + 4.2, 2.6); key.target.position.set(0, floorY + 0.4, 0);
-      frameCamera(dt, { top: 0.14, bottom: floorY - 0.02 });
+      frameCamera(dt, { top: 0.14, bottom: floorY - 0.02, focus: hookY - (cre.ready ? cre.bodyH * 0.42 : 0.2) });
       renderer.render(scene, camera);
       lastS = s;
     }
@@ -547,6 +552,10 @@ const Lab3D = (() => {
       resize, frame, pick, pointerY, toScreen, setCreature, setMedium, burst, dispose,
       setSpring(k, pop) { spring.setK(k); if (pop) { wob = 0.5; burst(0, -0.15, 0.05, 16, 0.8); } },
       orbit(dx) { yawUser = clamp(yawUser + dx, -0.75, 0.75); },
+      // multiply the distance (pinch ratio, or a finger drag); 1 = the whole rig in view
+      zoomBy(f) { zoom = clamp(zoom * f, ZOOM_IN, ZOOM_OUT); },
+      resetView() { zoom = 1; yawUser = 0; },
+      get zoom() { return zoom; },
       get yawUser() { return yawUser; }, set yawUser(v) { yawUser = v; },
       hookScreen(st) { return toScreen(0, -(st.L0 + st.s) - (cre.ready ? cre.bodyH * 0.5 : 0.2), 0); },
       renderer, camera, get debug() { return { layers: cre.layers.length, ready: cre.ready, lp: cre.layers[0] && cre.layers[0].getWorldPosition(new T.Vector3()).toArray(), W, H, padT, padB, floorY, camD, camT: camT.toArray(), cam: camera.position.toArray() }; }

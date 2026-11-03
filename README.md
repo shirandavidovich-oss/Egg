@@ -47,8 +47,9 @@ Its mass comes from the creature, so switching or trading creatures changes the 
 player's coins or progress.
 
 The hanging spring ("תלוי") is a 3D stage: pull the creature with a finger, pick a spring from the rack
-(soft, medium, stiff, steel), pour air, water, oil or honey into the tank, drag the background to walk
-around it, and tilt the phone to peek. Exact values are behind the sliders button. Phones without 3D
+(soft, medium, stiff, steel), pour air, water, oil or honey into the tank, drag the background sideways to walk
+around it, up to come closer and down to step back (or pinch with two fingers), double tap to reset
+the view, and tilt the phone to peek. Exact values are behind the sliders button. Phones without 3D
 get the flat lab.
 
 | What | File |

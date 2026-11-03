@@ -1532,6 +1532,8 @@ const Lab3D = (() => {
     }
 
     // ---------- camera: frames the whole rig, tilting the phone peeks around it ----------
+    let zoom = 1, zoomS = 1;
+    const ZOOM_IN = 0.32, ZOOM_OUT = 1.35;
     let W = 1, H = 1, padT = 0, padB = 0, yaw = 0.32, yawUser = 0, pitch = 0.1, floorY = -1, camT = new T.Vector3(0, -0.5, 0), camD = 3;
     const tilt = { x: 0, y: 0, rx: null, ry: null, sx: 0, sy: 0 };
     function feedGravity(x, y, z) {
@@ -1557,8 +1559,11 @@ const Lab3D = (() => {
       const spanH = need.top - need.bottom, spanW = 1.12;
       const d = Math.max(spanH / 2 / tf, spanW / 2 / (tf * camera.aspect)) * 1.04 + 0.25;
       const k = Math.min(1, dt * 4);
-      camD += (d - camD) * k;
-      camT.y += ((need.top + need.bottom) / 2 - camT.y) * k;
+      // zoom: < 1 comes closer and turns the camera onto the creature, > 1 steps back
+      zoomS += (zoom - zoomS) * Math.min(1, dt * 8);
+      const toward = clamp((1 - zoomS) / 0.55, 0, 1), mid = (need.top + need.bottom) / 2;
+      camD += (d * zoomS - camD) * Math.min(1, dt * 8);
+      camT.y += (lerp(mid, need.focus, smooth(toward)) - camT.y) * Math.min(1, dt * 8);
       camT.x += (0.0 - camT.x) * k;
       tilt.sx += (tilt.x - tilt.sx) * Math.min(1, dt * 6); tilt.sy += (tilt.y - tilt.sy) * Math.min(1, dt * 6);
       const t = performance.now() / 1000;
@@ -1681,7 +1686,7 @@ const Lab3D = (() => {
       }
 
       key.position.set(1.4, floorY + 4.2, 2.6); key.target.position.set(0, floorY + 0.4, 0);
-      frameCamera(dt, { top: 0.14, bottom: floorY - 0.02 });
+      frameCamera(dt, { top: 0.14, bottom: floorY - 0.02, focus: hookY - (cre.ready ? cre.bodyH * 0.42 : 0.2) });
       renderer.render(scene, camera);
       lastS = s;
     }
@@ -1702,6 +1707,10 @@ const Lab3D = (() => {
       resize, frame, pick, pointerY, toScreen, setCreature, setMedium, burst, dispose,
       setSpring(k, pop) { spring.setK(k); if (pop) { wob = 0.5; burst(0, -0.15, 0.05, 16, 0.8); } },
       orbit(dx) { yawUser = clamp(yawUser + dx, -0.75, 0.75); },
+      // multiply the distance (pinch ratio, or a finger drag); 1 = the whole rig in view
+      zoomBy(f) { zoom = clamp(zoom * f, ZOOM_IN, ZOOM_OUT); },
+      resetView() { zoom = 1; yawUser = 0; },
+      get zoom() { return zoom; },
       get yawUser() { return yawUser; }, set yawUser(v) { yawUser = v; },
       hookScreen(st) { return toScreen(0, -(st.L0 + st.s) - (cre.ready ? cre.bodyH * 0.5 : 0.2), 0); },
       renderer, camera, get debug() { return { layers: cre.layers.length, ready: cre.ready, lp: cre.layers[0] && cre.layers[0].getWorldPosition(new T.Vector3()).toArray(), W, H, padT, padB, floorY, camD, camT: camT.toArray(), cam: camera.position.toArray() }; }
@@ -9014,13 +9023,26 @@ const EggExplain = (() => {
     const DRAG_LINES = ["תפסיק למשוך, אני לא גומייה!", "עוד קצת ואתה מודד לי את האישיות בניוטון.", "אוי, זה מותח."];
     const RELEASE_LINES = ["אני לא קופץ, אני מתנודד!", "וואו. שוב!", "למעלה, למטה, למעלה…"];
 
-    // ---- hands: pull the creature down; drag anywhere else to walk around the stage; tap a part to ask about it ----
-    let downAt = null;
+    // ---- hands: pull the creature down; on the background one finger walks around (sideways) and
+    //      comes closer or steps back (up / down), two fingers pinch to zoom, a double tap resets the view;
+    //      tapping a part asks about it ----
+    let downAt = null, lastTap = 0;
+    const fingers = new Map();
+    let pinch = null;
+    const spread = () => { const p = [...fingers.values()]; return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1; };
     cv.addEventListener("pointerdown", (e) => {
       if (isSheetOpen()) return;
       G.audio.unlock();
-      const part = L3.pick(e.clientX, e.clientY);
       try { cv.setPointerCapture(e.pointerId); } catch (err) { }
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.size === 2) {
+        // a second finger: stop pulling or walking, start pinching
+        if (dragging) letGoBody();
+        orbiting = null; downAt = null; pinch = { d: spread() };
+        return;
+      }
+      if (fingers.size > 2) return;
+      const part = L3.pick(e.clientX, e.clientY);
       downAt = { x: e.clientX, y: e.clientY, part, t: performance.now() };
       if (part === "creature") {
         const y = L3.pointerY(e.clientX, e.clientY), hookY = -(L0 + sim.st.s);
@@ -9030,21 +9052,24 @@ const EggExplain = (() => {
         if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
         say(DRAG_LINES[Math.floor(Math.random() * DRAG_LINES.length)], 2);
         G.buzz(8);
-      } else orbiting = { x: e.clientX };
+      } else orbiting = { x: e.clientX, y: e.clientY };
     });
     cv.addEventListener("pointermove", (e) => {
+      if (!fingers.has(e.pointerId)) return;
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && fingers.size >= 2) { const d = spread(); L3.zoomBy(pinch.d / d); pinch.d = d; return; }
       if (dragging) {
         const y = L3.pointerY(e.clientX, e.clientY); if (y === null) return;
         const s = -(y - dragging.off) - L0;
         const u = clamp(s - SP.equilibrium(sim.p), 0, U_MAX);
         dragging.u = u; sim.pull(u);
-      } else if (orbiting) { L3.orbit(-(e.clientX - orbiting.x) * 0.006); orbiting.x = e.clientX; }
+      } else if (orbiting) {
+        L3.orbit(-(e.clientX - orbiting.x) * 0.006);
+        L3.zoomBy(Math.exp((e.clientY - orbiting.y) * 0.004));      // finger up = closer, down = farther
+        orbiting.x = e.clientX; orbiting.y = e.clientY;
+      }
     });
-    const letGo = (e) => {
-      const tap = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 8 && performance.now() - downAt.t < 400;
-      if (tap && downAt.part && downAt.part !== "creature") openInfo({ spring: "k", eq: "eq", tape: "s" }[downAt.part] || "k", { x: e.clientX, y: e.clientY });
-      downAt = null; orbiting = null;
-      if (!dragging) return;
+    function letGoBody() {
       dragging = null;
       const u0 = sim.u;
       if (u0 < 0.02 && Math.abs(sim.st.v) < 0.05) { sim.reset(sim.p, 0); return; }
@@ -9053,6 +9078,16 @@ const EggExplain = (() => {
       trial = startRelease(u0);
       G.sfx.boing(0.6); G.buzz(15);
       say(RELEASE_LINES[Math.floor(Math.random() * RELEASE_LINES.length)], 1.8);
+    }
+    const letGo = (e) => {
+      fingers.delete(e.pointerId);
+      if (pinch) { if (fingers.size < 2) pinch = null; downAt = null; orbiting = null; return; }
+      const now = performance.now();
+      const tap = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 8 && now - downAt.t < 400;
+      if (tap && downAt.part && downAt.part !== "creature") openInfo({ spring: "k", eq: "eq", tape: "s" }[downAt.part] || "k", { x: e.clientX, y: e.clientY });
+      else if (tap && !downAt.part) { if (now - lastTap < 350) { L3.resetView(); lastTap = 0; } else lastTap = now; }
+      downAt = null; orbiting = null;
+      if (dragging) letGoBody();
     };
     cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
 

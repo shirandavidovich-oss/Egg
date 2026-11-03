@@ -1349,13 +1349,26 @@
     const DRAG_LINES = ["תפסיק למשוך, אני לא גומייה!", "עוד קצת ואתה מודד לי את האישיות בניוטון.", "אוי, זה מותח."];
     const RELEASE_LINES = ["אני לא קופץ, אני מתנודד!", "וואו. שוב!", "למעלה, למטה, למעלה…"];
 
-    // ---- hands: pull the creature down; drag anywhere else to walk around the stage; tap a part to ask about it ----
-    let downAt = null;
+    // ---- hands: pull the creature down; on the background one finger walks around (sideways) and
+    //      comes closer or steps back (up / down), two fingers pinch to zoom, a double tap resets the view;
+    //      tapping a part asks about it ----
+    let downAt = null, lastTap = 0;
+    const fingers = new Map();
+    let pinch = null;
+    const spread = () => { const p = [...fingers.values()]; return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1; };
     cv.addEventListener("pointerdown", (e) => {
       if (isSheetOpen()) return;
       G.audio.unlock();
-      const part = L3.pick(e.clientX, e.clientY);
       try { cv.setPointerCapture(e.pointerId); } catch (err) { }
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.size === 2) {
+        // a second finger: stop pulling or walking, start pinching
+        if (dragging) letGoBody();
+        orbiting = null; downAt = null; pinch = { d: spread() };
+        return;
+      }
+      if (fingers.size > 2) return;
+      const part = L3.pick(e.clientX, e.clientY);
       downAt = { x: e.clientX, y: e.clientY, part, t: performance.now() };
       if (part === "creature") {
         const y = L3.pointerY(e.clientX, e.clientY), hookY = -(L0 + sim.st.s);
@@ -1365,21 +1378,24 @@
         if (!everDragged) { everDragged = true; if (P.achieve("first_drag")) reward("ach:first_drag", 3, { x: e.clientX, y: e.clientY }); }
         say(DRAG_LINES[Math.floor(Math.random() * DRAG_LINES.length)], 2);
         G.buzz(8);
-      } else orbiting = { x: e.clientX };
+      } else orbiting = { x: e.clientX, y: e.clientY };
     });
     cv.addEventListener("pointermove", (e) => {
+      if (!fingers.has(e.pointerId)) return;
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && fingers.size >= 2) { const d = spread(); L3.zoomBy(pinch.d / d); pinch.d = d; return; }
       if (dragging) {
         const y = L3.pointerY(e.clientX, e.clientY); if (y === null) return;
         const s = -(y - dragging.off) - L0;
         const u = clamp(s - SP.equilibrium(sim.p), 0, U_MAX);
         dragging.u = u; sim.pull(u);
-      } else if (orbiting) { L3.orbit(-(e.clientX - orbiting.x) * 0.006); orbiting.x = e.clientX; }
+      } else if (orbiting) {
+        L3.orbit(-(e.clientX - orbiting.x) * 0.006);
+        L3.zoomBy(Math.exp((e.clientY - orbiting.y) * 0.004));      // finger up = closer, down = farther
+        orbiting.x = e.clientX; orbiting.y = e.clientY;
+      }
     });
-    const letGo = (e) => {
-      const tap = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 8 && performance.now() - downAt.t < 400;
-      if (tap && downAt.part && downAt.part !== "creature") openInfo({ spring: "k", eq: "eq", tape: "s" }[downAt.part] || "k", { x: e.clientX, y: e.clientY });
-      downAt = null; orbiting = null;
-      if (!dragging) return;
+    function letGoBody() {
       dragging = null;
       const u0 = sim.u;
       if (u0 < 0.02 && Math.abs(sim.st.v) < 0.05) { sim.reset(sim.p, 0); return; }
@@ -1388,6 +1404,16 @@
       trial = startRelease(u0);
       G.sfx.boing(0.6); G.buzz(15);
       say(RELEASE_LINES[Math.floor(Math.random() * RELEASE_LINES.length)], 1.8);
+    }
+    const letGo = (e) => {
+      fingers.delete(e.pointerId);
+      if (pinch) { if (fingers.size < 2) pinch = null; downAt = null; orbiting = null; return; }
+      const now = performance.now();
+      const tap = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 8 && now - downAt.t < 400;
+      if (tap && downAt.part && downAt.part !== "creature") openInfo({ spring: "k", eq: "eq", tape: "s" }[downAt.part] || "k", { x: e.clientX, y: e.clientY });
+      else if (tap && !downAt.part) { if (now - lastTap < 350) { L3.resetView(); lastTap = 0; } else lastTap = now; }
+      downAt = null; orbiting = null;
+      if (dragging) letGoBody();
     };
     cv.addEventListener("pointerup", letGo); cv.addEventListener("pointercancel", letGo);
 
